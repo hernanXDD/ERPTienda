@@ -1,0 +1,30 @@
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
+import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
+import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
+import { AutenticacionService } from './autenticacion.service';
+import { InicioSesionDto } from './dto/inicio-sesion.dto';
+
+@Controller('autenticacion')
+export class AutenticacionController {
+  constructor(private readonly autenticacionService: AutenticacionService) {}
+
+  @Post('inicio-sesion')
+  @HttpCode(HttpStatus.OK)
+  iniciarSesion(@Body() datos: InicioSesionDto) {
+    return this.autenticacionService.iniciarSesion(datos);
+  }
+
+  @Get('sesion-actual')
+  @UseGuards(JwtAuthGuard)
+  sesionActual(@UsuarioSesionActual() usuario: UsuarioSesion) {
+    return this.autenticacionService.obtenerSesionActual(usuario);
+  }
+
+  @Post('cierre-sesion')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  cerrarSesion() {
+    return this.autenticacionService.cerrarSesion();
+  }
+}

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RefreshCw } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useClientesStore } from '../../stores/clientes';
@@ -25,6 +26,16 @@ const clienteModal = ref<Cliente | null>(null);
 const fechaFiltroDesde = ref('');
 const fechaFiltroHasta = ref('');
 
+const busquedaNombre = ref('');
+/** '' = todos; con-deuda = saldo deudor > 0; sin-deuda = saldo <= 0 */
+const filtroDeuda = ref<'' | 'con-deuda' | 'sin-deuda'>('');
+
+const opcionesFiltroDeuda = [
+  { valor: '' as const, etiqueta: 'Todas las cuentas' },
+  { valor: 'con-deuda' as const, etiqueta: 'Con deuda pendiente' },
+  { valor: 'sin-deuda' as const, etiqueta: 'Sin deuda pendiente' },
+];
+
 const refImportePago = ref<HTMLInputElement | null>(null);
 
 const fechaPago = ref('');
@@ -41,11 +52,37 @@ function estaMovimientoEnRangoFecha(m: MovimientoConSaldo): boolean {
   return true;
 }
 
-const cuentas = computed(() =>
+const cuentasHabilitadas = computed(() =>
   [...clientes.value]
     .filter((c) => c.habilitado && c.cuentaCorrienteHabilitada)
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
 );
+
+function clienteTieneDeudaPendiente(clienteId: string): boolean {
+  return cuentaCorrienteStore.saldoClienteCacheado(clienteId) > 0;
+}
+
+const cuentasFiltradas = computed(() => {
+  const texto = busquedaNombre.value.trim().toLowerCase();
+  return cuentasHabilitadas.value.filter((c) => {
+    if (texto) {
+      const agregado = `${c.nombre} ${c.documento}`.toLowerCase();
+      if (!agregado.includes(texto)) return false;
+    }
+    if (filtroDeuda.value === 'con-deuda' && !clienteTieneDeudaPendiente(c.id)) return false;
+    if (filtroDeuda.value === 'sin-deuda' && clienteTieneDeudaPendiente(c.id)) return false;
+    return true;
+  });
+});
+
+const hayFiltrosListadoActivos = computed(
+  () => Boolean(busquedaNombre.value.trim() || filtroDeuda.value),
+);
+
+function limpiarFiltrosListado(): void {
+  busquedaNombre.value = '';
+  filtroDeuda.value = '';
+}
 
 function creditoDisponible(cliente: Cliente): number {
   const saldo = cuentaCorrienteStore.saldoClienteCacheado(cliente.id);
@@ -58,16 +95,21 @@ const movimientosFiltradosModal = computed(() => {
   return cuentaCorrienteStore.movimientosConSaldoCliente(id).filter(estaMovimientoEnRangoFecha);
 });
 
-const cantidadCuentasCorriente = computed(() => cuentas.value.length);
+const cantidadCuentasCorriente = computed(() => cuentasHabilitadas.value.length);
+
+const cantidadCuentasVisibles = computed(() => cuentasFiltradas.value.length);
 
 const saldoTotalCartera = computed(() =>
-  cuentas.value.reduce((acumulado, clienteActual) => {
+  cuentasFiltradas.value.reduce((acumulado, clienteActual) => {
     return acumulado + cuentaCorrienteStore.saldoClienteCacheado(clienteActual.id);
   }, 0)
 );
 
 const limiteTotalCartera = computed(() =>
-  cuentas.value.reduce((acumulado, clienteActual) => acumulado + clienteActual.limiteCompraCuentaCorriente, 0)
+  cuentasFiltradas.value.reduce(
+    (acumulado, clienteActual) => acumulado + clienteActual.limiteCompraCuentaCorriente,
+    0
+  )
 );
 
 function etiquetaTipoMovimiento(tipo: MovimientoConSaldo['tipoMovimiento']): string {
@@ -189,80 +231,132 @@ function imprimirCuentaCliente(): void {
 </script>
 
 <template>
-  <section class="cc-principal-wrap" aria-labelledby="titulo-cc">
-    <div class="cc-principal-marco">
-      <header class="cc-principal-cab">
-        <div class="cc-principal-cab-txt">
-          <p class="cc-principal-eyebrow">Clientes · Cuentas corrientes</p>
-          <h1 id="titulo-cc" class="cc-principal-titulo">Cuentas corrientes</h1>
-          <p class="cc-principal-sub">
+  <section class="pg-wrap" aria-labelledby="titulo-cc">
+    <div class="pg-marco">
+      <header class="pg-cab">
+        <div class="pg-cab-txt">
+          <p class="pg-eyebrow">Clientes · Cuentas corrientes</p>
+          <h1 id="titulo-cc" class="pg-titulo">Cuentas corrientes</h1>
+          <p class="pg-sub">
             Límite y saldo según movimientos registrados. Abrí <strong>Movimientos de cuenta</strong> por cliente para
             detalle, filtro por período y registro de pagos.
           </p>
         </div>
-        <div class="cc-principal-kpis" role="group" aria-label="Resumen de la cartera en cuenta corriente">
-          <div class="cc-kpi">
-            <span class="cc-kpi-etiq">Cuentas activas</span>
-            <span class="cc-kpi-valor cc-mono">{{ cantidadCuentasCorriente }}</span>
+        <div class="pg-kpis" role="group" aria-label="Resumen de la cartera en cuenta corriente">
+          <div class="pg-kpi">
+            <span class="pg-kpi-etiq">Cuentas activas</span>
+            <span class="pg-kpi-valor pg-mono">{{ cantidadCuentasCorriente }}</span>
           </div>
-          <div class="cc-kpi">
-            <span class="cc-kpi-etiq">Límite combinado CC</span>
-            <span class="cc-kpi-valor cc-mono">{{ formatoPeso.format(limiteTotalCartera) }}</span>
+          <div class="pg-kpi">
+            <span class="pg-kpi-etiq">Límite combinado CC</span>
+            <span class="pg-kpi-valor pg-mono">{{ formatoPeso.format(limiteTotalCartera) }}</span>
           </div>
-          <div class="cc-kpi cc-kpi--saldo-cartera">
-            <span class="cc-kpi-etiq">Saldo total cartera</span>
-            <span class="cc-kpi-valor cc-mono">{{ formatoPeso.format(saldoTotalCartera) }}</span>
+          <div class="pg-kpi pg-kpi--peligro">
+            <span class="pg-kpi-etiq">Saldo total cartera</span>
+            <span class="pg-kpi-valor pg-mono">{{ formatoPeso.format(saldoTotalCartera) }}</span>
           </div>
         </div>
       </header>
 
-      <section class="cc-principal-tabla-cuerpo" aria-labelledby="cc-listado-cartera-tit">
-        <header class="cc-principal-tabla-cab">
-          <h2 id="cc-listado-cartera-tit" class="cc-principal-tabla-h2 cc-modal-seclab">
+      <div class="pg-barra" role="search" aria-label="Filtrar cartera de cuentas corrientes">
+        <div class="pg-barra-col pg-barra-col--busq">
+          <label class="pg-filtro-bl" for="pg-filtro-nombre">
+            <span class="pg-filtro-etiq">Buscar por nombre</span>
+            <input
+              id="pg-filtro-nombre"
+              v-model="busquedaNombre"
+              type="search"
+              class="pg-filtro-inp"
+              placeholder="Nombre o documento del cliente…"
+              autocomplete="off"
+            />
+          </label>
+        </div>
+
+        <div class="pg-barra-col pg-barra-col--filtro">
+          <label class="pg-filtro-bl" for="pg-filtro-deuda">
+            <span class="pg-filtro-etiq">Estado de deuda</span>
+            <select id="pg-filtro-deuda" v-model="filtroDeuda" class="pg-filtro-inp pg-filtro-sel">
+              <option v-for="op in opcionesFiltroDeuda" :key="op.valor" :value="op.valor">
+                {{ op.etiqueta }}
+              </option>
+            </select>
+          </label>
+        </div>
+
+        <div class="pg-barra-col pg-barra-col--reinicio">
+          <div class="pg-filtro-bl">
+            <span class="pg-filtro-etiq">Reinicio</span>
+            <button
+              type="button"
+              class="pg-btn-reset-filtros"
+              :disabled="!hayFiltrosListadoActivos"
+              @click="limpiarFiltrosListado"
+            >
+              <RefreshCw :size="16" aria-hidden="true" />
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p v-if="hayFiltrosListadoActivos" class="pg-resumen" role="status">
+        Mostrando <strong>{{ cantidadCuentasVisibles }}</strong> de
+        {{ cantidadCuentasCorriente }}
+        {{ cantidadCuentasCorriente === 1 ? 'cuenta' : 'cuentas' }} en la cartera.
+      </p>
+
+      <section class="pg-tabla-cuerpo" aria-labelledby="cc-listado-cartera-tit">
+        <header class="pg-tabla-cab">
+          <h2 id="cc-listado-cartera-tit" class="pg-tabla-h2 cc-modal-seclab">
             Cartera habilitada
           </h2>
-          <span class="cc-modal-tabla-meta cc-mono"
-            >{{ cantidadCuentasCorriente }}
-            {{
-              cantidadCuentasCorriente === 1 ? 'cliente' : 'clientes'
-            }}</span
-          >
+          <span class="pg-tabla-meta pg-mono">
+            {{ cantidadCuentasVisibles }}
+            {{ cantidadCuentasVisibles === 1 ? 'cliente visible' : 'clientes visibles' }}
+          </span>
         </header>
 
-        <div class="cc-principal-tabla-scroll" role="region" aria-label="Cuentas corrientes por cliente">
-          <table class="cc-tabla cc-tabla-estado">
+        <div class="pg-tabla-scroll" role="region" aria-label="Cuentas corrientes por cliente">
+          <table class="pg-tabla pg-tabla--estado">
             <thead>
               <tr>
                 <th scope="col" class="cc-col-cliente">Cliente</th>
                 <th scope="col" class="cc-col-documento">Documento</th>
-                <th scope="col" class="cc-der cc-col-monto-lista">Límite CC</th>
-                <th scope="col" class="cc-der cc-col-monto-lista">Saldo actual</th>
-                <th scope="col" class="cc-der cc-col-monto-lista">Disponible</th>
-                <th scope="col" class="cc-acc cc-col-acciones">Acciones</th>
+                <th scope="col" class="pg-der cc-col-monto-lista">Límite CC</th>
+                <th scope="col" class="pg-der cc-col-monto-lista">Saldo actual</th>
+                <th scope="col" class="pg-der cc-col-monto-lista">Disponible</th>
+                <th scope="col" class="pg-acc cc-col-acciones">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="c in cuentas" :key="c.id">
+              <tr v-for="c in cuentasFiltradas" :key="c.id">
                 <td class="cc-cel-cliente">{{ c.nombre }}</td>
-                <td class="cc-mono cc-col-documento">{{ c.documento }}</td>
-                <td class="cc-der cc-mono cc-col-monto-lista">{{ formatoPeso.format(c.limiteCompraCuentaCorriente) }}</td>
-                <td class="cc-der cc-mono cc-col-monto-lista">{{ formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(c.id)) }}</td>
-                <td class="cc-der cc-mono cc-col-monto-lista cc-cel-disponible">
+                <td class="pg-mono cc-col-documento">{{ c.documento }}</td>
+                <td class="pg-der pg-mono cc-col-monto-lista">{{ formatoPeso.format(c.limiteCompraCuentaCorriente) }}</td>
+                <td class="pg-der pg-mono cc-col-monto-lista">{{ formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(c.id)) }}</td>
+                <td class="pg-der pg-mono cc-col-monto-lista cc-cel-disponible">
                   {{ formatoPeso.format(creditoDisponible(c)) }}
                 </td>
-                <td class="cc-acc cc-col-acciones">
+                <td class="pg-acc cc-col-acciones">
                   <button
                     type="button"
-                    class="cc-btn mov cc-btn--lg"
+                    class="pg-btn pg-btn--lg"
                     @click="abrirMovimientosCliente(c)"
                   >
                     Movimientos de cuenta
                   </button>
                 </td>
               </tr>
-              <tr v-if="cuentas.length === 0">
-                <td colspan="6" class="cc-vacio-inner cc-vacio--principal">
-                  No hay clientes con cuenta corriente habilitada y habilitados para operar.
+              <tr v-if="cuentasFiltradas.length === 0">
+                <td colspan="6" class="pg-vacio">
+                  <template v-if="cuentasHabilitadas.length === 0">
+                    No hay clientes con cuenta corriente habilitada y habilitados para operar.
+                  </template>
+                  <template v-else>
+                    Ningún cliente coincide con los filtros elegidos. Probá otro nombre o cambiá el
+                    estado de deuda.
+                  </template>
                 </td>
               </tr>
             </tbody>
@@ -289,15 +383,15 @@ function imprimirCuentaCliente(): void {
             </p>
           </div>
           <div class="cc-modal-kpis" role="group" aria-label="Resumen de saldos">
-            <div class="cc-kpi">
-              <span class="cc-kpi-etiq">Saldo actual</span>
-              <span class="cc-kpi-valor cc-mono">{{
+            <div class="pg-kpi">
+              <span class="pg-kpi-etiq">Saldo actual</span>
+              <span class="pg-kpi-valor pg-mono">{{
                 formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(clienteModal.id))
               }}</span>
             </div>
-            <div class="cc-kpi cc-kpi--acento">
-              <span class="cc-kpi-etiq">Disponible para compras</span>
-              <span class="cc-kpi-valor cc-mono">{{ formatoPeso.format(creditoDisponible(clienteModal)) }}</span>
+            <div class="pg-kpi pg-kpi--acento">
+              <span class="pg-kpi-etiq">Disponible para compras</span>
+              <span class="pg-kpi-valor pg-mono">{{ formatoPeso.format(creditoDisponible(clienteModal)) }}</span>
             </div>
           </div>
           <button type="button" class="cc-modal-x" aria-label="Cerrar" @click="cerrarDialogoMovimientos"></button>
@@ -503,177 +597,8 @@ function imprimirCuentaCliente(): void {
 </template>
 
 <style scoped>
-.cc-principal-wrap {
-  width: 100%;
-  max-width: min(97vw, 1320px);
-  margin: 0 auto;
-  padding: 0 clamp(0.65rem, 2.2vw, 1rem) 1.35rem;
-  box-sizing: border-box;
-  /* Espacio fuera del card: barras UI + cab KPI + tabla + hueco seguridad (evita scroll del layout principal). */
-  --cc-reserva-vertical-vista: clamp(13.75rem, 26dvh, 20rem);
-}
-
-.cc-principal-marco {
-  display: flex;
-  flex-direction: column;
-  border-radius: 14px;
-  border: 1px solid var(--color-borde);
-  background: var(--color-fondo-elevado);
-  box-shadow:
-    0 4px 28px rgba(0, 0, 0, 0.32),
-    0 0 1px rgba(124, 140, 240, 0.15);
-  overflow: hidden;
-  min-height: 0;
-}
-
-.cc-principal-cab {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-  padding: 1.25rem clamp(1rem, 3vw, 1.65rem);
-  padding-top: 1.35rem;
-  border-bottom: 1px solid var(--color-borde);
-  background: linear-gradient(
-    165deg,
-    rgba(7, 11, 20, 0.98) 0%,
-    rgba(21, 29, 46, 0.92) 45%,
-    rgba(21, 29, 46, 0.55) 100%
-  );
-}
-
-@media (width >= 900px) {
-  .cc-principal-cab {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-    align-items: start;
-    gap: 1rem 1.75rem;
-  }
-
-  .cc-principal-kpis {
-    justify-self: end;
-  }
-}
-
-.cc-principal-cab-txt {
-  min-width: 0;
-}
-
-.cc-principal-eyebrow {
-  margin: 0 0 0.2rem;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--color-acento);
-}
-
-.cc-principal-titulo {
-  margin: 0;
-  font-size: clamp(1.25rem, 2.4vw, 1.52rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-}
-
-.cc-principal-sub {
-  margin: 0.45rem 0 0;
-  font-size: 0.89rem;
-  line-height: 1.48;
-  color: var(--color-texto-apagado);
-  max-width: 38rem;
-}
-
-.cc-principal-kpis {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.65rem;
-  width: 100%;
-  min-width: 0;
-}
-
-@media (width >= 520px) {
-  .cc-principal-kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (width >= 900px) {
-  .cc-principal-kpis {
-    grid-template-columns: repeat(3, minmax(5.85rem, 7.85rem));
-    width: auto;
-    gap: 0.65rem;
-  }
-}
-
-.cc-kpi--saldo-cartera {
-  border-color: rgba(251, 113, 133, 0.28);
-  background: linear-gradient(
-    158deg,
-    rgba(251, 113, 133, 0.1),
-    rgba(251, 113, 133, 0.03)
-  );
-}
-
-.cc-kpi--saldo-cartera .cc-kpi-etiq {
-  color: var(--color-texto-suave);
-}
-
-.cc-kpi--saldo-cartera .cc-kpi-valor {
-  color: var(--color-texto);
-}
-
-.cc-principal-tabla-cuerpo {
-  flex: 0 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: clamp(0.95rem, 2.5vw, 1.2rem) clamp(1rem, 3vw, 1.65rem) clamp(1.15rem, 3vw, 1.5rem);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, transparent 56%);
-}
-
-.cc-principal-tabla-cab {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.6rem;
-  flex-shrink: 0;
-}
-
-.cc-principal-tabla-h2 {
-  margin: 0;
-}
-
-/* Alto útil ~11 filas; tope también por viewport para no disparar scroll en el main del layout. */
-.cc-principal-tabla-scroll {
-  --cc-altura-cap-cab-tabla: 3.05rem;
-  --cc-altura-cap-fila: 2.8125rem;
-  --cc-cap-de-filas: 11;
-  flex: none;
-  width: 100%;
-  max-height: min(
-    calc(var(--cc-altura-cap-cab-tabla) + var(--cc-cap-de-filas) * var(--cc-altura-cap-fila)),
-    calc(100dvh - var(--cc-reserva-vertical-vista))
-  );
-  min-height: 0;
-  overflow: auto;
-  overflow-x: auto;
-  border-radius: 12px;
-  border: 1px solid var(--color-borde);
-  background: var(--color-fondo-cabecera);
-}
-
-@media (max-height: 700px) {
-  .cc-principal-tabla-scroll {
-    --cc-reserva-vertical-vista: clamp(13rem, 32dvh, 18rem);
-  }
-}
-
-@media (max-height: 600px) {
-  .cc-principal-tabla-scroll {
-    --cc-cap-de-filas: 8;
-    --cc-reserva-vertical-vista: clamp(11.75rem, 36dvh, 16rem);
-  }
+.pg-wrap {
+  --pg-reserva-vertical-vista: clamp(13.75rem, 26dvh, 20rem);
 }
 
 .cc-col-cliente {

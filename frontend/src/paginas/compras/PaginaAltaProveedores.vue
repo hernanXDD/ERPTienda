@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import {
@@ -228,36 +228,40 @@ function irAEditarDesdeDetalle(): void {
 </script>
 
 <template>
-  <section class="prv" aria-labelledby="titulo-alta-proveedores">
-    <header class="prv-cab">
-      <h1 id="titulo-alta-proveedores" class="prv-titulo">Proveedores</h1>
+  <section class="pg-wrap" aria-labelledby="titulo-alta-proveedores">
+    <div class="pg-marco pg-marco--tarjetas pg-marco--proveedores">
+    <header class="pg-cab">
+      <div class="pg-cab-txt">
+        <h1 id="titulo-alta-proveedores" class="pg-titulo">Proveedores</h1>
+      </div>
     </header>
 
-    <div class="prv-barra">
-      <div class="prv-barra-fila">
+    <div class="pg-barra">
+      <div class="pg-barra-fila">
         <div class="prv-busq">
-          <label class="prv-etq" for="busq-nom">Buscar</label>
+          <label class="pg-filtro-etiq" for="busq-nom">Buscar</label>
           <input
             id="busq-nom"
             v-model="busquedaNombre"
             type="search"
-            class="prv-inp"
+            class="pg-filtro-inp"
             placeholder="Nombre, documento o correo…"
             autocomplete="off"
           />
         </div>
         <div class="prv-acciones">
-          <button type="button" class="prv-btn-nuevo" @click="abrirAltaProveedor">Nuevo proveedor</button>
+          <button type="button" class="pg-btn-primario" @click="abrirAltaProveedor">Nuevo proveedor</button>
         </div>
       </div>
     </div>
 
+    <section class="pg-cuerpo pg-cuerpo--grilla">
     <div
       v-if="proveedoresFiltrados.length"
-      class="prv-grid-viewport"
+      class="pg-grilla-viewport"
       aria-label="Proveedores"
     >
-      <div class="prv-grid-wrap">
+      <div class="pg-grilla-wrap">
         <article
           v-for="p in proveedoresFiltrados"
           :key="p.id"
@@ -312,7 +316,10 @@ function irAEditarDesdeDetalle(): void {
         </article>
       </div>
     </div>
-    <p v-else class="prv-vacio">No hay proveedores que coincidan con la búsqueda.</p>
+    <p v-else class="pg-vacio--grilla">No hay proveedores que coincidan con la búsqueda.</p>
+    </section>
+
+    </div>
 
     <dialog
       ref="refDialog"
@@ -352,12 +359,12 @@ function irAEditarDesdeDetalle(): void {
           <section class="prv-modal-bloque" aria-labelledby="prv-sec-ident">
             <h3 id="prv-sec-ident" class="prv-modal-seccion-tit">Identificación</h3>
             <div class="prv-fila">
-              <label class="prv-etq" for="ed-nombre">Nombre o razón social</label>
-              <input id="ed-nombre" v-model="borrador.nombre" type="text" class="prv-inp" required />
+              <label class="pg-filtro-etiq" for="ed-nombre">Nombre o razón social</label>
+              <input id="ed-nombre" v-model="borrador.nombre" type="text" class="pg-filtro-inp" required />
             </div>
             <div class="prv-fila">
-              <label class="prv-etq" for="ed-doc">Documento / CUIT</label>
-              <p id="prv-tip-doc-ident" class="prv-etq-tip">
+              <label class="pg-filtro-etiq" for="ed-doc">Documento / CUIT</label>
+              <p id="prv-tip-doc-ident" class="pg-filtro-etiq-tip">
                 Único en el sistema. Si cargás sólo dígitos, se formatea solo: DNI con puntos
                 (37.436.702) y CUIT con tipo, puntos en el medio y verificador
                 (20-37.436.702-2). Comparación ignorando separadores.
@@ -367,8 +374,8 @@ function irAEditarDesdeDetalle(): void {
                 :value="borrador.documento"
                 type="text"
                 inputmode="text"
-                class="prv-inp"
-                :class="{ 'prv-inp--dato-invalido': erroresValidacionProveedor.documento }"
+                class="pg-filtro-inp"
+                :class="{ 'pg-filtro-inp--dato-invalido': erroresValidacionProveedor.documento }"
                 placeholder="Ej. DNI o CUIT (se formatea al escribir)…"
                 autocomplete="off"
                 :aria-invalid="erroresValidacionProveedor.documento ? true : undefined"
@@ -395,14 +402,14 @@ function irAEditarDesdeDetalle(): void {
             <h3 id="prv-sec-contacto" class="prv-modal-seccion-tit">Contacto y ubicación</h3>
             <div class="prv-modal-grid-duo">
               <div class="prv-fila">
-                <label class="prv-etq" for="ed-tel-p">Teléfono principal</label>
+                <label class="pg-filtro-etiq" for="ed-tel-p">Teléfono principal</label>
                 <input
                   id="ed-tel-p"
                   v-model="borrador.telefonoPrincipal"
                   type="tel"
-                  class="prv-inp"
+                  class="pg-filtro-inp"
                   autocomplete="tel"
-                  :class="{ 'prv-inp--dato-invalido': erroresValidacionProveedor.telefonoPrincipal }"
+                  :class="{ 'pg-filtro-inp--dato-invalido': erroresValidacionProveedor.telefonoPrincipal }"
                   :aria-invalid="erroresValidacionProveedor.telefonoPrincipal ? true : undefined"
                 />
                 <p
@@ -414,15 +421,15 @@ function irAEditarDesdeDetalle(): void {
                 </p>
               </div>
               <div class="prv-fila">
-                <label class="prv-etq" for="ed-tel-alt">Teléfono alternativo</label>
+                <label class="pg-filtro-etiq" for="ed-tel-alt">Teléfono alternativo</label>
                 <input
                   id="ed-tel-alt"
                   v-model="borrador.telefonoAlternativo"
                   type="tel"
-                  class="prv-inp"
+                  class="pg-filtro-inp"
                   autocomplete="tel"
                   placeholder="Opcional"
-                  :class="{ 'prv-inp--dato-invalido': erroresValidacionProveedor.telefonoAlternativo }"
+                  :class="{ 'pg-filtro-inp--dato-invalido': erroresValidacionProveedor.telefonoAlternativo }"
                   :aria-invalid="erroresValidacionProveedor.telefonoAlternativo ? true : undefined"
                 />
                 <p
@@ -435,19 +442,19 @@ function irAEditarDesdeDetalle(): void {
               </div>
             </div>
             <div class="prv-fila">
-              <label class="prv-etq" for="ed-correo">Correo electrónico</label>
-              <p id="prv-tip-correo" class="prv-etq-tip">
+              <label class="pg-filtro-etiq" for="ed-correo">Correo electrónico</label>
+              <p id="prv-tip-correo" class="pg-filtro-etiq-tip">
                 Opcional. Formato habitual: cuenta@servidor.dom
               </p>
               <input
                 id="ed-correo"
                 v-model="borrador.correoElectronico"
                 type="email"
-                class="prv-inp"
+                class="pg-filtro-inp"
                 autocomplete="email"
                 inputmode="email"
                 placeholder="ejemplo@sucursal.com"
-                :class="{ 'prv-inp--dato-invalido': erroresValidacionProveedor.correoElectronico }"
+                :class="{ 'pg-filtro-inp--dato-invalido': erroresValidacionProveedor.correoElectronico }"
                 :aria-invalid="erroresValidacionProveedor.correoElectronico ? true : undefined"
                 :aria-describedby="
                   erroresValidacionProveedor.correoElectronico
@@ -465,7 +472,7 @@ function irAEditarDesdeDetalle(): void {
               </p>
             </div>
             <div class="prv-fila">
-              <label class="prv-etq" for="ed-dir">Dirección</label>
+              <label class="pg-filtro-etiq" for="ed-dir">Dirección</label>
               <textarea
                 id="ed-dir"
                 v-model="borrador.direccion"
@@ -485,20 +492,20 @@ function irAEditarDesdeDetalle(): void {
               Define si esta tienda puede dejar pendiente el pago de compras a este proveedor y hasta qué tope estimado en pesos (no reemplaza el contrato jurídico).
             </p>
             <div class="prv-fila prv-fila--chk prv-fila--cc">
-              <label class="prv-etq prv-etq--inline">
+              <label class="pg-filtro-etiq pg-filtro-etiq--inline">
                 <input v-model="borrador.comprasCreditoHabilitadas" type="checkbox" />
                 Permitir compras a crédito con este proveedor
               </label>
             </div>
             <div v-if="borrador.comprasCreditoHabilitadas" class="prv-fila prv-fila-limite-cc">
-              <label class="prv-etq" for="ed-lim">Límite estimado de crédito de compras (ARS)</label>
+              <label class="pg-filtro-etiq" for="ed-lim">Límite estimado de crédito de compras (ARS)</label>
               <input
                 id="ed-lim"
                 v-model.number="borrador.limiteCreditoCompras"
                 type="number"
                 min="0"
                 step="1000"
-                class="prv-inp prv-inp-mono"
+                class="pg-filtro-inp pg-filtro-inp-mono"
                 inputmode="numeric"
               />
             </div>
@@ -659,53 +666,19 @@ function irAEditarDesdeDetalle(): void {
 </template>
 
 <style scoped>
-.prv {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 72rem;
-  margin: 0 auto;
-  --prv-grid-gap: 0.6rem;
-  --prv-grid-col: 3;
-  /** Filas que deben verse completas dentro del área scroll (sin cortar cards). */
-  --prv-grid-filas-visibles: 3;
-  /**
-   * Alto mínimo de cada fila alineado con la tarjeta compacta (sin esto el panel usa ~7–8rem
-   * pero la card ocupa ~9.35rem y solo entran ~2½ filas visibles).
-   */
-  --prv-altura-card-fila: 9.4rem;
-  --prv-grid-viewpad-v: 1rem;
-  --prv-panel-h: min(
-    calc(
-      var(--prv-grid-filas-visibles) * var(--prv-altura-card-fila) +
-        (var(--prv-grid-filas-visibles) - 1) * var(--prv-grid-gap) +
-        var(--prv-grid-viewpad-v)
-    ),
-    82vh
-  );
+.pg-marco--proveedores {
+  --pg-grilla-altura-fila: 9.4rem;
+  --pg-reserva-vertical-vista: clamp(12.5rem, 24dvh, 18rem);
 }
 
-.prv-titulo {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-
-.prv-barra {
-  padding: 1rem;
-  border-radius: var(--radio-control);
-  border: 1px solid var(--color-borde);
-  background: var(--color-fondo-elevado);
-}
-
-.prv-barra-fila {
+.pg-barra-fila {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
 }
 
 @media (min-width: 720px) {
-  .prv-barra-fila {
+  .pg-barra-fila {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-end;
@@ -749,7 +722,7 @@ function irAEditarDesdeDetalle(): void {
   filter: brightness(1.06);
 }
 
-.prv-etq {
+.pg-filtro-etiq {
   display: block;
   margin-bottom: 0.3rem;
   font-size: 0.72rem;
@@ -759,7 +732,7 @@ function irAEditarDesdeDetalle(): void {
   color: var(--color-texto-apagado);
 }
 
-.prv-etq--inline {
+.pg-filtro-etiq--inline {
   margin-bottom: 0;
   text-transform: none;
   letter-spacing: 0;
@@ -772,7 +745,7 @@ function irAEditarDesdeDetalle(): void {
   cursor: pointer;
 }
 
-.prv-etq-tip {
+.pg-filtro-etiq-tip {
   margin: -0.1rem 0 0.4rem;
   font-size: 0.71rem;
   line-height: 1.42;
@@ -788,11 +761,11 @@ function irAEditarDesdeDetalle(): void {
   color: var(--color-peligro);
 }
 
-.prv-inp--dato-invalido {
+.pg-filtro-inp--dato-invalido {
   border-color: rgba(251, 113, 133, 0.75);
 }
 
-.prv-inp {
+.pg-filtro-inp {
   width: 100%;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--color-borde);
@@ -806,23 +779,23 @@ function irAEditarDesdeDetalle(): void {
     box-shadow 0.15s ease;
 }
 
-.prv-form--modal .prv-inp:hover,
+.prv-form--modal .pg-filtro-inp:hover,
 .prv-form--modal .prv-ta:hover {
   border-color: rgba(124, 140, 240, 0.28);
 }
 
-.prv-form--modal .prv-inp:focus,
+.prv-form--modal .pg-filtro-inp:focus,
 .prv-form--modal .prv-ta:focus {
   outline: none;
   border-color: var(--color-acento);
   box-shadow: 0 0 0 2px rgba(124, 140, 240, 0.22);
 }
 
-.prv-form--modal .prv-inp--dato-invalido:hover {
+.prv-form--modal .pg-filtro-inp--dato-invalido:hover {
   border-color: rgba(251, 113, 133, 0.45);
 }
 
-.prv-form--modal .prv-inp--dato-invalido:focus {
+.prv-form--modal .pg-filtro-inp--dato-invalido:focus {
   outline: none;
   border-color: var(--color-peligro);
   box-shadow: 0 0 0 2px rgba(251, 113, 133, 0.22);
@@ -847,55 +820,11 @@ function irAEditarDesdeDetalle(): void {
   max-width: 24rem;
 }
 
-/*
- * Panel con altura para exactamente tres filas de tarjetas (+ separadores),
- * más el padding vertical del viewport (1rem). El contenido extra hace scroll.
- */
-.prv-grid-viewport {
-  height: var(--prv-panel-h);
-  max-height: var(--prv-panel-h);
-  overflow: auto;
-  padding: 0.5rem;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-control);
-  background: var(--color-fondo-cabecera);
-  box-sizing: border-box;
-}
-
-.prv-grid-wrap {
-  display: grid;
-  grid-template-columns: repeat(var(--prv-grid-col), minmax(0, 1fr));
-  grid-auto-rows: minmax(var(--prv-altura-card-fila), auto);
-  gap: var(--prv-grid-gap);
-  align-items: stretch;
-}
-
-@media (max-width: 719px) {
-  .prv {
-    --prv-grid-col: 1;
-    --prv-altura-card-fila: 9rem;
-    --prv-panel-h: min(
-      calc(
-        var(--prv-grid-filas-visibles) * var(--prv-altura-card-fila) +
-          (var(--prv-grid-filas-visibles) - 1) * var(--prv-grid-gap) +
-          var(--prv-grid-viewpad-v)
-      ),
-      72vh
-    );
-  }
-}
-
-@media (min-width: 720px) and (max-width: 1023px) {
-  .prv {
-    --prv-grid-col: 2;
-  }
-}
-
 .prv-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: var(--prv-altura-card-fila);
+  min-height: var(--pg-grilla-altura-fila);
   align-self: stretch;
   overflow-x: clip;
   border-radius: 12px;
@@ -1674,7 +1603,7 @@ function irAEditarDesdeDetalle(): void {
   padding-top: 0;
 }
 
-.prv-inp-mono {
+.pg-filtro-inp-mono {
   font-variant-numeric: tabular-nums;
 }
 

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { crearSemillaMovimientosCuentaCorriente } from '../datos/semillaMovimientosCuentaCorriente';
 import type { AuditoriaPagoCuentaCorriente, MovimientoCuentaCorriente } from '../tipos/cuentaCorriente';
 import { crearCodigoPublicoReciboPagoCuentaCorriente } from '../utilidades/codigoPublicoReciboPagoCc';
+import { crearRegistroOperadorDesdeSesion } from '../utilidades/registroOperadorSesion';
 import { useSesionStore } from './sesion';
 function compararMovimientosPorFecha(a: MovimientoCuentaCorriente, b: MovimientoCuentaCorriente): number {
   const t = new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
@@ -91,6 +92,7 @@ export const useCuentaCorrienteStore = defineStore('cuentaCorriente', () => {
       tipoMovimiento: 'cargo',
       importe,
       descripcion: descripcion.trim() || 'Cargo en cuenta corriente',
+      registradoPor: crearRegistroOperadorDesdeSesion(),
     };
     movimientos.value = [...movimientos.value, registro];
   }

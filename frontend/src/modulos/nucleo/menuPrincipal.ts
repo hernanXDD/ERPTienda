@@ -8,6 +8,7 @@ export const ORDEN_CLAVES_MENU_PRINCIPAL: ClaveMenuPrincipal[] = [
   'compras',
   'productos',
   'stock',
+  'reportes',
   'usuarios',
   'configuracion',
 ];
@@ -18,6 +19,7 @@ export const ETIQUETA_MENU_PRINCIPAL: Record<ClaveMenuPrincipal, string> = {
   compras: 'Compras',
   productos: 'Productos',
   stock: 'Stock',
+  reportes: 'Reportes',
   usuarios: 'Usuarios',
   configuracion: 'Configuración',
 };
@@ -25,6 +27,8 @@ export const ETIQUETA_MENU_PRINCIPAL: Record<ClaveMenuPrincipal, string> = {
 const MAPA_NOMBRE_RUTA_MENU: Partial<Record<string, ClaveMenuPrincipal>> = {
   'clientes-alta': 'clientes',
   'clientes-cuentas-corrientes': 'clientes',
+  'ventas-centro': 'ventas',
+  'ventas-historial': 'ventas',
   ventas: 'ventas',
   'compras-proveedores': 'compras',
   'compras-registro': 'compras',
@@ -32,6 +36,11 @@ const MAPA_NOMBRE_RUTA_MENU: Partial<Record<string, ClaveMenuPrincipal>> = {
   'productos-categorias': 'productos',
   'stock-actual': 'stock',
   'stock-auditorias': 'stock',
+  'reportes-panel': 'reportes',
+  'reportes-ventas-periodo': 'reportes',
+  'reportes-stock-valorizado': 'reportes',
+  'reportes-cuentas-corrientes': 'reportes',
+  'reportes-compras-proveedor': 'reportes',
   'usuarios-alta': 'usuarios',
   'usuarios-permisos': 'usuarios',
   configuracion: 'configuracion',

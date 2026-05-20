@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { crearSemillaVentas } from '../datos/semillaVentas';
 import type { IdFormaPago, LineaVentaRegistro, VentaRegistrada } from '../tipos/venta';
+import { crearRegistroOperadorDesdeSesion } from '../utilidades/registroOperadorSesion';
 
 function maxNumeroVentaDesdeLista(lista: VentaRegistrada[]): number {
   let max = 0;
@@ -42,6 +43,7 @@ export const useVentasStore = defineStore('ventas', () => {
       total: datos.total,
       lineas: datos.lineas,
       observaciones: datos.observaciones.trim(),
+      registradoPor: crearRegistroOperadorDesdeSesion(),
     };
     ventas.value = [nueva, ...ventas.value];
     return nueva;

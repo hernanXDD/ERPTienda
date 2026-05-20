@@ -9,12 +9,12 @@ import {
 } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { FORMAS_PAGO } from '../../datos/formasPago';
+import { FORMAS_PAGO, etiquetaFormaPago } from '../../datos/formasPago';
 import { useCatalogoStore } from '../../stores/catalogo';
 import { useClientesStore } from '../../stores/clientes';
 import { useStockStore } from '../../stores/stock';
 import { useVentasStore } from '../../stores/ventas';
-import type { Producto } from '../../tipos/catalogo';
+import type { Producto, Variante } from '../../tipos/catalogo';
 import type { Cliente } from '../../tipos/cliente';
 import type { IdFormaPago } from '../../tipos/venta';
 import { formatearFechaYHora } from '../../utilidades/formatoFechaHora';
@@ -26,11 +26,26 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 });
 
 interface LineaTicket {
-  productoId: string;
+  varianteId: string;
   nombre: string;
   cantidad: number;
   precioUnitario: number;
 }
+
+interface FilaVarianteListado {
+  variante: Variante;
+  producto: Producto;
+  nombreLinea: string;
+  precioUnitario: number;
+}
+
+const props = withDefaults(
+  defineProps<{
+    /** Cuando es true, se muestra como página del menú (sin modal ni botón volver). */
+    embebidoEnPagina?: boolean;
+  }>(),
+  { embebidoEnPagina: false }
+);
 
 const emit = defineEmits<{ cerrar: [] }>();
 
@@ -38,7 +53,7 @@ const catalogo = useCatalogoStore();
 const clientesStore = useClientesStore();
 const ventasStore = useVentasStore();
 const stockStore = useStockStore();
-const { productos } = storeToRefs(catalogo);
+const { variantes } = storeToRefs(catalogo);
 const { clientes } = storeToRefs(clientesStore);
 
 type ModoProducto = 'LECTOR' | 'NOMBRE';
@@ -48,7 +63,7 @@ const refInputNombre = useTemplateRef<HTMLInputElement>('refInputNombre');
 const modoProducto = ref<ModoProducto>('LECTOR');
 const codigoLector = ref('');
 const busquedaNombre = ref('');
-const productoSeleccionadoId = ref<string | null>(null);
+const varianteSeleccionadaId = ref<string | null>(null);
 const filtroClienteTexto = ref('');
 const lineas = ref<LineaTicket[]>([]);
 const clienteId = ref('');
@@ -69,32 +84,49 @@ function normalizarCodigoBarras(c: string): string {
   return c.trim();
 }
 
-function coincideBusqueda(producto: Producto, texto: string): boolean {
+const filasVarianteActivas = computed((): FilaVarianteListado[] => {
+  return variantes.value
+    .filter((v) => v.activa)
+    .map((variante): FilaVarianteListado | null => {
+      const producto = catalogo.productoPorId(variante.productoId);
+      if (!producto) return null;
+      return {
+        variante,
+        producto,
+        nombreLinea: catalogo.nombreLineaComercial(variante.id),
+        precioUnitario: producto.precioVenta,
+      };
+    })
+    .filter((f): f is FilaVarianteListado => f !== null);
+});
+
+function coincideBusquedaVariante(fila: FilaVarianteListado, texto: string): boolean {
   const q = texto.trim().toLowerCase();
   if (!q) return false;
   const trozos = [
-    producto.nombre,
-    producto.marca,
-    producto.tipoPrenda,
-    producto.descripcion,
-    producto.codigoBarras,
+    fila.producto.nombre,
+    fila.producto.marca,
+    fila.producto.descripcion,
+    fila.variante.talle,
+    fila.variante.color,
+    fila.variante.codigoBarras,
+    catalogo.nombreCategoria(fila.producto.categoriaId),
+    fila.nombreLinea,
   ].map((x) => x.toLowerCase());
   return trozos.some((t) => t.includes(q));
 }
 
-const resultadosProducto = computed(() => {
+const resultadosVariante = computed(() => {
   const q = busquedaNombre.value.trim();
   if (!q) return [];
-  return [...productos.value]
-    .filter((p) => coincideBusqueda(p, q))
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  return [...filasVarianteActivas.value]
+    .filter((f) => coincideBusquedaVariante(f, q))
+    .sort((a, b) => a.nombreLinea.localeCompare(b.nombreLinea, 'es', { sensitivity: 'base' }));
 });
 
-const productoNombreSeleccionado = computed(
+const filaVarianteSeleccionada = computed(
   () =>
-    (productoSeleccionadoId.value
-      ? productos.value.find((p) => p.id === productoSeleccionadoId.value)
-      : null) ?? null
+    filasVarianteActivas.value.find((f) => f.variante.id === varianteSeleccionadaId.value) ?? null
 );
 
 const clientesFiltrados = computed(() => {
@@ -146,7 +178,7 @@ watch(clienteId, () => {
 });
 
 watch(busquedaNombre, () => {
-  productoSeleccionadoId.value = null;
+  varianteSeleccionadaId.value = null;
 });
 
 watch(modoProducto, () => {
@@ -170,41 +202,43 @@ function agregarPorLector() {
     mostrarToast('Ingresá el código del lector o escribilo y presioná Enter.', 3200);
     return;
   }
-  const producto = productos.value.find(
-    (p) =>
-      Boolean(p.codigoBarras) && normalizarCodigoBarras(p.codigoBarras) === codigoNorm
-  );
-  if (!producto) {
-    mostrarToast('No hay ningún producto con ese código.', 3800);
+  const variante = catalogo.variantePorCodigoBarras(codigoNorm);
+  if (!variante) {
+    mostrarToast('No hay ninguna variante con ese código de barras.', 3800);
     return;
   }
-  agregarAlTicket(producto);
+  agregarAlTicket(variante);
   codigoLector.value = '';
   enfocarModoActual();
 }
 
-function seleccionarProductoNombre(producto: Producto) {
-  productoSeleccionadoId.value = producto.id;
+function seleccionarVarianteNombre(fila: FilaVarianteListado) {
+  varianteSeleccionadaId.value = fila.variante.id;
 }
 
-function agregarProductoNombreSeleccionado() {
-  const p = productoNombreSeleccionado.value;
-  if (!p) {
-    mostrarToast('Seleccioná un producto en la lista.', 3500);
+function agregarVarianteNombreSeleccionada() {
+  const fila = filaVarianteSeleccionada.value;
+  if (!fila) {
+    mostrarToast('Seleccioná una variante en la lista.', 3500);
     return;
   }
-  agregarAlTicket(p);
-  productoSeleccionadoId.value = null;
+  agregarAlTicket(fila.variante);
+  varianteSeleccionadaId.value = null;
 }
 
 function setModoProducto(m: ModoProducto) {
   modoProducto.value = m;
 }
 
+function elegirFormaPago(id: IdFormaPago) {
+  if (id === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente.value) return;
+  formaPago.value = id;
+}
+
 function resetBorrador() {
   codigoLector.value = '';
   busquedaNombre.value = '';
-  productoSeleccionadoId.value = null;
+  varianteSeleccionadaId.value = null;
   modoProducto.value = 'LECTOR';
   filtroClienteTexto.value = '';
   lineas.value = [];
@@ -224,20 +258,25 @@ function pedirLimpiar() {
   nextTick(() => enfocarModoActual());
 }
 
-function agregarAlTicket(producto: Producto) {
+function agregarAlTicket(variante: Variante) {
+  const producto = catalogo.productoPorId(variante.productoId);
+  if (!producto) {
+    mostrarToast('No se encontró el producto de esta variante.', 4000);
+    return;
+  }
   if (!Number.isFinite(producto.precioVenta) || producto.precioVenta < 0) {
     mostrarToast('El producto no tiene precio de venta válido.', 4000);
     return;
   }
-  const existente = lineas.value.find((l) => l.productoId === producto.id);
+  const existente = lineas.value.find((l) => l.varianteId === variante.id);
   if (existente) {
     existente.cantidad += 1;
   } else {
     lineas.value = [
       ...lineas.value,
       {
-        productoId: producto.id,
-        nombre: producto.nombre,
+        varianteId: variante.id,
+        nombre: catalogo.nombreLineaComercial(variante.id),
         cantidad: 1,
         precioUnitario: producto.precioVenta,
       },
@@ -245,16 +284,16 @@ function agregarAlTicket(producto: Producto) {
   }
 }
 
-function quitarLinea(productoId: string) {
-  lineas.value = lineas.value.filter((l) => l.productoId !== productoId);
+function quitarLinea(varianteId: string) {
+  lineas.value = lineas.value.filter((l) => l.varianteId !== varianteId);
 }
 
-function cambiarCantidad(productoId: string, delta: number) {
-  const l = lineas.value.find((x) => x.productoId === productoId);
+function cambiarCantidad(varianteId: string, delta: number) {
+  const l = lineas.value.find((x) => x.varianteId === varianteId);
   if (!l) return;
   const nueva = l.cantidad + delta;
   if (nueva <= 0) {
-    quitarLinea(productoId);
+    quitarLinea(varianteId);
     return;
   }
   l.cantidad = nueva;
@@ -293,7 +332,7 @@ function confirmarVenta() {
   }
 
   const lineasRegistro = lineas.value.map((l) => ({
-    productoId: l.productoId,
+    varianteId: l.varianteId,
     nombre: l.nombre,
     cantidad: l.cantidad,
     precioUnitario: l.precioUnitario,
@@ -329,7 +368,12 @@ function confirmarVenta() {
   );
 
   mostrarToast('Venta registrada.', 2800);
-  emit('cerrar');
+  if (props.embebidoEnPagina) {
+    resetBorrador();
+    nextTick(() => enfocarModoActual());
+  } else {
+    emit('cerrar');
+  }
 }
 
 onMounted(() => {
@@ -339,9 +383,20 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="ev ev--en-modal ev-pro" aria-labelledby="titulo-nueva">
-    <header class="ev-cab ev-cab--nueva">
-      <button type="button" class="ev-volver" @click="emit('cerrar')">← Ventas</button>
+  <section
+    class="ev ev-pro"
+    :class="{ 'ev--en-modal': !embebidoEnPagina, 'ev--en-pagina': embebidoEnPagina }"
+    aria-labelledby="titulo-nueva"
+  >
+    <header class="ev-cab ev-cab--nueva" :class="{ 'ev-cab--sin-volver': embebidoEnPagina }">
+      <button
+        v-if="!embebidoEnPagina"
+        type="button"
+        class="ev-volver"
+        @click="emit('cerrar')"
+      >
+        ← Ventas
+      </button>
       <span class="ev-cab-fill" />
       <button type="button" class="ev-btn-otra" @click="pedirLimpiar">Limpiar</button>
       <button
@@ -364,7 +419,9 @@ onMounted(() => {
         <header class="ev-fact-enc">
           <div class="ev-fact-enc-izq">
             <p class="ev-fact-tipo" aria-hidden="true">FACTURA DE VENTA</p>
-            <h1 class="ev-fact-titulo" id="titulo-nueva">Nueva venta</h1>
+            <h1 class="ev-fact-titulo" id="titulo-nueva">
+              {{ embebidoEnPagina ? 'Centro de ventas' : 'Nueva venta' }}
+            </h1>
             <p class="ev-fact-ley">Documento interno — no válido como comprobante fiscal</p>
           </div>
           <div class="ev-fact-enc-der">
@@ -375,12 +432,18 @@ onMounted(() => {
           </div>
         </header>
 
-        <section class="ev-fac-bloq" aria-labelledby="fac-lbl-cli">
-          <h2 id="fac-lbl-cli" class="ev-fac-bloq-tit">Datos del receptor</h2>
-          <div class="ev-fac-cli">
-            <div class="ev-fac-cli-tools">
-              <div class="ev-fac-cli-fld ev-fac-cli-fld--busq">
-                <label class="ev-fac-cli-eti" for="filtro-cliente">Buscar en agenda</label>
+        <section class="ev-fac-bloq ev-fac-bloq--receptor-pago" aria-labelledby="fac-lbl-receptor-pago">
+          <h2 id="fac-lbl-receptor-pago" class="ev-fac-bloq-tit">Cliente y cobro</h2>
+
+          <div class="ev-receptor-pago-grid">
+            <div class="ev-receptor-grupo" aria-labelledby="fac-lbl-cli">
+              <h3 id="fac-lbl-cli" class="ev-receptor-subtit">Datos del receptor</h3>
+              <p class="ev-receptor-resumen" :class="{ 'ev-receptor-resumen--cf': !clienteId }">
+                {{ nombreClienteMostrar }}
+              </p>
+              <div class="ev-receptor-campos">
+                <div class="ev-fac-cli-fld ev-fac-cli-fld--busq">
+                  <label class="ev-fac-cli-eti" for="filtro-cliente">Buscar en agenda</label>
                 <input
                   id="filtro-cliente"
                   v-model="filtroClienteTexto"
@@ -399,37 +462,46 @@ onMounted(() => {
                   </option>
                 </select>
               </div>
+              </div>
+            </div>
+
+            <div class="ev-receptor-grupo ev-receptor-grupo--pago" aria-labelledby="lbl-pago">
+              <h3 id="lbl-pago" class="ev-receptor-subtit">Forma de pago</h3>
+              <p class="ev-receptor-pago-actual">
+                Cobro:
+                <strong>{{ etiquetaFormaPago(formaPago) }}</strong>
+              </p>
+              <div class="ev-pago-opciones" role="radiogroup" aria-label="Condición de venta">
+                <button
+                  v-for="fp in FORMAS_PAGO"
+                  :key="fp.id"
+                  type="button"
+                  role="radio"
+                  class="ev-pago-opc"
+                  :class="{
+                    'ev-pago-opc--on': formaPago === fp.id,
+                    'ev-pago-opc--bloq':
+                      fp.id === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente,
+                  }"
+                  :aria-checked="formaPago === fp.id"
+                  :disabled="fp.id === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente"
+                  @click="elegirFormaPago(fp.id)"
+                >
+                  {{ fp.etiqueta }}
+                </button>
+              </div>
+              <p v-if="!puedeCuentaCorriente" class="ev-fac-pago-hint">
+                Cuenta corriente solo con cliente de crédito habilitado.
+              </p>
             </div>
           </div>
-        </section>
-
-        <section class="ev-fac-bloq ev-fac-bloq--pago" aria-labelledby="lbl-pago">
-          <h2 id="lbl-pago" class="ev-fac-bloq-tit">Forma de pago</h2>
-          <div class="ev-fac-pago-fila">
-            <label class="ev-fac-cli-eti" for="sel-forma-pago">Condición de venta</label>
-            <select
-              id="sel-forma-pago"
-              v-model="formaPago"
-              class="ev-inp ev-sel ev-inp--fac ev-fac-pago-select"
-            >
-              <option
-                v-for="fp in FORMAS_PAGO"
-                :key="fp.id"
-                :value="fp.id"
-                :disabled="fp.id === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente"
-              >
-                {{ fp.etiqueta }}
-              </option>
-            </select>
-          </div>
-          <p v-if="!puedeCuentaCorriente" class="ev-fac-pago-hint">
-            Cuenta corriente solo con cliente de crédito habilitado.
-          </p>
         </section>
 
         <section class="ev-fac-bloq ev-fac-bloq--stretch" aria-labelledby="lbl-detalle">
           <h2 id="lbl-detalle" class="ev-fac-bloq-tit">Detalle de ítems</h2>
 
+          <div class="ev-detalle-cuerpo">
+            <div class="ev-detalle-ingreso">
           <div class="ev-fac-agre">
             <span class="ev-fac-agre-lbl">Ingreso de artículos</span>
             <div class="ev-modo-seg" role="radiogroup" aria-label="Modo de ingreso">
@@ -495,29 +567,32 @@ onMounted(() => {
             </div>
 
             <p v-if="!busquedaNombre.trim()" class="ev-nom-ayuda">
-              Escribí para buscar; tocá una fila y luego <strong>Agregar</strong>.
+              Escribí para buscar por producto, talle o color; tocá una fila y luego
+              <strong>Agregar</strong>.
             </p>
 
             <ul
-              v-else-if="resultadosProducto.length"
+              v-else-if="resultadosVariante.length"
               class="ev-nom-lista"
               role="listbox"
               aria-label="Resultados de búsqueda"
             >
-              <li v-for="p in resultadosProducto" :key="p.id">
+              <li v-for="f in resultadosVariante" :key="f.variante.id">
                 <button
                   type="button"
                   class="ev-nom-fila"
-                  :class="{ 'ev-nom-fila--sel': productoSeleccionadoId === p.id }"
+                  :class="{ 'ev-nom-fila--sel': varianteSeleccionadaId === f.variante.id }"
                   role="option"
-                  :aria-selected="productoSeleccionadoId === p.id"
-                  @click="seleccionarProductoNombre(p)"
+                  :aria-selected="varianteSeleccionadaId === f.variante.id"
+                  @click="seleccionarVarianteNombre(f)"
                 >
                   <span class="ev-nom-fila-txt">
-                    <span class="ev-nom-nom">{{ p.nombre }}</span>
-                    <span v-if="p.codigoBarras" class="ev-nom-cod">{{ p.codigoBarras }}</span>
+                    <span class="ev-nom-nom">{{ f.nombreLinea }}</span>
+                    <span v-if="f.variante.codigoBarras" class="ev-nom-cod">{{
+                      f.variante.codigoBarras
+                    }}</span>
                   </span>
-                  <span class="ev-nom-pre">{{ formatoPeso.format(p.precioVenta) }}</span>
+                  <span class="ev-nom-pre">{{ formatoPeso.format(f.precioUnitario) }}</span>
                 </button>
               </li>
             </ul>
@@ -527,12 +602,13 @@ onMounted(() => {
             <button
               type="button"
               class="ev-btn-agregar ev-btn-agregar--ancho"
-              :disabled="!productoSeleccionadoId"
-              @click="agregarProductoNombreSeleccionado"
+              :disabled="!varianteSeleccionadaId"
+              @click="agregarVarianteNombreSeleccionada"
             >
               Agregar
             </button>
           </div>
+            </div>
 
           <div class="ev-lineas-env">
             <table class="ev-fac-items">
@@ -551,17 +627,17 @@ onMounted(() => {
                     Sin líneas. Ingresá artículos con el lector o por nombre.
                   </td>
                 </tr>
-                <tr v-for="l in lineas" :key="l.productoId" class="ev-fac-item-row">
+                <tr v-for="l in lineas" :key="l.varianteId" class="ev-fac-item-row">
                   <td class="ev-fac-items-desc">
                     <span class="ev-fac-it-nom">{{ l.nombre }}</span>
                   </td>
                   <td class="ev-fac-items-cant">
                     <span class="ev-linea-cant ev-linea-cant--fac">
-                      <button type="button" class="ev-pm" @click="cambiarCantidad(l.productoId, -1)">
+                      <button type="button" class="ev-pm" @click="cambiarCantidad(l.varianteId, -1)">
                         <Minus :size="16" stroke-width="2" aria-hidden="true" />
                       </button>
                       <span class="ev-fac-it-q">{{ l.cantidad }}</span>
-                      <button type="button" class="ev-pm" @click="cambiarCantidad(l.productoId, 1)">
+                      <button type="button" class="ev-pm" @click="cambiarCantidad(l.varianteId, 1)">
                         <Plus :size="16" stroke-width="2" aria-hidden="true" />
                       </button>
                     </span>
@@ -573,7 +649,7 @@ onMounted(() => {
                       type="button"
                       class="ev-linea-x"
                       :aria-label="`Quitar ${l.nombre}`"
-                      @click="quitarLinea(l.productoId)"
+                      @click="quitarLinea(l.varianteId)"
                     >
                       <Trash2 :size="16" stroke-width="2" aria-hidden="true" />
                     </button>
@@ -591,21 +667,25 @@ onMounted(() => {
             </button>
           </div>
 
-          <div class="ev-fac-subt" aria-live="polite">
-            <span class="ev-fac-subt-lbl">Total</span>
-            <span class="ev-fac-subt-val">{{ formatoPeso.format(totalTicket) }}</span>
           </div>
 
-          <div class="ev-fac-obs">
-            <label class="ev-fac-obs-eti" for="obs">Observaciones</label>
-            <textarea
-              id="obs"
-              v-model="observaciones"
-              class="ev-ta ev-ta--fac ev-ta--obs"
-              rows="2"
-              maxlength="500"
-              placeholder="Opcional…"
-            />
+          <div class="ev-detalle-pie">
+            <div class="ev-fac-subt" aria-live="polite">
+              <span class="ev-fac-subt-lbl">Total</span>
+              <span class="ev-fac-subt-val">{{ formatoPeso.format(totalTicket) }}</span>
+            </div>
+
+            <div class="ev-fac-obs">
+              <label class="ev-fac-obs-eti" for="obs">Observaciones</label>
+              <textarea
+                id="obs"
+                v-model="observaciones"
+                class="ev-ta ev-ta--fac ev-ta--obs"
+                rows="1"
+                maxlength="500"
+                placeholder="Opcional…"
+              />
+            </div>
           </div>
         </section>
       </article>
@@ -683,11 +763,248 @@ onMounted(() => {
   margin-bottom: 0;
 }
 
+.ev--en-pagina {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.15rem;
+  overflow: hidden;
+}
+
+.ev--en-pagina .ev-cab--nueva {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.ev--en-pagina .ev-flujo {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+}
+
+.ev--en-pagina .ev-fact {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: var(--ev-r-xl);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.28),
+    0 12px 36px rgba(0, 0, 0, 0.28);
+}
+
+.ev--en-pagina .ev-cab--sin-volver {
+  position: static;
+  z-index: auto;
+  margin-bottom: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--ev-r-xl);
+  border: 1px solid var(--ev-line);
+  box-shadow: var(--ev-sh-panel);
+  background: var(--color-fondo-cabecera);
+  backdrop-filter: none;
+}
+
+.ev--en-pagina .ev-toast {
+  flex-shrink: 0;
+  margin: 0.15rem 0;
+}
+
+.ev--en-pagina .ev-fact-enc {
+  flex-shrink: 0;
+  padding: 0.5rem 0.9rem 0.45rem;
+  gap: 0.55rem;
+}
+
+.ev--en-pagina .ev-fact-ley,
+.ev--en-pagina .ev-mini,
+.ev--en-pagina .ev-nom-ayuda {
+  display: none;
+}
+
+.ev--en-pagina .ev-fact-titulo {
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.ev--en-pagina .ev-fact-tipo {
+  margin-bottom: 0.05rem;
+  font-size: 0.58rem;
+}
+
+.ev--en-pagina .ev-fac-bloq--receptor-pago {
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem 0.4rem;
+}
+
+.ev--en-pagina .ev-fac-bloq-tit {
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.2rem;
+  font-size: 0.64rem;
+}
+
+.ev--en-pagina .ev-receptor-grupo {
+  padding: 0.45rem 0.55rem;
+  gap: 0.3rem;
+}
+
+.ev--en-pagina .ev-receptor-resumen,
+.ev--en-pagina .ev-receptor-pago-actual {
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.ev--en-pagina .ev-fac-pago-hint {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.ev--en-pagina .ev-inp--fac,
+.ev--en-pagina .ev-pago-opc {
+  min-height: 2rem;
+  font-size: 0.8rem;
+}
+
+.ev--en-pagina .ev-fac-bloq--stretch {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.35rem 0.75rem 0.4rem;
+  border-bottom: none;
+}
+
+.ev--en-pagina .ev-fac-bloq--stretch .ev-fac-bloq-tit {
+  margin-bottom: 0.3rem;
+}
+
+.ev--en-pagina .ev-detalle-cuerpo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  overflow: hidden;
+}
+
+.ev--en-pagina .ev-detalle-ingreso {
+  flex-shrink: 0;
+}
+
+.ev--en-pagina .ev-fac-agre {
+  margin-bottom: 0.15rem;
+}
+
+.ev--en-pagina .ev-panel-prod {
+  gap: 0.2rem;
+}
+
+.ev--en-pagina .ev-lineas-env {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0;
+  border-radius: var(--ev-r);
+}
+
+.ev--en-pagina .ev-fac-items {
+  min-width: 0;
+}
+
+.ev--en-pagina .ev-nom-lista {
+  max-height: min(10rem, 32vh);
+  overflow: auto;
+}
+
+.ev--en-pagina .ev-detalle-pie {
+  flex-shrink: 0;
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--ev-line);
+}
+
+.ev--en-pagina .ev-fac-subt {
+  margin-top: 0;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--ev-r);
+}
+
+.ev--en-pagina .ev-fac-obs {
+  padding: 0;
+}
+
+.ev--en-pagina .ev-ta--obs {
+  min-height: 1.85rem;
+  max-height: 2.6rem;
+  resize: none;
+}
+
+@media (min-width: 640px) {
+  .ev--en-pagina .ev-fac-pago-fila {
+    max-width: none;
+  }
+
+  .ev--en-pagina .ev-fac-agre .ev-modo-seg {
+    flex: 0 1 auto;
+    min-width: 12rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .ev--en-pagina .ev-receptor-pago-grid {
+    grid-template-columns: 1.35fr 1fr;
+    gap: 0.65rem;
+  }
+
+  .ev--en-pagina .ev-receptor-campos {
+    grid-template-columns: 0.95fr 1.05fr;
+  }
+
+  .ev--en-pagina .ev-pago-opciones {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ev--en-pagina .ev-detalle-cuerpo {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .ev--en-pagina .ev-detalle-ingreso {
+    flex: 0 0 min(16.5rem, 26%);
+    min-width: 13.5rem;
+    max-height: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ev--en-pagina .ev-lineas-env {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ev--en-pagina .ev-detalle-pie {
+    grid-template-columns: minmax(10rem, auto) 1fr;
+    align-items: start;
+    gap: 0.45rem 0.65rem;
+  }
+}
+
 .ev-cab--nueva {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 0.5rem 0.65rem;
+}
+
+.ev-cab--sin-volver {
+  grid-template-columns: 1fr auto auto;
   padding: 0.65rem 0.85rem;
   margin-bottom: 0.15rem;
   border-radius: var(--ev-r-xl);
@@ -897,24 +1214,150 @@ onMounted(() => {
   color: var(--color-texto-apagado);
 }
 
-/* Campos receptor (búsqueda + select) */
-.ev-fac-cli {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+/* Panel cliente y cobro */
+.ev-fac-bloq--receptor-pago {
+  background: rgba(0, 0, 0, 0.04);
 }
 
-.ev-fac-cli-tools {
+.ev-receptor-pago-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.6rem 0.85rem;
+  gap: 0.85rem;
+}
+
+@media (min-width: 720px) {
+  .ev-receptor-pago-grid {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 1rem 1.25rem;
+    align-items: start;
+  }
+}
+
+.ev-receptor-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--ev-line);
+  border-radius: var(--ev-r);
+  background: var(--color-fondo-cabecera);
+}
+
+.ev-receptor-grupo--pago {
+  align-self: stretch;
+}
+
+.ev-receptor-subtit {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-texto-apagado);
+}
+
+.ev-receptor-resumen {
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 140, 240, 0.35);
+  background: rgba(124, 140, 240, 0.1);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-texto);
+}
+
+.ev-receptor-resumen--cf {
+  border-style: dashed;
+  border-color: var(--color-borde);
+  background: transparent;
+  color: var(--color-texto-suave);
+  font-weight: 500;
+}
+
+.ev-receptor-campos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
 }
 
 @media (min-width: 520px) {
-  .ev-fac-cli-tools {
-    grid-template-columns: 1fr 1fr;
+  .ev-receptor-campos {
+    grid-template-columns: 1fr 1.1fr;
     align-items: end;
   }
+}
+
+.ev-receptor-pago-actual {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-texto-apagado);
+}
+
+.ev-receptor-pago-actual strong {
+  color: var(--color-acento-hover);
+  font-weight: 700;
+}
+
+.ev-pago-opciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+@media (min-width: 520px) {
+  .ev-pago-opciones {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 720px) {
+  .ev-pago-opciones {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ev-pago-opc {
+  min-height: 2.35rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--ev-line);
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--color-texto-suave);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.ev-pago-opc:hover:not(:disabled) {
+  border-color: rgba(124, 140, 240, 0.45);
+  color: var(--color-texto);
+}
+
+.ev-pago-opc--on {
+  border-color: var(--color-acento);
+  background: rgba(124, 140, 240, 0.18);
+  color: var(--color-texto);
+  box-shadow: inset 0 0 0 1px rgba(124, 140, 240, 0.35);
+}
+
+.ev-pago-opc--bloq,
+.ev-pago-opc:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.ev-fac-bloq--receptor-pago .ev-fac-pago-hint {
+  margin-top: 0.15rem;
 }
 
 .ev-fac-cli-fld {

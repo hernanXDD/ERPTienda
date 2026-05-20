@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { crearSemillaCatalogo } from '../datos/semillaCatalogo';
-import { cantidadInicialSemillaPorProductoId } from '../datos/semillaStock';
+import { cantidadInicialSemillaPorVarianteId } from '../datos/semillaStock';
 import { crearSemillaVentas } from '../datos/semillaVentas';
 import type { FaltaStockLinea, MovimientoStock } from '../tipos/stock';
 import type { LineaVentaRegistro } from '../tipos/venta';
@@ -9,17 +9,19 @@ import type { LineaVentaRegistro } from '../tipos/venta';
 const MAXIMO_MOVIMIENTOS_ENMEMORIA = 400;
 
 function armarCantidadesBaseDesdeSemilla(): Record<string, number> {
-  const { productos } = crearSemillaCatalogo();
+  const { variantes } = crearSemillaCatalogo();
   const mapa: Record<string, number> = {};
-  for (const p of productos) mapa[p.id] = cantidadInicialSemillaPorProductoId(p.id);
+  for (const v of variantes) {
+    mapa[v.id] = cantidadInicialSemillaPorVarianteId(v.id);
+  }
 
   const ventasAsc = [...crearSemillaVentas()].sort(
     (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
   );
   for (const v of ventasAsc) {
     for (const ln of v.lineas) {
-      if (mapa[ln.productoId] === undefined) continue;
-      mapa[ln.productoId] -= ln.cantidad;
+      if (mapa[ln.varianteId] === undefined) continue;
+      mapa[ln.varianteId] -= ln.cantidad;
     }
   }
   return mapa;
@@ -30,12 +32,12 @@ function nuevoUuid(): string {
 }
 
 export const useStockStore = defineStore('stock', () => {
-  /** Existencias físicas disponibles por id de producto (no incluye borradores ni reserva). */
-  const cantidadesPorProductoId = ref<Record<string, number>>(armarCantidadesBaseDesdeSemilla());
+  /** Existencias físicas disponibles por id de variante. */
+  const cantidadesPorVarianteId = ref<Record<string, number>>(armarCantidadesBaseDesdeSemilla());
   const movimientos = ref<MovimientoStock[]>([]);
 
-  function cantidadActual(productoId: string): number {
-    const c = cantidadesPorProductoId.value[productoId];
+  function cantidadActual(varianteId: string): number {
+    const c = cantidadesPorVarianteId.value[varianteId];
     if (c === undefined) return 0;
     return c;
   }
@@ -52,10 +54,10 @@ export const useStockStore = defineStore('stock', () => {
   function validacionAntesDeVenta(lineas: LineaVentaRegistro[]): FaltaStockLinea[] | null {
     const faltas: FaltaStockLinea[] = [];
     for (const ln of lineas) {
-      const disponible = cantidadActual(ln.productoId);
+      const disponible = cantidadActual(ln.varianteId);
       if (disponible < ln.cantidad) {
         faltas.push({
-          productoId: ln.productoId,
+          varianteId: ln.varianteId,
           nombre: ln.nombre,
           solicitado: ln.cantidad,
           disponible,
@@ -65,52 +67,48 @@ export const useStockStore = defineStore('stock', () => {
     return faltas.length > 0 ? faltas : null;
   }
 
-  /**
-   * Se llama después de persistir la venta; descuenta existencias por cada línea.
-   */
   function aplicarSalidaPorVentaRegistrada(
     lineas: LineaVentaRegistro[],
     idVenta: string,
     numeroVenta: string
   ): void {
-    const siguiente = { ...cantidadesPorProductoId.value };
+    const siguiente = { ...cantidadesPorVarianteId.value };
     for (const ln of lineas) {
-      const anterior = siguiente[ln.productoId] ?? 0;
-      siguiente[ln.productoId] = anterior - ln.cantidad;
+      const anterior = siguiente[ln.varianteId] ?? 0;
+      siguiente[ln.varianteId] = anterior - ln.cantidad;
       registrarMovimiento({
-        productoId: ln.productoId,
-        nombreProducto: ln.nombre,
+        varianteId: ln.varianteId,
+        nombreVariante: ln.nombre,
         motivo: 'salidaPorVenta',
         cantidadVariacion: -ln.cantidad,
-        stockResultante: siguiente[ln.productoId],
+        stockResultante: siguiente[ln.varianteId],
         idVenta,
         numeroVenta,
         nota: null,
         ejecutadoPorUsuario: null,
       });
     }
-    cantidadesPorProductoId.value = siguiente;
+    cantidadesPorVarianteId.value = siguiente;
   }
 
-  /**
-   * Entrada cuando exista el módulo de compras; también usable para alta manual controlada por permisos.
-   */
   function aplicarEntradaPorCompra(
-    productoId: string,
-    nombreProducto: string,
+    varianteId: string,
+    nombreVariante: string,
     unidadesAgregadas: number,
     notaOpcional: string | undefined,
     ejecutadoPorUsuario: string
   ): void {
     const u = Math.floor(unidadesAgregadas);
     if (!Number.isFinite(u) || u <= 0) return;
-    const anterior = cantidadesPorProductoId.value[productoId] ?? 0;
+    const anterior = cantidadesPorVarianteId.value[varianteId] ?? 0;
     const nuevo = anterior + u;
-    const siguiente = { ...cantidadesPorProductoId.value, [productoId]: nuevo };
-    cantidadesPorProductoId.value = siguiente;
+    cantidadesPorVarianteId.value = {
+      ...cantidadesPorVarianteId.value,
+      [varianteId]: nuevo,
+    };
     registrarMovimiento({
-      productoId,
-      nombreProducto,
+      varianteId,
+      nombreVariante,
       motivo: 'entradaPorCompra',
       cantidadVariacion: u,
       stockResultante: nuevo,
@@ -119,25 +117,24 @@ export const useStockStore = defineStore('stock', () => {
     });
   }
 
-  /** Concierto físico: fija cantidad observada en depósito o local. */
   function aplicarAjustePorConteo(
-    productoId: string,
-    nombreProducto: string,
+    varianteId: string,
+    nombreVariante: string,
     cantidadFisicaContada: number,
     ejecutadoPorUsuario: string,
     observacionOpcional?: string | null
   ): { anterior: number; nuevo: number; delta: number } {
     let destino = Math.floor(Number(cantidadFisicaContada));
     if (!Number.isFinite(destino) || destino < 0) destino = 0;
-    const anterior = cantidadesPorProductoId.value[productoId] ?? 0;
+    const anterior = cantidadesPorVarianteId.value[varianteId] ?? 0;
     const delta = destino - anterior;
-    cantidadesPorProductoId.value = {
-      ...cantidadesPorProductoId.value,
-      [productoId]: destino,
+    cantidadesPorVarianteId.value = {
+      ...cantidadesPorVarianteId.value,
+      [varianteId]: destino,
     };
     registrarMovimiento({
-      productoId,
-      nombreProducto,
+      varianteId,
+      nombreVariante,
       motivo: 'ajustePorConteo',
       cantidadVariacion: delta,
       stockResultante: destino,
@@ -147,27 +144,37 @@ export const useStockStore = defineStore('stock', () => {
     return { anterior, nuevo: destino, delta };
   }
 
-  /** Nuevo ítem del catálogo empieza con existencia cero (se actualiza por compras o conteo). */
-  function inicializarExistenciaParaProducto(productoId: string): void {
-    if (cantidadesPorProductoId.value[productoId] !== undefined) return;
-    cantidadesPorProductoId.value = { ...cantidadesPorProductoId.value, [productoId]: 0 };
+  function inicializarExistenciaParaVariante(varianteId: string): void {
+    if (cantidadesPorVarianteId.value[varianteId] !== undefined) return;
+    cantidadesPorVarianteId.value = {
+      ...cantidadesPorVarianteId.value,
+      [varianteId]: 0,
+    };
   }
 
-  function quitarProducto(productoId: string): void {
-    const siguiente = { ...cantidadesPorProductoId.value };
-    delete siguiente[productoId];
-    cantidadesPorProductoId.value = siguiente;
+  function quitarVariante(varianteId: string): void {
+    const siguiente = { ...cantidadesPorVarianteId.value };
+    delete siguiente[varianteId];
+    cantidadesPorVarianteId.value = siguiente;
+  }
+
+  function quitarVariantes(idsVariantes: string[]): void {
+    if (idsVariantes.length === 0) return;
+    const siguiente = { ...cantidadesPorVarianteId.value };
+    for (const id of idsVariantes) delete siguiente[id];
+    cantidadesPorVarianteId.value = siguiente;
   }
 
   return {
-    cantidadesPorProductoId,
+    cantidadesPorVarianteId,
     movimientos,
     cantidadActual,
     validacionAntesDeVenta,
     aplicarSalidaPorVentaRegistrada,
     aplicarEntradaPorCompra,
     aplicarAjustePorConteo,
-    inicializarExistenciaParaProducto,
-    quitarProducto,
+    inicializarExistenciaParaVariante,
+    quitarVariante,
+    quitarVariantes,
   };
 });

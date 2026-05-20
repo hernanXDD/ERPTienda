@@ -1,18 +1,32 @@
+/** Catálogo maestro: tipo de artículo (remera, buzo, calzado, etc.). */
 export interface Categoria {
   id: string;
   nombre: string;
   descripcion: string;
 }
 
+/**
+ * Artículo padre del catálogo. No incluye talle/color ni código de barras
+ * (pertenecen a variante). Precio de venta de referencia del producto.
+ */
 export interface Producto {
   id: string;
   nombre: string;
-  tipoPrenda: string;
   marca: string;
   descripcion: string;
   categoriaId: string;
-  /** Código de barras (EAN/UPC interno). Vacío si el artículo no tiene código. */
-  codigoBarras: string;
-  /** Precio de venta vigente en moneda local (sin impuestos desglosados por ahora). */
   precioVenta: number;
+}
+
+/**
+ * SKU vendible: combinación talle + color de un producto.
+ * Stock, ventas y compras operan sobre variante, no sobre producto.
+ */
+export interface Variante {
+  id: string;
+  productoId: string;
+  talle: string;
+  color: string;
+  codigoBarras: string;
+  activa: boolean;
 }

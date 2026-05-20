@@ -1,4 +1,5 @@
 import type { VentaRegistrada } from '../tipos/venta';
+import { REGISTRO_ADMIN, REGISTRO_DUENO, REGISTRO_EMPLEADO } from './idsUsuariosSemilla';
 
 function iso(diasAtras: number, horaH = 14, horaM = 30): string {
   const d = new Date();
@@ -22,9 +23,10 @@ export function crearSemillaVentas(): VentaRegistrada[] {
       formaPago: 'EFECTIVO',
       total: 185_000,
       observaciones: '',
+      registradoPor: REGISTRO_ADMIN,
       lineas: [
         {
-          productoId: 'p-d1',
+          varianteId: 'p-d1',
           nombre: 'Campera impermeable',
           cantidad: 1,
           precioUnitario: 185_000,
@@ -41,16 +43,17 @@ export function crearSemillaVentas(): VentaRegistrada[] {
       formaPago: 'DEBITO',
       total: 42_500,
       observaciones: 'Retira por local',
+      registradoPor: REGISTRO_EMPLEADO,
       lineas: [
         {
-          productoId: 'p-d2',
+          varianteId: 'p-d2',
           nombre: 'Bufanda tejida',
           cantidad: 1,
           precioUnitario: 12_500,
           subtotal: 12_500,
         },
         {
-          productoId: 'p-d3',
+          varianteId: 'p-d3',
           nombre: 'Gorra bordó',
           cantidad: 2,
           precioUnitario: 15_000,
@@ -67,16 +70,17 @@ export function crearSemillaVentas(): VentaRegistrada[] {
       formaPago: 'CUENTA_CORRIENTE',
       total: 312_000,
       observaciones: '',
+      registradoPor: REGISTRO_DUENO,
       lineas: [
         {
-          productoId: 'p-d4',
+          varianteId: 'p-d4',
           nombre: 'Vestido largo estampado',
           cantidad: 1,
           precioUnitario: 198_000,
           subtotal: 198_000,
         },
         {
-          productoId: 'p-d5',
+          varianteId: 'p-d5',
           nombre: 'Cinturón cuero',
           cantidad: 2,
           precioUnitario: 57_000,
@@ -93,9 +97,10 @@ export function crearSemillaVentas(): VentaRegistrada[] {
       formaPago: 'TRANSFERENCIA',
       total: 67_800,
       observaciones: 'Transferencia acreditada',
+      registradoPor: REGISTRO_EMPLEADO,
       lineas: [
         {
-          productoId: 'p-d6',
+          varianteId: 'p-d6',
           nombre: 'Jean clásico talle 42',
           cantidad: 1,
           precioUnitario: 67_800,
@@ -112,16 +117,17 @@ export function crearSemillaVentas(): VentaRegistrada[] {
       formaPago: 'CREDITO',
       total: 890_000,
       observaciones: 'Orden mayorista · 3 cuotas sin interés',
+      registradoPor: REGISTRO_ADMIN,
       lineas: [
         {
-          productoId: 'p-d7',
+          varianteId: 'p-d7',
           nombre: 'Pack remeras x12 surtido',
           cantidad: 2,
           precioUnitario: 400_000,
           subtotal: 800_000,
         },
         {
-          productoId: 'p-d8',
+          varianteId: 'p-d8',
           nombre: 'Short deportivo',
           cantidad: 3,
           precioUnitario: 30_000,
@@ -138,9 +144,10 @@ export function crearSemillaVentas(): VentaRegistrada[] {
       formaPago: 'EFECTIVO',
       total: 24_000,
       observaciones: '',
+      registradoPor: REGISTRO_DUENO,
       lineas: [
         {
-          productoId: 'p-d9',
+          varianteId: 'p-d9',
           nombre: 'Medias pack x3',
           cantidad: 4,
           precioUnitario: 6_000,
@@ -157,16 +164,17 @@ export function crearSemillaVentas(): VentaRegistrada[] {
       formaPago: 'DEBITO',
       total: 156_400,
       observaciones: '',
+      registradoPor: REGISTRO_EMPLEADO,
       lineas: [
         {
-          productoId: 'p-d10',
+          varianteId: 'p-d10',
           nombre: 'Sweater cuello V',
           cantidad: 1,
           precioUnitario: 89_400,
           subtotal: 89_400,
         },
         {
-          productoId: 'p-d11',
+          varianteId: 'p-d11',
           nombre: 'Pantalón gabardina',
           cantidad: 1,
           precioUnitario: 67_000,
@@ -183,9 +191,10 @@ export function crearSemillaVentas(): VentaRegistrada[] {
       formaPago: 'EFECTIVO',
       total: 45_500,
       observaciones: 'Primera compra del mes',
+      registradoPor: REGISTRO_ADMIN,
       lineas: [
         {
-          productoId: 'p-d12',
+          varianteId: 'p-d12',
           nombre: 'Remera manga larga',
           cantidad: 2,
           precioUnitario: 22_750,

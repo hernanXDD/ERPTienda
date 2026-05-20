@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { crearSemillaComprasRegistro } from '../datos/semillaComprasRegistro';
 import type { CompraRegistrada, IdCondicionCompra, LineaCompraRegistro } from '../tipos/compraRegistrada';
+import { crearRegistroOperadorDesdeSesion } from '../utilidades/registroOperadorSesion';
 
 function maximoNumeroCompraEnLista(lista: CompraRegistrada[]): number {
   let maximo = 0;
@@ -42,6 +43,7 @@ export const useRegistroComprasStore = defineStore('registroCompras', () => {
       total: datos.total,
       lineas: datos.lineas,
       observaciones: datos.observaciones.trim(),
+      registradoPor: crearRegistroOperadorDesdeSesion(),
     };
     compras.value = [nueva, ...compras.value];
     return nueva;

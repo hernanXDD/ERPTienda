@@ -1,4 +1,5 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
+import { UserCog } from 'lucide-vue-next';
 import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import { etiquetaRolUsuario } from '../../datos/etiquetasRolUsuario';
@@ -279,17 +280,25 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
 </script>
 
 <template>
-  <section class="ua" aria-labelledby="titulo-alta-usuarios">
-    <header class="ua-cab">
-      <p class="ua-rubro">Usuarios</p>
-      <h1 id="titulo-alta-usuarios" class="ua-tit">Alta y fichas de usuario</h1>
-      <p class="ua-sub">
+  <section class="pg-wrap" aria-labelledby="titulo-alta-usuarios">
+    <div class="pg-marco pg-marco--tarjetas pg-marco--usuarios">
+      <header class="pg-cab">
+        <div class="pg-cab-txt">
+          <div class="pg-cab-izq">
+            <UserCog :size="22" class="pg-cab-ico" aria-hidden="true" stroke-width="1.85" />
+            <div>
+              <p class="pg-eyebrow">Usuarios · Gestión</p>
+              <h1 id="titulo-alta-usuarios" class="pg-titulo">Alta y fichas de usuario</h1>
+      <p class="pg-sub">
         Entorno demo: creación y mantenimiento de cuentas locales. Las acciones sensibles (fichas, inhabilitar, blanquear
         o eliminar) dependen de lo definido en
         <strong>Permisos usuario</strong>
-        ; por defecto las gestionan Administrador y Dueño.
-      </p>
-    </header>
+                ; por defecto las gestionan Administrador y Dueño.
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
 
     <p v-if="sesionEsDueño" class="ua-aviso-politica-dueno">
       Con perfil <strong>Dueño</strong>, las cuentas con rol <strong>Administrador</strong> no se listan aquí: las gestiona solo quien inicia sesión como administrador.
@@ -302,27 +311,27 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
       las marcas necesarias para tu cuenta.
     </p>
 
-    <div class="ua-barra">
-      <div class="ua-barra-fila">
-        <div class="ua-busq">
-          <label class="ua-etq" for="busq-usuario-alta">Buscar</label>
+    <div class="pg-barra">
+      <div class="pg-barra-fila">
+        <div class="pg-barra-col pg-barra-col--busq">
+          <label class="pg-filtro-etiq" for="busq-usuario-alta">Buscar</label>
           <input
             id="busq-usuario-alta"
             v-model="busquedaUsuario"
             type="search"
-            class="ua-inp"
+            class="pg-filtro-inp"
             placeholder="Nombre, apellido, usuario de login o rol…"
             autocomplete="off"
           />
         </div>
-        <div class="ua-acciones">
+        <div class="pg-barra-col pg-barra-col--accion ua-barra-acciones">
           <span class="ua-contador" aria-live="polite">
             {{ usuariosFiltradosLista.length }} cuenta{{ usuariosFiltradosLista.length === 1 ? '' : 's' }}
           </span>
           <button
             v-if="puedeEditarFichas"
             type="button"
-            class="ua-btn-pri"
+            class="pg-btn-primario"
             @click="abrirAltaUsuario"
           >
             Nuevo usuario
@@ -331,13 +340,13 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
       </div>
     </div>
 
-    <div
-      v-if="usuariosFiltradosLista.length"
-      class="ua-grid-viewport"
-      role="region"
-      aria-label="Usuarios del sistema"
-    >
-      <div class="ua-grid-wrap">
+    <section class="pg-cuerpo pg-cuerpo--grilla">
+      <div
+        v-if="usuariosFiltradosLista.length"
+        class="pg-grilla-viewport"
+        aria-label="Usuarios del sistema"
+      >
+        <div class="pg-grilla-wrap">
         <article
           v-for="uFil in usuariosFiltradosLista"
           :key="uFil.id"
@@ -425,16 +434,19 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
             </footer>
           </div>
         </article>
+        </div>
       </div>
-    </div>
-    <p v-else-if="usuariosOrdenados.length" class="ua-vacio-msg" role="status">
-      No hay usuarios que coincidan con la búsqueda.
-    </p>
-    <div v-else class="ua-vacio-msg" role="status">
-      <span class="ua-vacio-msg-tit">No hay usuarios</span>
-      <span class="ua-vacio-msg-det">
-        Creá la primera cuenta con «Nuevo usuario» si tenés permiso de fichas.
-      </span>
+      <p v-else-if="usuariosOrdenados.length" class="pg-vacio--grilla" role="status">
+        No hay usuarios que coincidan con la búsqueda.
+      </p>
+      <div v-else class="pg-vacio--grilla" role="status">
+        <span class="pg-vacio--grilla-tit">No hay usuarios</span>
+        <span>
+          Creá la primera cuenta con «Nuevo usuario» si tenés permiso de fichas.
+        </span>
+      </div>
+    </section>
+
     </div>
 
     <Teleport to="body">
@@ -456,25 +468,25 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
           <legend class="ua-legend">Datos personales</legend>
           <div class="ua-grid-par">
             <div class="ua-campo">
-              <label class="ua-etq" for="dlg-persona-nombre">Nombre</label>
+              <label class="pg-filtro-etiq" for="dlg-persona-nombre">Nombre</label>
               <input
                 id="dlg-persona-nombre"
                 v-model="borradorNombre"
                 type="text"
                 required
-                class="ua-inp"
+                class="pg-filtro-inp"
                 maxlength="64"
                 autocomplete="given-name"
               />
             </div>
             <div class="ua-campo">
-              <label class="ua-etq" for="dlg-persona-apellido">Apellido</label>
+              <label class="pg-filtro-etiq" for="dlg-persona-apellido">Apellido</label>
               <input
                 id="dlg-persona-apellido"
                 v-model="borradorApellido"
                 type="text"
                 required
-                class="ua-inp"
+                class="pg-filtro-inp"
                 maxlength="64"
                 autocomplete="family-name"
               />
@@ -485,20 +497,20 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
         <fieldset class="ua-fs ua-fs--sep">
           <legend class="ua-legend">Credenciales de acceso</legend>
           <div class="ua-campo">
-            <label class="ua-etq" for="dlg-usuario-nombre">Nombre de usuario (login)</label>
+            <label class="pg-filtro-etiq" for="dlg-usuario-nombre">Nombre de usuario (login)</label>
             <input
               id="dlg-usuario-nombre"
               v-model="borradorNombreUsuario"
               type="text"
               required
-              class="ua-inp ua-inp--mono"
+              class="pg-filtro-inp pg-filtro-inp--mono"
               maxlength="48"
               autocomplete="username"
               spellcheck="false"
             />
           </div>
           <div class="ua-campo">
-            <label class="ua-etq" for="dlg-usuario-pass">
+            <label class="pg-filtro-etiq" for="dlg-usuario-pass">
               {{ modoFormulario === 'edicion' ? 'Nueva contraseña (opcional)' : 'Contraseña inicial' }}
             </label>
             <input
@@ -506,7 +518,7 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
               v-model="borradorContrasena"
               type="password"
               :required="modoFormulario === 'alta'"
-              class="ua-inp"
+              class="pg-filtro-inp"
               maxlength="72"
               autocomplete="new-password"
               :placeholder="
@@ -527,8 +539,8 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
         <fieldset class="ua-fs ua-fs--sep">
           <legend class="ua-legend">Rol y estado</legend>
           <div class="ua-campo">
-            <label class="ua-etq" for="dlg-usuario-rol">Rol en el sistema</label>
-            <select id="dlg-usuario-rol" v-model="borradorRol" class="ua-inp ua-select">
+            <label class="pg-filtro-etiq" for="dlg-usuario-rol">Rol en el sistema</label>
+            <select id="dlg-usuario-rol" v-model="borradorRol" class="pg-filtro-inp ua-select">
               <option v-if="operadorPuedeAsignarRolAdministrador" value="ADMIN">Administrador</option>
               <option value="DUEÑO">Dueño</option>
               <option value="EMPLEADO">Empleado</option>
@@ -566,57 +578,34 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
 </template>
 
 <style scoped>
-.ua {
+.pg-marco--usuarios {
+  --pg-grilla-altura-fila: 10.85rem;
+  --pg-reserva-vertical-vista: clamp(13rem, 26dvh, 19.5rem);
+}
+
+.pg-marco--usuarios .ua-aviso-politica-dueno,
+.pg-marco--usuarios .ua-retro,
+.pg-marco--usuarios .ua-aviso-sin_permiso {
+  margin: 0 clamp(1rem, 3vw, 1.65rem);
+}
+
+.pg-marco--usuarios .ua-barra-acciones {
   display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  max-width: 72rem;
-  margin: 0 auto;
-  --ua-grid-gap: 0.6rem;
-  --ua-grid-col: 3;
-  --ua-grid-filas-visibles: 3;
-  --ua-altura-card-fila: 10.35rem;
-  --ua-grid-viewpad-v: 1rem;
-  --ua-panel-h: min(
-    calc(
-      var(--ua-grid-filas-visibles) * var(--ua-altura-card-fila) +
-        (var(--ua-grid-filas-visibles) - 1) * var(--ua-grid-gap) +
-        var(--ua-grid-viewpad-v)
-    ),
-    82vh
-  );
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem 0.65rem;
 }
 
-.ua-cab {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
+.pg-marco--usuarios .pg-barra-col--accion .pg-btn-primario {
+  width: 100%;
 }
 
-.ua-rubro {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--color-texto-apagado);
-}
-
-.ua-tit {
-  margin: 0.35rem 0 0;
-  font-size: 1.45rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-}
-
-.ua-sub {
-  margin: 0.55rem 0 0;
-  max-width: 46rem;
-  font-size: 0.84rem;
-  line-height: 1.55;
-  color: var(--color-texto-apagado);
+@media (min-width: 720px) {
+  .pg-marco--usuarios .pg-barra-col--accion .pg-btn-primario {
+    width: auto;
+    min-width: 10.5rem;
+  }
 }
 
 .ua-retro {
@@ -663,53 +652,6 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
   font-weight: 600;
 }
 
-.ua-barra {
-  padding: 1rem;
-  border-radius: var(--radio-control);
-  border: 1px solid var(--color-borde);
-  background: var(--color-fondo-elevado);
-}
-
-.ua-barra-fila {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-@media (min-width: 720px) {
-  .ua-barra-fila {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
-  }
-
-  .ua-busq {
-    flex: 1;
-    max-width: none;
-    min-width: 14rem;
-  }
-
-  .ua-acciones {
-    margin-left: auto;
-  }
-}
-
-.ua-acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.ua-busq {
-  max-width: 24rem;
-}
-
-.ua-busq .ua-etq {
-  display: block;
-  margin-bottom: 0.3rem;
-}
-
 .ua-contador {
   display: inline-flex;
   align-items: center;
@@ -724,51 +666,11 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
   border: 1px solid var(--color-borde);
 }
 
-.ua-grid-viewport {
-  height: var(--ua-panel-h);
-  max-height: var(--ua-panel-h);
-  overflow: auto;
-  padding: 0.5rem;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-control);
-  background: var(--color-fondo-cabecera);
-  box-sizing: border-box;
-}
-
-.ua-grid-wrap {
-  display: grid;
-  grid-template-columns: repeat(var(--ua-grid-col), minmax(0, 1fr));
-  grid-auto-rows: minmax(var(--ua-altura-card-fila), auto);
-  gap: var(--ua-grid-gap);
-  align-items: stretch;
-}
-
-@media (max-width: 719px) {
-  .ua {
-    --ua-grid-col: 1;
-    --ua-altura-card-fila: 10rem;
-    --ua-panel-h: min(
-      calc(
-        var(--ua-grid-filas-visibles) * var(--ua-altura-card-fila) +
-          (var(--ua-grid-filas-visibles) - 1) * var(--ua-grid-gap) +
-          var(--ua-grid-viewpad-v)
-      ),
-      72vh
-    );
-  }
-}
-
-@media (min-width: 720px) and (max-width: 1023px) {
-  .ua {
-    --ua-grid-col: 2;
-  }
-}
-
 .ua-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: var(--ua-altura-card-fila);
+  min-height: var(--pg-grilla-altura-fila);
   align-self: stretch;
   overflow-x: clip;
   border-radius: 12px;
@@ -1388,7 +1290,7 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
   margin-top: 0.35rem;
 }
 
-.ua-etq {
+.pg-filtro-etiq {
   font-size: 0.71rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -1396,7 +1298,7 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
   color: var(--color-texto-apagado);
 }
 
-.ua-inp {
+.pg-filtro-inp {
   width: 100%;
   padding: 0.52rem 0.65rem;
   border-radius: var(--radio-control);
@@ -1410,17 +1312,17 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
     box-shadow 0.15s ease;
 }
 
-.ua-inp:hover:not(:disabled) {
+.pg-filtro-inp:hover:not(:disabled) {
   border-color: var(--color-acento-borde);
 }
 
-.ua-inp:focus {
+.pg-filtro-inp:focus {
   outline: none;
   border-color: var(--color-acento);
   box-shadow: 0 0 0 3px var(--color-acento-suave);
 }
 
-.ua-inp--mono {
+.pg-filtro-inp--mono {
   font-family: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', monospace;
   font-size: 0.86rem;
 }

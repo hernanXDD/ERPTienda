@@ -1,0 +1,51 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc">
+  <header class="rep-enc">
+    <div>
+      <h1 class="rep-marca"><%= it.negocioNombre %></h1>
+      <p class="rep-tit"><%= it.tituloReporte %></p>
+    </div>
+    <div class="rep-meta-bloque">
+      <p><strong>Período</strong><br/><%= it.rangoLegible %></p>
+      <% if (it.filtroEntidadLegible) { %><p><strong>Proveedor</strong><br/><%= it.filtroEntidadLegible %></p><% } %>
+      <p><strong>Generado</strong><br/><%= it.generadoEl %></p>
+    </div>
+  </header>
+
+  <div class="rep-kpis">
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Total comprado</span><span class="rep-kpi-val"><%= it.totalCompras %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Operaciones</span><span class="rep-kpi-val"><%= it.cantidadOperaciones %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Proveedores</span><span class="rep-kpi-val"><%= it.proveedoresActivos %></span></div>
+  </div>
+
+  <% if (it.sinCompras) { %>
+  <p class="rep-vacio">No hay compras registradas en el período seleccionado.</p>
+  <% } else { %>
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Resumen por proveedor</h2>
+    <table class="rep-tabla">
+      <thead><tr><th>Proveedor</th><th class="der">Operaciones</th><th class="der">Total</th><th class="der">%</th></tr></thead>
+      <tbody>
+      <% it.filasProveedor.forEach(function (p) { %>
+        <tr><td><%= p.proveedor %></td><td class="der"><%= p.operaciones %></td><td class="der"><%= p.total %></td><td class="der"><%= p.porcentaje %></td></tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Detalle de compras</h2>
+    <table class="rep-tabla">
+      <thead><tr><th>Nº</th><th>Fecha</th><th>Proveedor</th><th>Condición</th><th class="der">Total</th></tr></thead>
+      <tbody>
+      <% it.filasCompras.forEach(function (c) { %>
+        <tr><td><%= c.numero %></td><td><%= c.fecha %></td><td><%= c.proveedor %></td><td><%= c.condicion %></td><td class="der"><%= c.total %></td></tr>
+      <% }) %>
+      </tbody>
+      <tfoot><tr><td colspan="4">Total período</td><td class="der"><%= it.totalCompras %></td></tr></tfoot>
+    </table>
+  </section>
+  <% } %>
+
+  <footer class="rep-pie">Documento generado por ERP Tienda · Uso interno</footer>
+</article>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { RefreshCw, ScrollText } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -33,7 +33,7 @@ const movimientosFiltrados = computed(() => {
     .filter((m) => movimientoEnRangoFecha(m.fecha))
     .filter((m) => {
       if (!texto) return true;
-      const agregado = `${m.nombreProducto} ${m.nota ?? ''} ${m.numeroVenta ?? ''} ${m.ejecutadoPorUsuario ?? ''}`
+      const agregado = `${m.nombreVariante} ${m.nota ?? ''} ${m.numeroVenta ?? ''} ${m.ejecutadoPorUsuario ?? ''}`
         .toLowerCase()
         .trim();
       return agregado.includes(texto);
@@ -49,13 +49,15 @@ function limpiarFiltros(): void {
 </script>
 
 <template>
-  <section class="aud" aria-labelledby="tit-auditorias-stock">
-    <header class="aud-cab">
-      <div class="aud-cab-izq">
-        <ScrollText :size="22" class="aud-ico" aria-hidden="true" stroke-width="1.85" />
+  <section class="pg-wrap" aria-labelledby="tit-auditorias-stock">
+    <div class="pg-marco">
+    <header class="pg-cab">
+        <div class="pg-cab-txt">
+          <div class="pg-cab-izq">
+        <ScrollText :size="22" class="pg-cab-ico" aria-hidden="true" stroke-width="1.85" />
         <div>
-          <h1 id="tit-auditorias-stock" class="aud-tit">Auditorías de stock</h1>
-          <p class="aud-sub">
+          <h1 id="tit-auditorias-stock" class="pg-titulo">Auditorías de stock</h1>
+          <p class="pg-sub">
             Historial de variaciones de inventario (ventas, entradas manuales y ajustes por conteo).
             Para el saldo vigente volvé a
             <RouterLink class="aud-enlace-interno" :to="{ name: 'stock-actual' }">Stock actual</RouterLink>
@@ -63,41 +65,42 @@ function limpiarFiltros(): void {
           </p>
         </div>
       </div>
-    </header>
+            </div>
+      </header>
 
-    <div class="aud-barra">
-      <div class="aud-barra-col aud-barra-col--busq">
-        <label class="aud-etq-bl" for="aud-busq-prod">
-          <span class="aud-etiqueta">Buscar en descripción</span>
+    <div class="pg-barra">
+      <div class="pg-barra-col pg-barra-col--busq">
+        <label class="pg-filtro-bl" for="aud-busq-prod">
+          <span class="pg-filtro-etiq">Buscar en descripción</span>
           <input
             id="aud-busq-prod"
             v-model="busquedaProducto"
             type="search"
-            class="aud-inp"
+            class="pg-filtro-inp"
             placeholder="Producto, nota o venta…"
             autocomplete="off"
           />
         </label>
       </div>
 
-      <div class="aud-barra-col aud-barra-col--fecha">
-        <label class="aud-etq-bl" for="aud-fecha-desde">
-          <span class="aud-etiqueta">Fecha desde</span>
-          <input id="aud-fecha-desde" v-model="fechaDesde" type="date" class="aud-inp" />
+      <div class="pg-barra-col pg-barra-col--fecha">
+        <label class="pg-filtro-bl" for="aud-fecha-desde">
+          <span class="pg-filtro-etiq">Fecha desde</span>
+          <input id="aud-fecha-desde" v-model="fechaDesde" type="date" class="pg-filtro-inp" />
         </label>
       </div>
 
-      <div class="aud-barra-col aud-barra-col--fecha">
-        <label class="aud-etq-bl" for="aud-fecha-hasta">
-          <span class="aud-etiqueta">Fecha hasta</span>
-          <input id="aud-fecha-hasta" v-model="fechaHasta" type="date" class="aud-inp" />
+      <div class="pg-barra-col pg-barra-col--fecha">
+        <label class="pg-filtro-bl" for="aud-fecha-hasta">
+          <span class="pg-filtro-etiq">Fecha hasta</span>
+          <input id="aud-fecha-hasta" v-model="fechaHasta" type="date" class="pg-filtro-inp" />
         </label>
       </div>
 
-      <div class="aud-barra-col aud-barra-col--reinicio">
-        <div class="aud-etq-bl">
-          <span class="aud-etiqueta">Reinicio</span>
-          <button type="button" class="aud-btn-sec aud-btn-reset" @click="limpiarFiltros">
+      <div class="pg-barra-col pg-barra-col--reinicio">
+        <div class="pg-filtro-bl">
+          <span class="pg-filtro-etiq">Reinicio</span>
+          <button type="button" class="pg-btn-reset-filtros" @click="limpiarFiltros">
             <RefreshCw :size="16" aria-hidden="true" />
             Limpiar filtros
           </button>
@@ -105,12 +108,12 @@ function limpiarFiltros(): void {
       </div>
     </div>
 
-    <p class="aud-resumen" role="status">
+    <p class="pg-resumen pg-resumen--flex" role="status">
       Mostrando {{ movimientosFiltrados.length }} de {{ movimientos.length }} movimientos cargados en esta sesión.
     </p>
 
-    <div class="aud-tab-wrap" role="region" aria-label="Registro de movimientos de stock">
-      <table class="aud-tabla">
+    <div class="pg-tabla-cuerpo" role="region" aria-label="Registro de movimientos de stock">
+      <table class="pg-tabla pg-tabla--estado">
         <thead>
           <tr>
             <th scope="col">Fecha / hora</th>
@@ -124,7 +127,7 @@ function limpiarFiltros(): void {
         <tbody>
           <tr v-for="m in movimientosFiltrados" :key="m.id">
             <td class="aud-mono aud-cel-fecha">{{ formatearFechaYHora(m.fecha) }}</td>
-            <td>{{ m.nombreProducto }}</td>
+            <td>{{ m.nombreVariante }}</td>
             <td>
               {{ etiquetaMotivoMovimientoStock(m.motivo) }}
               <span v-if="m.numeroVenta" class="aud-mute aud-inline"> · {{ m.numeroVenta }}</span>
@@ -153,6 +156,7 @@ function limpiarFiltros(): void {
         </tbody>
       </table>
     </div>
+    </div>
   </section>
 </template>
 
@@ -163,30 +167,30 @@ function limpiarFiltros(): void {
   margin-inline: auto;
 }
 
-.aud-cab {
+.pg-cab {
   margin-bottom: 1rem;
 }
 
-.aud-cab-izq {
+.pg-cab-izq {
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
 }
 
-.aud-ico {
+.pg-cab-ico {
   flex-shrink: 0;
   color: var(--color-acento);
   margin-top: 0.1rem;
 }
 
-.aud-tit {
+.pg-titulo {
   margin: 0;
   font-size: clamp(1.1rem, 2.6vw, 1.45rem);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.aud-sub {
+.pg-sub {
   margin: 0.35rem 0 0;
   font-size: 0.845rem;
   line-height: 1.52;
@@ -205,7 +209,7 @@ function limpiarFiltros(): void {
   filter: brightness(1.08);
 }
 
-.aud-barra {
+.pg-barra {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
@@ -217,54 +221,54 @@ function limpiarFiltros(): void {
   background: var(--color-fondo-elevado);
 }
 
-.aud-barra-col {
+.pg-barra-col {
   display: flex;
   flex-direction: column;
   gap: 0.28rem;
   min-width: 0;
 }
 
-.aud-barra-col--busq {
+.pg-barra-col--busq {
   flex: 1 1 13rem;
   min-width: min(100%, 12rem);
 }
 
-.aud-barra-col--fecha {
+.pg-barra-col--fecha {
   flex: 0 1 10.25rem;
   min-width: min(100%, 9.5rem);
 }
 
-.aud-barra-col--reinicio {
+.pg-barra-col--reinicio {
   flex: 0 0 auto;
   margin-left: auto;
 }
 
-.aud-barra-col--reinicio .aud-btn-reset {
+.pg-barra-col--reinicio .aud-btn-reset {
   width: 100%;
   justify-content: center;
 }
 
 @media (min-width: 720px) {
-  .aud-barra-col--reinicio .aud-btn-reset {
+  .pg-barra-col--reinicio .aud-btn-reset {
     width: auto;
     min-width: 10.5rem;
   }
 }
 
 @media (max-width: 719px) {
-  .aud-barra-col--reinicio {
+  .pg-barra-col--reinicio {
     margin-left: 0;
     flex: 1 1 100%;
   }
 }
 
-.aud-etq-bl {
+.pg-filtro-bl {
   display: flex;
   flex-direction: column;
   gap: 0.28rem;
 }
 
-.aud-etiqueta {
+.pg-filtro-etiq {
   font-size: 0.71rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -272,7 +276,7 @@ function limpiarFiltros(): void {
   color: var(--color-texto-apagado);
 }
 
-.aud-inp {
+.pg-filtro-inp {
   border-radius: 10px;
   border: 1px solid var(--color-borde);
   background: var(--color-fondo-cabecera);
@@ -303,35 +307,35 @@ function limpiarFiltros(): void {
   padding-inline: 0.85rem;
 }
 
-.aud-resumen {
+.pg-resumen pg-resumen--flex {
   margin: 0 0 0.75rem;
   font-size: 0.78rem;
   color: var(--color-texto-apagado);
 }
 
-.aud-tab-wrap {
+.pg-tabla-cuerpo {
   border-radius: 12px;
   border: 1px solid var(--color-borde);
   overflow-x: auto;
   background: var(--color-fondo-elevado);
 }
 
-.aud-tabla {
+.pg-tabla pg-tabla--estado {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.825rem;
   min-width: 720px;
 }
 
-.aud-tabla th,
-.aud-tabla td {
+.pg-tabla pg-tabla--estado th,
+.pg-tabla pg-tabla--estado td {
   padding: 0.52rem 0.75rem;
   border-bottom: 1px solid var(--color-borde);
   text-align: left;
   vertical-align: top;
 }
 
-.aud-tabla th {
+.pg-tabla pg-tabla--estado th {
   font-size: 0.695rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -365,7 +369,7 @@ function limpiarFiltros(): void {
   line-height: 1.45;
 }
 
-.aud-tabla td[data-subio='true'] {
+.pg-tabla pg-tabla--estado td[data-subio='true'] {
   color: var(--color-exito);
 }
 

@@ -1,7 +1,9 @@
+import type { RegistroOperador } from './registroOperador';
+
 export type IdCondicionCompra = 'CONTADO' | 'CUENTA_PROVEEDOR';
 
 export interface LineaCompraRegistro {
-  productoId: string | null;
+  varianteId: string | null;
   nombre: string;
   cantidad: number;
   costoUnitario: number;
@@ -19,4 +21,5 @@ export interface CompraRegistrada {
   total: number;
   lineas: LineaCompraRegistro[];
   observaciones: string;
+  registradoPor: RegistroOperador;
 }

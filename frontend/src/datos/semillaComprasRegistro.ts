@@ -1,4 +1,5 @@
 import type { CompraRegistrada } from '../tipos/compraRegistrada';
+import { REGISTRO_ADMIN, REGISTRO_DUENO, REGISTRO_EMPLEADO } from './idsUsuariosSemilla';
 
 function iso(diasAtras: number, horaH = 10, horaM = 15): string {
   const d = new Date();
@@ -19,16 +20,17 @@ export function crearSemillaComprasRegistro(): CompraRegistrada[] {
       condicionCompra: 'CUENTA_PROVEEDOR',
       total: 892_400,
       observaciones: 'Ingresan en depósito central.',
+      registradoPor: REGISTRO_DUENO,
       lineas: [
         {
-          productoId: 'p-demo-ropa-1',
+          varianteId: 'p-demo-ropa-1',
           nombre: 'Tela gabardina negra rollo',
           cantidad: 8,
           costoUnitario: 68_050,
           subtotal: 544_400,
         },
         {
-          productoId: 'p-demo-ropa-2',
+          varianteId: 'p-demo-ropa-2',
           nombre: 'Hilo poliéster 40/2 bobina',
           cantidad: 120,
           costoUnitario: 2900,
@@ -45,9 +47,10 @@ export function crearSemillaComprasRegistro(): CompraRegistrada[] {
       condicionCompra: 'CONTADO',
       total: 215_000,
       observaciones: '',
+      registradoPor: REGISTRO_EMPLEADO,
       lineas: [
         {
-          productoId: null,
+          varianteId: null,
           nombre: 'Caja surtido accesorios temporada',
           cantidad: 5,
           costoUnitario: 43_000,
@@ -64,16 +67,17 @@ export function crearSemillaComprasRegistro(): CompraRegistrada[] {
       condicionCompra: 'CONTADO',
       total: 1_068_750,
       observaciones: 'Remito R-8921.',
+      registradoPor: REGISTRO_ADMIN,
       lineas: [
         {
-          productoId: 'p-demo-calz-1',
+          varianteId: 'p-demo-calz-1',
           nombre: 'Zapatillas running talle surtido',
           cantidad: 45,
           costoUnitario: 21_750,
           subtotal: 978_750,
         },
         {
-          productoId: null,
+          varianteId: null,
           nombre: 'Plantillas térmicas par',
           cantidad: 60,
           costoUnitario: 1500,

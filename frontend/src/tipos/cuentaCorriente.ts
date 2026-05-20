@@ -1,3 +1,5 @@
+import type { RegistroOperador } from './registroOperador';
+
 /** Origen del movimiento en cuenta corriente (compra a crédito, ingreso de dinero, etc.). */
 export type TipoMovimientoCuentaCorriente = 'cargo' | 'pagoRegistrado';
 
@@ -25,4 +27,6 @@ export interface MovimientoCuentaCorriente {
   descripcion: string;
   /** Presente cuando `tipoMovimiento` es pago cargado desde el formulario registrado por operador. */
   auditoriaPago?: AuditoriaPagoCuentaCorriente;
+  /** Operador que registró el movimiento (cargos y respaldo de trazabilidad). */
+  registradoPor?: RegistroOperador;
 }

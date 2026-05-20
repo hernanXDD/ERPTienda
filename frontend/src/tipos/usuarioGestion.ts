@@ -7,6 +7,7 @@ export type ClaveMenuPrincipal =
   | 'compras'
   | 'productos'
   | 'stock'
+  | 'reportes'
   | 'usuarios'
   | 'configuracion';
 

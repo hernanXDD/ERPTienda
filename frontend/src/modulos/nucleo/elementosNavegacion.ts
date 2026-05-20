@@ -8,6 +8,7 @@ import {
   UserCog,
   Users,
   Warehouse,
+  BarChart3,
 } from 'lucide-vue-next';
 import type { ClaveMenuPrincipal } from '../../tipos/usuarioGestion';
 
@@ -40,7 +41,7 @@ export function elementoMenuCoincideRuta(
 }
 
 /**
- * Orden principal de navegación: inicio · clientes · ventas · compras · productos · stock · usuarios · configuración.
+ * Orden principal: inicio · clientes · ventas · compras · productos · stock · reportes · usuarios · configuración.
  */
 export const elementosMenuPrincipal: ElementoMenuPrincipal[] = [
   { nombreRuta: 'inicio', etiqueta: 'Inicio', icono: LayoutDashboard },
@@ -56,9 +57,13 @@ export const elementosMenuPrincipal: ElementoMenuPrincipal[] = [
   },
   {
     claveMenuPrincipal: 'ventas',
-    nombreRuta: 'ventas',
+    nombreRuta: 'ventas-centro',
     etiqueta: 'Ventas',
     icono: ShoppingCart,
+    subelementos: [
+      { nombreRuta: 'ventas-centro', etiqueta: 'Centro de ventas' },
+      { nombreRuta: 'ventas-historial', etiqueta: 'Historial de ventas' },
+    ],
   },
   {
     claveMenuPrincipal: 'compras',
@@ -88,6 +93,19 @@ export const elementosMenuPrincipal: ElementoMenuPrincipal[] = [
     subelementos: [
       { nombreRuta: 'stock-actual', etiqueta: 'Stock actual' },
       { nombreRuta: 'stock-auditorias', etiqueta: 'Auditorías de stock' },
+    ],
+  },
+  {
+    claveMenuPrincipal: 'reportes',
+    nombreRuta: 'reportes-panel',
+    etiqueta: 'Reportes',
+    icono: BarChart3,
+    subelementos: [
+      { nombreRuta: 'reportes-panel', etiqueta: 'Panel de reportes' },
+      { nombreRuta: 'reportes-ventas-periodo', etiqueta: 'Ventas por período' },
+      { nombreRuta: 'reportes-stock-valorizado', etiqueta: 'Stock valorizado' },
+      { nombreRuta: 'reportes-cuentas-corrientes', etiqueta: 'Cuentas corrientes' },
+      { nombreRuta: 'reportes-compras-proveedor', etiqueta: 'Compras por proveedor' },
     ],
   },
   {

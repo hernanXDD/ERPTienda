@@ -1,0 +1,55 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc">
+  <header class="rep-enc">
+    <div>
+      <h1 class="rep-marca"><%= it.negocioNombre %></h1>
+      <p class="rep-tit"><%= it.tituloReporte %></p>
+    </div>
+    <div class="rep-meta-bloque">
+      <p><strong>Período</strong><br/><%= it.rangoLegible %></p>
+      <% if (it.filtroEntidadLegible) { %><p><strong>Cliente</strong><br/><%= it.filtroEntidadLegible %></p><% } %>
+      <p><strong>Generado</strong><br/><%= it.generadoEl %></p>
+    </div>
+  </header>
+
+  <div class="rep-kpis">
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Deuda total clientes</span><span class="rep-kpi-val"><%= it.totalDeuda %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Clientes con saldo</span><span class="rep-kpi-val"><%= it.clientesConSaldo %></span></div>
+  </div>
+
+  <% if (it.sinClientes) { %>
+  <p class="rep-vacio">No hay clientes con cuenta corriente o movimientos en el período.</p>
+  <% } else { %>
+  <% it.clientes.forEach(function (c) { %>
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit"><%= c.nombre %> · <%= c.documento %></h2>
+    <table class="rep-tabla" style="margin-bottom:0.5rem;">
+      <thead><tr><th>Saldo inicial</th><th class="der">Cargos período</th><th class="der">Pagos período</th><th class="der">Saldo final</th><th class="der">Límite CC</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><%= c.saldoInicial %></td>
+          <td class="der"><%= c.cargosPeriodo %></td>
+          <td class="der"><%= c.pagosPeriodo %></td>
+          <td class="der"><span class="<%= c.claseSaldo %>"><%= c.saldoFinal %></span></td>
+          <td class="der"><%= c.limite %></td>
+        </tr>
+      </tbody>
+    </table>
+    <% if (c.sinMovimientosPeriodo) { %>
+    <p class="rep-vacio" style="padding:0.5rem;">Sin movimientos en el período seleccionado.</p>
+    <% } else { %>
+    <table class="rep-tabla">
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th class="der">Cargo</th><th class="der">Pago</th><th class="der">Saldo</th></tr></thead>
+      <tbody>
+      <% c.movimientos.forEach(function (m) { %>
+        <tr><td><%= m.fecha %></td><td><%= m.tipo %></td><td><%= m.descripcion %></td><td class="der"><%= m.cargo %></td><td class="der"><%= m.pago %></td><td class="der"><%= m.saldo %></td></tr>
+      <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+  </section>
+  <% }) %>
+  <% } %>
+
+  <footer class="rep-pie">Documento generado por ERP Tienda · Uso interno</footer>
+</article>

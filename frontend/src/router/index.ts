@@ -49,16 +49,25 @@ const router = createRouter({
         {
           path: 'ventas',
           component: () => import('../layouts/LayoutVentas.vue'),
-          redirect: { name: 'ventas' },
+          redirect: { name: 'ventas-centro' },
           children: [
             {
+              path: 'centro',
+              name: 'ventas-centro',
+              component: () => import('../paginas/ventas/PaginaCentroVentas.vue'),
+            },
+            {
+              path: 'historial',
+              name: 'ventas-historial',
+              component: () => import('../paginas/ventas/PaginaHistorialVentas.vue'),
+            },
+            {
               path: '',
-              name: 'ventas',
-              component: () => import('../paginas/ventas/PaginaListaVentas.vue'),
+              redirect: { name: 'ventas-centro' },
             },
             {
               path: 'nueva',
-              redirect: { name: 'ventas' },
+              redirect: { name: 'ventas-centro' },
             },
           ],
         },
@@ -110,6 +119,38 @@ const router = createRouter({
               path: 'auditorias',
               name: 'stock-auditorias',
               component: () => import('../paginas/stock/PaginaAuditoriasStock.vue'),
+            },
+          ],
+        },
+        {
+          path: 'reportes',
+          component: () => import('../layouts/LayoutReportes.vue'),
+          redirect: { name: 'reportes-panel' },
+          children: [
+            {
+              path: 'panel',
+              name: 'reportes-panel',
+              component: () => import('../paginas/reportes/PaginaPanelReportes.vue'),
+            },
+            {
+              path: 'ventas-periodo',
+              name: 'reportes-ventas-periodo',
+              component: () => import('../paginas/reportes/PaginaReporteVentasPeriodo.vue'),
+            },
+            {
+              path: 'stock-valorizado',
+              name: 'reportes-stock-valorizado',
+              component: () => import('../paginas/reportes/PaginaReporteStockValorizado.vue'),
+            },
+            {
+              path: 'cuentas-corrientes',
+              name: 'reportes-cuentas-corrientes',
+              component: () => import('../paginas/reportes/PaginaReporteCuentasCorrientes.vue'),
+            },
+            {
+              path: 'compras-proveedor',
+              name: 'reportes-compras-proveedor',
+              component: () => import('../paginas/reportes/PaginaReporteComprasProveedor.vue'),
             },
           ],
         },

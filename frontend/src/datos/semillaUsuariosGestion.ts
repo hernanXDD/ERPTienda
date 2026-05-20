@@ -17,6 +17,7 @@ export function menusVisiblesPorDefecto(): MenusVisiblesUsuario {
     compras: true,
     productos: true,
     stock: true,
+    reportes: true,
     usuarios: true,
     configuracion: true,
   };
@@ -46,10 +47,10 @@ export function crearSemillaUsuariosGestion(): UsuarioGestion[] {
   return [
     {
       id: '11111111-1111-1111-1111-111111111111',
-      nombre: 'Ana',
-      apellido: 'Administración',
+      nombre: 'Administrador',
+      apellido: '',
       nombreUsuario: 'admin',
-      contrasenaPlano: 'admin',
+      contrasenaPlano: 'Ophhre43u',
       contrasenaEstaBlanqueada: false,
       rol: 'ADMIN',
       habilitado: true,

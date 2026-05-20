@@ -1,3 +1,5 @@
+import type { RegistroOperador } from './registroOperador';
+
 export type IdFormaPago =
   | 'EFECTIVO'
   | 'DEBITO'
@@ -6,7 +8,7 @@ export type IdFormaPago =
   | 'CUENTA_CORRIENTE';
 
 export interface LineaVentaRegistro {
-  productoId: string;
+  varianteId: string;
   nombre: string;
   cantidad: number;
   precioUnitario: number;
@@ -24,4 +26,5 @@ export interface VentaRegistrada {
   total: number;
   lineas: LineaVentaRegistro[];
   observaciones: string;
+  registradoPor: RegistroOperador;
 }

@@ -4,8 +4,9 @@ export type MotivoMovimientoStock = 'salidaPorVenta' | 'entradaPorCompra' | 'aju
 export interface MovimientoStock {
   id: string;
   fecha: string;
-  productoId: string;
-  nombreProducto: string;
+  varianteId: string;
+  /** Texto de comprobante; desnormalizado para historial sin join. */
+  nombreVariante: string;
   motivo: MotivoMovimientoStock;
   /** Variación aplicada (+ entra inventario / − sale inventario respecto del estado anterior). */
   cantidadVariacion: number;
@@ -17,7 +18,7 @@ export interface MovimientoStock {
 }
 
 export interface FaltaStockLinea {
-  productoId: string;
+  varianteId: string;
   nombre: string;
   solicitado: number;
   disponible: number;

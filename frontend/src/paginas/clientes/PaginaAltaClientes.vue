@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import {
@@ -9,7 +9,7 @@ import {
 import { formatearDocumentoClienteAlEscribir } from '../../modulos/clientes/formateadorDocumentoCliente';
 import { useClientesStore } from '../../stores/clientes';
 import type { Cliente } from '../../tipos/cliente';
-import { ClipboardCheck, Landmark, MapPin, Phone } from 'lucide-vue-next';
+import { ClipboardCheck, Landmark, MapPin, Phone, Users } from 'lucide-vue-next';
 
 type ModoDialogoCliente = 'alta' | 'edicion';
 
@@ -246,36 +246,52 @@ function irAEditarDesdeDetalle(): void {
 </script>
 
 <template>
-  <section class="lc" aria-labelledby="titulo-alta-clientes">
-    <header class="lc-cab">
-      <h1 id="titulo-alta-clientes" class="lc-titulo">Clientes</h1>
+  <section class="pg-wrap" aria-labelledby="titulo-alta-clientes">
+    <div class="pg-marco pg-marco--tarjetas pg-marco--clientes">
+    <header class="pg-cab">
+      <div class="pg-cab-txt">
+        <div class="pg-cab-izq">
+          <Users :size="22" class="pg-cab-ico" aria-hidden="true" stroke-width="1.85" />
+          <div>
+            <p class="pg-eyebrow">Ventas · Clientes</p>
+            <h1 id="titulo-alta-clientes" class="pg-titulo">Clientes</h1>
+            <p class="pg-sub">
+              Fichas, contacto y cuenta corriente. Buscá por nombre, documento o correo y gestioná
+              ventas habilitadas por cliente.
+            </p>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <div class="lc-barra">
-      <div class="lc-barra-fila">
-        <div class="lc-busq">
-          <label class="lc-etq" for="busq-nom">Buscar</label>
+    <div class="pg-barra">
+      <div class="pg-barra-fila">
+        <div class="pg-barra-col pg-barra-col--busq">
+          <label class="pg-filtro-etiq" for="busq-nom">Buscar</label>
           <input
             id="busq-nom"
             v-model="busquedaNombre"
             type="search"
-            class="lc-inp"
+            class="pg-filtro-inp"
             placeholder="Nombre, documento o correo…"
             autocomplete="off"
           />
         </div>
-        <div class="lc-acciones">
-          <button type="button" class="lc-btn-nuevo" @click="abrirAltaCliente">Nuevo cliente</button>
+        <div class="pg-barra-col pg-barra-col--accion">
+          <button type="button" class="pg-btn-primario" @click="abrirAltaCliente">
+            Nuevo cliente
+          </button>
         </div>
       </div>
     </div>
 
+    <section class="pg-cuerpo pg-cuerpo--grilla">
     <div
       v-if="clientesFiltrados.length"
-      class="lc-grid-viewport"
+      class="pg-grilla-viewport"
       aria-label="Clientes registrados"
     >
-      <div class="lc-grid-wrap">
+      <div class="pg-grilla-wrap">
         <article
           v-for="c in clientesFiltrados"
           :key="c.id"
@@ -332,14 +348,18 @@ function irAEditarDesdeDetalle(): void {
         </article>
       </div>
     </div>
-    <p v-else-if="clientes.length" class="lc-vacio" role="status">
+    <p v-else-if="clientes.length" class="pg-vacio--grilla" role="status">
       No hay clientes que coincidan con la búsqueda.
     </p>
-    <div v-else class="lc-vacio-msg" role="status">
-      <span class="lc-vacio-msg-tit">No hay clientes</span>
-      <span class="lc-vacio-msg-det">
+    <div v-else class="pg-vacio--grilla" role="status">
+      <span class="pg-vacio--grilla-tit">No hay clientes</span>
+      <span>
         Creá la primera ficha con «Nuevo cliente».
       </span>
+    </div>
+
+    </section>
+
     </div>
 
     <Teleport to="body">
@@ -381,11 +401,11 @@ function irAEditarDesdeDetalle(): void {
           <section class="lc-modal-bloque" aria-labelledby="lc-sec-ident">
             <h3 id="lc-sec-ident" class="lc-modal-seccion-tit">Identificación</h3>
             <div class="lc-fila">
-              <label class="lc-etq" for="ed-nombre">Nombre o razón social</label>
-              <input id="ed-nombre" v-model="borrador.nombre" type="text" class="lc-inp" required />
+              <label class="pg-filtro-etiq" for="ed-nombre">Nombre o razón social</label>
+              <input id="ed-nombre" v-model="borrador.nombre" type="text" class="pg-filtro-inp" required />
             </div>
             <div class="lc-fila">
-              <label class="lc-etq" for="ed-doc">Documento / CUIT</label>
+              <label class="pg-filtro-etiq" for="ed-doc">Documento / CUIT</label>
               <p id="lc-tip-doc-ident" class="lc-etq-tip">
                 Único en el sistema. Si cargás sólo dígitos, se formatea solo: DNI con puntos
                 (37.436.702) y CUIT con tipo, puntos en el medio y verificador
@@ -396,7 +416,7 @@ function irAEditarDesdeDetalle(): void {
                 :value="borrador.documento"
                 type="text"
                 inputmode="text"
-                class="lc-inp"
+                class="pg-filtro-inp"
                 :class="{ 'lc-inp--dato-invalido': erroresValidacionCliente.documento }"
                 placeholder="Ej. DNI o CUIT (se formatea al escribir)…"
                 autocomplete="off"
@@ -424,12 +444,12 @@ function irAEditarDesdeDetalle(): void {
             <h3 id="lc-sec-contacto" class="lc-modal-seccion-tit">Contacto y ubicación</h3>
             <div class="lc-modal-grid-duo">
               <div class="lc-fila">
-                <label class="lc-etq" for="ed-tel-p">Teléfono principal</label>
+                <label class="pg-filtro-etiq" for="ed-tel-p">Teléfono principal</label>
                 <input
                   id="ed-tel-p"
                   v-model="borrador.telefonoPrincipal"
                   type="tel"
-                  class="lc-inp"
+                  class="pg-filtro-inp"
                   autocomplete="tel"
                   :class="{ 'lc-inp--dato-invalido': erroresValidacionCliente.telefonoPrincipal }"
                   :aria-invalid="erroresValidacionCliente.telefonoPrincipal ? true : undefined"
@@ -443,12 +463,12 @@ function irAEditarDesdeDetalle(): void {
                 </p>
               </div>
               <div class="lc-fila">
-                <label class="lc-etq" for="ed-tel-alt">Teléfono alternativo</label>
+                <label class="pg-filtro-etiq" for="ed-tel-alt">Teléfono alternativo</label>
                 <input
                   id="ed-tel-alt"
                   v-model="borrador.telefonoAlternativo"
                   type="tel"
-                  class="lc-inp"
+                  class="pg-filtro-inp"
                   autocomplete="tel"
                   placeholder="Opcional"
                   :class="{ 'lc-inp--dato-invalido': erroresValidacionCliente.telefonoAlternativo }"
@@ -464,7 +484,7 @@ function irAEditarDesdeDetalle(): void {
               </div>
             </div>
             <div class="lc-fila">
-              <label class="lc-etq" for="ed-correo">Correo electrónico</label>
+              <label class="pg-filtro-etiq" for="ed-correo">Correo electrónico</label>
               <p id="lc-tip-correo" class="lc-etq-tip">
                 Opcional. Formato habitual: cuenta@servidor.dom
               </p>
@@ -472,7 +492,7 @@ function irAEditarDesdeDetalle(): void {
                 id="ed-correo"
                 v-model="borrador.correoElectronico"
                 type="email"
-                class="lc-inp"
+                class="pg-filtro-inp"
                 autocomplete="email"
                 inputmode="email"
                 placeholder="ejemplo@sucursal.com"
@@ -494,7 +514,7 @@ function irAEditarDesdeDetalle(): void {
               </p>
             </div>
             <div class="lc-fila">
-              <label class="lc-etq" for="ed-dir">Dirección</label>
+              <label class="pg-filtro-etiq" for="ed-dir">Dirección</label>
               <textarea
                 id="ed-dir"
                 v-model="borrador.direccion"
@@ -521,7 +541,7 @@ function irAEditarDesdeDetalle(): void {
               </label>
             </div>
             <div v-if="borrador.cuentaCorrienteHabilitada" class="lc-fila lc-fila-limite-cc">
-              <label class="lc-etq" for="ed-lim">Límite de compra en cuenta corriente (ARS)</label>
+              <label class="pg-filtro-etiq" for="ed-lim">Límite de compra en cuenta corriente (ARS)</label>
               <input
                 id="ed-lim"
                 v-model.number="borrador.limiteCompraCuentaCorriente"
@@ -695,113 +715,19 @@ function irAEditarDesdeDetalle(): void {
 </template>
 
 <style scoped>
-.lc {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 72rem;
-  margin: 0 auto;
-  --lc-grid-gap: 0.6rem;
-  --lc-grid-col: 3;
-  --lc-grid-filas-visibles: 3;
-  /** Tarjeta un poco más alta que proveedores por línea de contacto (correo/tel). */
-  --lc-altura-card-fila: 10.65rem;
-  --lc-grid-viewpad-v: 1rem;
-  --lc-panel-h: min(
-    calc(
-      var(--lc-grid-filas-visibles) * var(--lc-altura-card-fila) +
-        (var(--lc-grid-filas-visibles) - 1) * var(--lc-grid-gap) +
-        var(--lc-grid-viewpad-v)
-    ),
-    82vh
-  );
+.pg-marco--clientes {
+  --pg-grilla-altura-fila: 10.65rem;
+  --pg-reserva-vertical-vista: clamp(12.5rem, 24dvh, 18rem);
 }
 
-.lc-titulo {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-
-.lc-barra {
-  padding: 1rem;
-  border-radius: var(--radio-control);
-  border: 1px solid var(--color-borde);
-  background: var(--color-fondo-elevado);
-}
-
-.lc-barra-fila {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+.pg-marco--clientes .pg-barra-col--accion .pg-btn-primario {
+  width: 100%;
 }
 
 @media (min-width: 720px) {
-  .lc-barra-fila {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
-  }
-
-  .lc-busq {
-    flex: 1;
-    max-width: none;
-    min-width: 14rem;
-  }
-
-  .lc-acciones {
-    margin-left: auto;
-  }
-}
-
-.lc-acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.lc-busq {
-  max-width: 24rem;
-}
-
-.lc-grid-viewport {
-  height: var(--lc-panel-h);
-  max-height: var(--lc-panel-h);
-  overflow: auto;
-  padding: 0.5rem;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-control);
-  background: var(--color-fondo-cabecera);
-  box-sizing: border-box;
-}
-
-.lc-grid-wrap {
-  display: grid;
-  grid-template-columns: repeat(var(--lc-grid-col), minmax(0, 1fr));
-  grid-auto-rows: minmax(var(--lc-altura-card-fila), auto);
-  gap: var(--lc-grid-gap);
-  align-items: stretch;
-}
-
-@media (max-width: 719px) {
-  .lc {
-    --lc-grid-col: 1;
-    --lc-altura-card-fila: 10.35rem;
-    --lc-panel-h: min(
-      calc(
-        var(--lc-grid-filas-visibles) * var(--lc-altura-card-fila) +
-          (var(--lc-grid-filas-visibles) - 1) * var(--lc-grid-gap) +
-          var(--lc-grid-viewpad-v)
-      ),
-      72vh
-    );
-  }
-}
-
-@media (min-width: 720px) and (max-width: 1023px) {
-  .lc {
-    --lc-grid-col: 2;
+  .pg-marco--clientes .pg-barra-col--accion .pg-btn-primario {
+    width: auto;
+    min-width: 10.5rem;
   }
 }
 
@@ -809,7 +735,7 @@ function irAEditarDesdeDetalle(): void {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: var(--lc-altura-card-fila);
+  min-height: var(--pg-grilla-altura-fila);
   align-self: stretch;
   overflow-x: clip;
   border-radius: 12px;

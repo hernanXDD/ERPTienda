@@ -85,7 +85,7 @@ function construirLineasValidadas(): LineaCompraRegistro[] | null {
     const costoUnitario = Math.round(costoBruto);
     const subtotal = cantidad * costoUnitario;
     resultado.push({
-      productoId: null,
+      varianteId: null,
       nombre: nombreTrim,
       cantidad,
       costoUnitario,

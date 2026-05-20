@@ -6,7 +6,7 @@ defineProps<{
 </script>
 
 <template>
-  <section class="envoltorio" aria-labelledby="titulo-construccion">
+  <section class="pg-wrap" aria-labelledby="titulo-construccion">
     <h1 id="titulo-construccion" class="titulo">{{ titulo }}</h1>
     <p v-if="descripcion" class="texto">{{ descripcion }}</p>
     <p v-else class="texto">Sección en preparación.</p>

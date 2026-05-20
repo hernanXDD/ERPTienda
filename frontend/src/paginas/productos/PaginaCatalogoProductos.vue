@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Plus } from 'lucide-vue-next';
+import { Package, Plus, Trash2 } from 'lucide-vue-next';
 import { computed, onMounted, reactive, ref, useTemplateRef } from 'vue';
 import { storeToRefs } from 'pinia';
+import { etiquetaTalleColor } from '../../modulos/catalogo/catalogoPresentacion';
 import { useCatalogoStore } from '../../stores/catalogo';
 import { useStockStore } from '../../stores/stock';
-import type { Producto } from '../../tipos/catalogo';
+import type { Producto, Variante } from '../../tipos/catalogo';
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -18,26 +19,33 @@ const { categorias, productos } = storeToRefs(catalogo);
 
 const refDialogo = useTemplateRef('refDialogo');
 
+interface BorradorVariante {
+  claveLocal: string;
+  id?: string;
+  talle: string;
+  color: string;
+  codigoBarras: string;
+}
+
+const formulario = reactive({
+  nombre: '',
+  marca: '',
+  descripcion: '',
+  categoriaId: '',
+  precioVenta: '' as string | number,
+});
+
+const variantesBorrador = ref<BorradorVariante[]>([]);
+const idEdicion = ref<string | null>(null);
+const mensajeToast = ref('');
+const tipoMensajeToast = ref<'error' | 'ok'>('ok');
+let idToast: ReturnType<typeof setTimeout> | null = null;
+
 const productosOrdenados = computed(() => {
   return [...productos.value].sort((a, b) =>
     a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
   );
 });
-
-const formulario = reactive({
-  nombre: '',
-  tipoPrenda: '',
-  marca: '',
-  descripcion: '',
-  categoriaId: '',
-  codigoBarras: '',
-  precioVenta: '' as string | number,
-});
-
-const idEdicion = ref<string | null>(null);
-const mensajeToast = ref('');
-const tipoMensajeToast = ref<'error' | 'ok'>('ok');
-let idToast: ReturnType<typeof setTimeout> | null = null;
 
 function mostrarToast(texto: string, tipo: 'error' | 'ok') {
   mensajeToast.value = texto;
@@ -48,14 +56,21 @@ function mostrarToast(texto: string, tipo: 'error' | 'ok') {
   }, 4000);
 }
 
+function nuevaClaveLocal(): string {
+  return crypto.randomUUID();
+}
+
+function filaVarianteVacia(): BorradorVariante {
+  return { claveLocal: nuevaClaveLocal(), talle: '', color: '', codigoBarras: '' };
+}
+
 function resetFormulario() {
   formulario.nombre = '';
-  formulario.tipoPrenda = '';
   formulario.marca = '';
   formulario.descripcion = '';
   formulario.categoriaId = categorias.value[0]?.id ?? '';
-  formulario.codigoBarras = '';
   formulario.precioVenta = '';
+  variantesBorrador.value = [filaVarianteVacia()];
   idEdicion.value = null;
 }
 
@@ -71,13 +86,34 @@ function abrirNuevo() {
 function abrirModificar(p: Producto) {
   idEdicion.value = p.id;
   formulario.nombre = p.nombre;
-  formulario.tipoPrenda = p.tipoPrenda;
   formulario.marca = p.marca;
   formulario.descripcion = p.descripcion;
   formulario.categoriaId = p.categoriaId;
-  formulario.codigoBarras = p.codigoBarras;
   formulario.precioVenta = p.precioVenta;
+  const existentes = catalogo.todasVariantesDeProducto(p.id);
+  variantesBorrador.value =
+    existentes.length > 0
+      ? existentes.map((v) => ({
+          claveLocal: nuevaClaveLocal(),
+          id: v.id,
+          talle: v.talle,
+          color: v.color,
+          codigoBarras: v.codigoBarras,
+        }))
+      : [filaVarianteVacia()];
   refDialogo.value?.showModal();
+}
+
+function agregarFilaVariante() {
+  variantesBorrador.value = [...variantesBorrador.value, filaVarianteVacia()];
+}
+
+function quitarFilaVariante(claveLocal: string) {
+  if (variantesBorrador.value.length <= 1) {
+    mostrarToast('El producto debe tener al menos una variante (talle y color).', 'error');
+    return;
+  }
+  variantesBorrador.value = variantesBorrador.value.filter((f) => f.claveLocal !== claveLocal);
 }
 
 function cerrarModal() {
@@ -88,16 +124,85 @@ function alCerrarDialogo() {
   resetFormulario();
 }
 
+function cantidadVariantesProducto(productoId: string): number {
+  return catalogo.cantidadVariantesActivas(productoId);
+}
+
+function validarVariantesBorrador(): BorradorVariante[] | null {
+  const validas: BorradorVariante[] = [];
+  const claves = new Set<string>();
+  for (const fila of variantesBorrador.value) {
+    const talle = fila.talle.trim();
+    const color = fila.color.trim();
+    if (!talle || !color) {
+      mostrarToast('Cada variante necesita talle y color.', 'error');
+      return null;
+    }
+    const clave = `${talle.toLowerCase()}|${color.toLowerCase()}`;
+    if (claves.has(clave)) {
+      mostrarToast('No puede haber dos variantes con el mismo talle y color.', 'error');
+      return null;
+    }
+    claves.add(clave);
+    validas.push({ ...fila, talle, color, codigoBarras: fila.codigoBarras.trim() });
+  }
+  if (validas.length === 0) {
+    mostrarToast('Agregá al menos una variante.', 'error');
+    return null;
+  }
+  return validas;
+}
+
+function persistirVariantes(productoId: string, filas: BorradorVariante[]): boolean {
+  const idsEnFormulario = new Set(filas.filter((f) => f.id).map((f) => f.id as string));
+  const actuales = catalogo.todasVariantesDeProducto(productoId);
+
+  for (const existente of actuales) {
+    if (!idsEnFormulario.has(existente.id)) {
+      const ok = catalogo.eliminarVariante(existente.id);
+      if (!ok) {
+        mostrarToast('No se puede quitar la única variante activa del producto.', 'error');
+        return false;
+      }
+      stockStore.quitarVariante(existente.id);
+    }
+  }
+
+  for (const fila of filas) {
+    const datos: Omit<Variante, 'id'> = {
+      productoId,
+      talle: fila.talle,
+      color: fila.color,
+      codigoBarras: fila.codigoBarras,
+      activa: true,
+    };
+    if (fila.id) {
+      const ok = catalogo.actualizarVariante(fila.id, datos);
+      if (!ok) {
+        mostrarToast('Ya existe otra variante con ese talle y color.', 'error');
+        return false;
+      }
+    } else {
+      const creada = catalogo.agregarVariante(datos);
+      if (!creada) {
+        mostrarToast('Ya existe una variante con ese talle y color.', 'error');
+        return false;
+      }
+      stockStore.inicializarExistenciaParaVariante(creada.id);
+    }
+  }
+  return true;
+}
+
 function guardar() {
   const nombre = formulario.nombre.trim();
-  const tipoPrenda = formulario.tipoPrenda.trim();
   const marca = formulario.marca.trim();
-  if (!nombre || !tipoPrenda || !marca) {
-    mostrarToast('Completá nombre, tipo de prenda y marca.', 'error');
+  if (!nombre || !marca) {
+    mostrarToast('Completá nombre y marca.', 'error');
     return;
   }
   if (!formulario.categoriaId) {
-    mostrarToast('Elegí una categoría.', 'error');
+    mostrarToast('Elegí una categoría (tipo de producto).', 'error');
     return;
   }
   const precio =
@@ -108,33 +213,41 @@ function guardar() {
     mostrarToast('Indicá un precio de venta válido (mayor o igual a 0).', 'error');
     return;
   }
-  const codigoBarras = formulario.codigoBarras.trim();
-  const descripcion = formulario.descripcion.trim();
-  const datos = {
+
+  const filasVariante = validarVariantesBorrador();
+  if (!filasVariante) return;
+
+  const datosProducto = {
     nombre,
-    tipoPrenda,
     marca,
-    descripcion,
+    descripcion: formulario.descripcion.trim(),
     categoriaId: formulario.categoriaId,
-    codigoBarras,
     precioVenta: precio,
   };
+
   if (idEdicion.value) {
-    catalogo.actualizarProducto(idEdicion.value, datos);
-    mostrarToast('Producto actualizado.', 'ok');
+    catalogo.actualizarProducto(idEdicion.value, datosProducto);
+    if (!persistirVariantes(idEdicion.value, filasVariante)) return;
+    mostrarToast('Producto y variantes actualizados.', 'ok');
   } else {
-    const nuevoProducto = catalogo.agregarProducto(datos);
-    stockStore.inicializarExistenciaParaProducto(nuevoProducto.id);
-    mostrarToast('Producto creado.', 'ok');
+    const nuevoProducto = catalogo.agregarProducto(datosProducto);
+    if (!persistirVariantes(nuevoProducto.id, filasVariante)) {
+      catalogo.eliminarProducto(nuevoProducto.id);
+      stockStore.quitarVariantes(
+        catalogo.todasVariantesDeProducto(nuevoProducto.id).map((v) => v.id)
+      );
+      return;
+    }
+    mostrarToast('Producto creado con sus variantes.', 'ok');
   }
   cerrarModal();
   resetFormulario();
 }
 
 function borrar(p: Producto) {
-  if (!globalThis.confirm(`¿Borrar el producto «${p.nombre}»?`)) return;
-  catalogo.eliminarProducto(p.id);
-  stockStore.quitarProducto(p.id);
+  if (!globalThis.confirm(`¿Borrar el producto «${p.nombre}» y todas sus variantes?`)) return;
+  const idsVariantes = catalogo.eliminarProducto(p.id);
+  stockStore.quitarVariantes(idsVariantes);
   mostrarToast('Producto borrado.', 'ok');
 }
 
@@ -144,15 +257,25 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="pagina" aria-labelledby="titulo-prod">
-    <header class="cabecera">
-      <h1 id="titulo-prod" class="titulo">Catálogo de productos</h1>
-      <p class="subtitulo">
-        Listado de productos. Para existencias físicas disponibles usá el menú <strong>Stock</strong>. Las variantes por talle/color se trabajarán en una etapa posterior.
-      </p>
+  <section class="pg-wrap" aria-labelledby="titulo-prod">
+    <div class="pg-marco">
+    <header class="pg-cab">
+      <div class="pg-cab-txt">
+        <div class="pg-cab-izq">
+          <Package :size="22" class="pg-cab-ico" aria-hidden="true" stroke-width="1.85" />
+          <div>
+            <p class="pg-eyebrow">Productos · Catálogo</p>
+            <h1 id="titulo-prod" class="pg-titulo">Catálogo de productos</h1>
+            <p class="pg-sub">
+              Cada producto pertenece a una categoría (remera, buzo, calzado…) y tiene una o más
+              variantes por talle y color. El stock y las ventas operan sobre cada variante.
+            </p>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <div class="barra-acciones">
+    <div class="pg-barra pg-barra--acciones">
       <p v-if="mensajeToast" class="toast" :class="tipoMensajeToast" role="status">
         {{ mensajeToast }}
       </p>
@@ -162,44 +285,45 @@ onMounted(() => {
       </button>
     </div>
 
-    <div class="envoltorio-tabla" role="region" aria-label="Listado de productos">
-      <table class="tabla">
+    <section class="pg-tabla-cuerpo" role="region" aria-label="Listado de productos">
+      <div class="pg-tabla-scroll pg-tabla-scroll--libre">
+      <table class="pg-tabla pg-tabla--estado">
         <thead>
           <tr>
             <th scope="col">Nombre</th>
-            <th scope="col">Tipo</th>
             <th scope="col">Marca</th>
             <th scope="col">Categoría</th>
-            <th scope="col" class="col-corta">Código</th>
-            <th scope="col" class="col-precio der">Precio</th>
+            <th scope="col" class="col-corta der">Variantes</th>
+            <th scope="col" class="col-precio der">Precio ref.</th>
             <th scope="col" class="col-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="p in productosOrdenados" :key="p.id">
             <td>{{ p.nombre }}</td>
-            <td>{{ p.tipoPrenda }}</td>
             <td>{{ p.marca }}</td>
             <td>{{ catalogo.nombreCategoria(p.categoriaId) }}</td>
-            <td class="col-corta codigo">{{ p.codigoBarras || '—' }}</td>
+            <td class="col-corta der">{{ cantidadVariantesProducto(p.id) }}</td>
             <td class="col-precio der">{{ formatoPeso.format(p.precioVenta) }}</td>
             <td class="col-acciones">
               <div class="grupo-botones">
-                <button type="button" class="boton-mini" @click="abrirModificar(p)">Alta</button>
-                <button type="button" class="boton-mini peligro" @click="borrar(p)">Borrado</button>
+                <button type="button" class="boton-mini" @click="abrirModificar(p)">Modificar</button>
+                <button type="button" class="boton-mini peligro" @click="borrar(p)">Borrar</button>
               </div>
             </td>
           </tr>
           <tr v-if="productosOrdenados.length === 0">
-            <td colspan="7" class="vacía">
+            <td colspan="6" class="vacía">
               No hay productos. Pulsa <strong>Nuevo producto</strong> para agregar el primero.
             </td>
           </tr>
         </tbody>
       </table>
+      </div>
+    </section>
     </div>
 
-    <dialog ref="refDialogo" class="modal" @close="alCerrarDialogo">
+    <dialog ref="refDialogo" class="modal modal--ancho" @close="alCerrarDialogo">
       <div class="modal-panel" @click.stop>
         <h2 id="titulo-modal-prod" class="modal-titulo">{{ tituloModal() }}</h2>
         <form class="formulario" @submit.prevent="guardar">
@@ -217,18 +341,6 @@ onMounted(() => {
               />
             </div>
             <div class="fila">
-              <label class="etiqueta" for="modal-prod-tipo">Tipo de prenda</label>
-              <input
-                id="modal-prod-tipo"
-                v-model="formulario.tipoPrenda"
-                type="text"
-                class="entrada"
-                required
-                maxlength="80"
-                placeholder="Ej. Remera, campera"
-              />
-            </div>
-            <div class="fila">
               <label class="etiqueta" for="modal-prod-marca">Marca</label>
               <input
                 id="modal-prod-marca"
@@ -240,7 +352,16 @@ onMounted(() => {
               />
             </div>
             <div class="fila">
-              <label class="etiqueta" for="modal-prod-precio">Precio de venta</label>
+              <label class="etiqueta" for="modal-prod-cat">Categoría (tipo)</label>
+              <select id="modal-prod-cat" v-model="formulario.categoriaId" class="entrada" required>
+                <option disabled value="">Seleccionar…</option>
+                <option v-for="c in categorias" :key="c.id" :value="c.id">
+                  {{ c.nombre }}
+                </option>
+              </select>
+            </div>
+            <div class="fila">
+              <label class="etiqueta" for="modal-prod-precio">Precio de venta (referencia)</label>
               <input
                 id="modal-prod-precio"
                 v-model="formulario.precioVenta"
@@ -253,28 +374,6 @@ onMounted(() => {
                 placeholder="0"
               />
             </div>
-            <div class="fila">
-              <label class="etiqueta" for="modal-prod-cat">Categoría</label>
-              <select id="modal-prod-cat" v-model="formulario.categoriaId" class="entrada" required>
-                <option disabled value="">Seleccionar…</option>
-                <option v-for="c in categorias" :key="c.id" :value="c.id">
-                  {{ c.nombre }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="fila">
-            <label class="etiqueta" for="modal-prod-ean">Código de barras</label>
-            <input
-              id="modal-prod-ean"
-              v-model="formulario.codigoBarras"
-              type="text"
-              class="entrada"
-              maxlength="48"
-              inputmode="numeric"
-              autocomplete="off"
-              placeholder="Opcional — EAN, UPC o interno"
-            />
           </div>
           <div class="fila">
             <label class="etiqueta" for="modal-prod-desc">Descripción</label>
@@ -282,10 +381,58 @@ onMounted(() => {
               id="modal-prod-desc"
               v-model="formulario.descripcion"
               class="entrada area"
-              rows="3"
+              rows="2"
               maxlength="1000"
             />
           </div>
+
+          <fieldset class="bloque-variantes">
+            <legend class="bloque-variantes-tit">Variantes (talle y color)</legend>
+            <p class="bloque-variantes-ayuda">
+              Cada fila es una combinación vendible con stock propio. Un producto con un solo talle y
+              color tiene una variante.
+            </p>
+            <div
+              v-for="fila in variantesBorrador"
+              :key="fila.claveLocal"
+              class="fila-variante"
+            >
+              <div class="fila-variante-campos">
+                <label class="etiqueta-mini">
+                  Talle
+                  <input v-model="fila.talle" type="text" class="entrada" maxlength="24" required />
+                </label>
+                <label class="etiqueta-mini">
+                  Color
+                  <input v-model="fila.color" type="text" class="entrada" maxlength="48" required />
+                </label>
+                <label class="etiqueta-mini etiqueta-mini--cod">
+                  Código de barras
+                  <input
+                    v-model="fila.codigoBarras"
+                    type="text"
+                    class="entrada"
+                    maxlength="48"
+                    inputmode="numeric"
+                    placeholder="Opcional"
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                class="boton-quitar-variante"
+                :aria-label="`Quitar variante ${etiquetaTalleColor(fila.talle, fila.color)}`"
+                @click="quitarFilaVariante(fila.claveLocal)"
+              >
+                <Trash2 :size="16" aria-hidden="true" />
+              </button>
+            </div>
+            <button type="button" class="boton secundario boton-agregar-variante" @click="agregarFilaVariante">
+              <Plus :size="16" aria-hidden="true" />
+              Agregar variante
+            </button>
+          </fieldset>
+
           <div class="modal-pie">
             <button type="button" class="boton secundario" @click="cerrarModal">Cancelar</button>
             <button type="submit" class="boton primario">Guardar</button>
@@ -412,12 +559,6 @@ onMounted(() => {
   max-width: 7.5rem;
 }
 
-.codigo {
-  font-variant-numeric: tabular-nums;
-  font-size: 0.82rem;
-  color: var(--color-texto-apagado);
-}
-
 .col-precio {
   white-space: nowrap;
 }
@@ -477,6 +618,10 @@ onMounted(() => {
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
+.modal--ancho {
+  width: min(36rem, calc(100vw - 2rem));
+}
+
 .modal::backdrop {
   background: rgba(0, 0, 0, 0.55);
 }
@@ -506,10 +651,6 @@ onMounted(() => {
   .rejilla {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .formulario .fila:last-of-type {
-    grid-column: 1 / -1;
-  }
 }
 
 .fila {
@@ -534,7 +675,85 @@ onMounted(() => {
 
 .area {
   resize: vertical;
-  min-height: 4rem;
+  min-height: 3rem;
+}
+
+.bloque-variantes {
+  margin: 0.25rem 0 0;
+  padding: 0.85rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-control);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.bloque-variantes-tit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+.bloque-variantes-ayuda {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-texto-apagado);
+  line-height: 1.45;
+}
+
+.fila-variante {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.fila-variante-campos {
+  flex: 1;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (min-width: 520px) {
+  .fila-variante-campos {
+    grid-template-columns: 0.75fr 0.75fr 1.25fr;
+  }
+}
+
+.etiqueta-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-texto-apagado);
+}
+
+.etiqueta-mini--cod {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 520px) {
+  .etiqueta-mini--cod {
+    grid-column: auto;
+  }
+}
+
+.boton-quitar-variante {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  background: transparent;
+  color: var(--color-peligro);
+  cursor: pointer;
+}
+
+.boton-agregar-variante {
+  align-self: flex-start;
 }
 
 .modal-pie {

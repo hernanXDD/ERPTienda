@@ -14,7 +14,14 @@ import { useCatalogoStore } from '../../stores/catalogo';
 import { useGestionUsuariosStore } from '../../stores/gestionUsuarios';
 import { useSesionStore } from '../../stores/sesion';
 import { useStockStore } from '../../stores/stock';
-import type { Producto } from '../../tipos/catalogo';
+import { etiquetaTalleColor } from '../../modulos/catalogo/catalogoPresentacion';
+import type { Producto, Variante } from '../../tipos/catalogo';
+
+interface FilaStock {
+  variante: Variante;
+  producto: Producto;
+  existencia: number;
+}
 
 const UMBRAL_BAJO = 12;
 
@@ -22,7 +29,7 @@ const catalogoStore = useCatalogoStore();
 const stockStore = useStockStore();
 const sesionStore = useSesionStore();
 const gestionUsuariosStore = useGestionUsuariosStore();
-const { productos, categorias } = storeToRefs(catalogoStore);
+const { categorias, variantes } = storeToRefs(catalogoStore);
 
 const puedeGestionar = computed(() => {
   const usuarioSesion = sesionStore.usuario;
@@ -41,41 +48,59 @@ const soloStockBajo = ref(false);
 const refModalConteo = useTemplateRef('refModalConteo');
 const refModalEntrada = useTemplateRef('refModalEntrada');
 
+const varianteConteoSeleccionada = ref<Variante | null>(null);
 const productoConteoSeleccionado = ref<Producto | null>(null);
 const cantidadContadaTexto = ref('');
 const observacionConteoTexto = ref('');
 const mensajeModalConteo = ref('');
 
+const varianteEntradaSeleccionada = ref<Variante | null>(null);
 const productoEntradaSeleccionado = ref<Producto | null>(null);
 const unidadesEntradaTexto = ref('');
 const observacionEntradaTexto = ref('');
 const mensajeModalEntrada = ref('');
 
-const filasFiltradas = computed(() => {
+const filasFiltradas = computed((): FilaStock[] => {
   const textoBusqueda = busqueda.value.trim().toLowerCase();
   const idCategoriaFiltro = categoriaSeleccionada.value.trim();
-  return [...productos.value]
-    .map((producto): { producto: Producto; existencia: number } => ({
-      producto,
-      existencia: stockStore.cantidadActual(producto.id),
-    }))
+
+  return variantes.value
+    .filter((v) => v.activa)
+    .map((variante): FilaStock | null => {
+      const producto = catalogoStore.productoPorId(variante.productoId);
+      if (!producto) return null;
+      return {
+        variante,
+        producto,
+        existencia: stockStore.cantidadActual(variante.id),
+      };
+    })
+    .filter((fila): fila is FilaStock => fila !== null)
     .filter(({ producto }) => !idCategoriaFiltro || producto.categoriaId === idCategoriaFiltro)
     .filter(({ existencia }) => {
       if (soloStockCritico.value) return existencia === 0;
       if (soloStockBajo.value) return existencia > 0 && existencia <= UMBRAL_BAJO;
       return true;
     })
-    .filter(({ producto }) => {
+    .filter(({ variante, producto }) => {
       if (!textoBusqueda) return true;
       const agregado =
-        `${producto.nombre} ${producto.marca} ${producto.tipoPrenda} ${producto.descripcion} ${producto.codigoBarras}`
+        `${producto.nombre} ${producto.marca} ${producto.descripcion} ${variante.talle} ${variante.color} ${variante.codigoBarras} ${catalogoStore.nombreCategoria(producto.categoriaId)}`
           .toLowerCase()
           .trim();
       return agregado.includes(textoBusqueda);
     })
-    .sort((a, b) =>
-      a.producto.nombre.localeCompare(b.producto.nombre, 'es', { sensitivity: 'base' })
-    );
+    .sort((a, b) => {
+      const porNombre = a.producto.nombre.localeCompare(b.producto.nombre, 'es', {
+        sensitivity: 'base',
+      });
+      if (porNombre !== 0) return porNombre;
+      return etiquetaTalleColor(a.variante.talle, a.variante.color).localeCompare(
+        etiquetaTalleColor(b.variante.talle, b.variante.color),
+        'es',
+        { sensitivity: 'base' }
+      );
+    });
 });
 
 function limpiarFiltros(): void {
@@ -109,10 +134,15 @@ function textoEstadoCantidad(unidades: number): string {
   return 'En rango normal';
 }
 
-function abrirModalConteo(producto: Producto): void {
+function tituloVariante(fila: FilaStock): string {
+  return `${fila.producto.nombre} — ${etiquetaTalleColor(fila.variante.talle, fila.variante.color)}`;
+}
+
+function abrirModalConteo(fila: FilaStock): void {
   mensajeModalConteo.value = '';
-  productoConteoSeleccionado.value = producto;
-  cantidadContadaTexto.value = String(stockStore.cantidadActual(producto.id));
+  varianteConteoSeleccionada.value = fila.variante;
+  productoConteoSeleccionado.value = fila.producto;
+  cantidadContadaTexto.value = String(stockStore.cantidadActual(fila.variante.id));
   observacionConteoTexto.value = '';
   nextTick(() => refModalConteo.value?.showModal());
 }
@@ -122,23 +152,24 @@ function cerrarModalConteo(): void {
 }
 
 function alCerrarModalConteo(): void {
+  varianteConteoSeleccionada.value = null;
   productoConteoSeleccionado.value = null;
   mensajeModalConteo.value = '';
 }
 
 function guardarModalConteo(): void {
-  const producto = productoConteoSeleccionado.value;
-  if (!producto || !sesionStore.usuario) return;
+  const variante = varianteConteoSeleccionada.value;
+  if (!variante || !sesionStore.usuario) return;
 
-  let cantidadFisica = Math.floor(Number(String(cantidadContadaTexto.value).trim()));
+  const cantidadFisica = Math.floor(Number(String(cantidadContadaTexto.value).trim()));
   if (!Number.isFinite(cantidadFisica) || cantidadFisica < 0) {
     mensajeModalConteo.value = 'La cantidad contada debe ser un número mayor o igual a 0.';
     return;
   }
 
   stockStore.aplicarAjustePorConteo(
-    producto.id,
-    producto.nombre,
+    variante.id,
+    catalogoStore.nombreLineaComercial(variante.id),
     cantidadFisica,
     sesionStore.usuario.nombreUsuario,
     observacionConteoTexto.value.trim() || undefined
@@ -146,9 +177,10 @@ function guardarModalConteo(): void {
   cerrarModalConteo();
 }
 
-function abrirModalEntrada(producto: Producto): void {
+function abrirModalEntrada(fila: FilaStock): void {
   mensajeModalEntrada.value = '';
-  productoEntradaSeleccionado.value = producto;
+  varianteEntradaSeleccionada.value = fila.variante;
+  productoEntradaSeleccionado.value = fila.producto;
   unidadesEntradaTexto.value = '';
   observacionEntradaTexto.value = '';
   nextTick(() => refModalEntrada.value?.showModal());
@@ -159,12 +191,14 @@ function cerrarModalEntrada(): void {
 }
 
 function alCerrarModalEntrada(): void {
+  varianteEntradaSeleccionada.value = null;
   productoEntradaSeleccionado.value = null;
 }
 
 function guardarModalEntrada(): void {
+  const variante = varianteEntradaSeleccionada.value;
   const producto = productoEntradaSeleccionado.value;
-  if (!producto || !sesionStore.usuario) return;
+  if (!variante || !producto || !sesionStore.usuario) return;
 
   const unidadesRaw = Number(String(unidadesEntradaTexto.value).replace(',', '.'));
   const unidades = Math.floor(Math.abs(unidadesRaw));
@@ -186,13 +220,14 @@ function guardarModalEntrada(): void {
 </script>
 
 <template>
-  <section class="stk" aria-labelledby="tit-stock-actual">
-    <header class="stk-cab">
-      <div class="stk-cab-izq">
-        <Warehouse :size="22" aria-hidden="true" class="stk-icono" stroke-width="1.85" />
+  <section class="pg-wrap" aria-labelledby="tit-stock-actual">
+    <div class="pg-marco">
+    <header class="pg-cab">
+      <div class="pg-cab-izq">
+        <Warehouse :size="22" aria-hidden="true" class="pg-cab-ico" stroke-width="1.85" />
         <div class="stk-cab-textos">
-          <h1 id="tit-stock-actual" class="stk-tit">Stock actual</h1>
-          <p class="stk-sub">
+          <h1 id="tit-stock-actual" class="pg-titulo">Stock actual</h1>
+          <p class="pg-sub">
             Existencias disponibles para vender hoy. El detalle de cada movimiento y variación queda en
             <RouterLink class="stk-enlace-interno" :to="{ name: 'stock-auditorias' }">
               Auditorías de stock
@@ -210,25 +245,25 @@ function guardarModalEntrada(): void {
       </p>
     </header>
 
-    <div class="stk-barra">
-      <div class="stk-barra-col stk-barra-col--busq">
-        <label class="stk-etq-bl" for="stk-filtro-busq">
-          <span class="stk-etiqueta-bl">Buscar</span>
+    <div class="pg-barra">
+      <div class="pg-barra-col pg-barra-col--busq">
+        <label class="pg-filtro-bl" for="stk-filtro-busq">
+          <span class="pg-filtro-etiq">Buscar</span>
           <input
             id="stk-filtro-busq"
             v-model="busqueda"
             type="search"
-            class="stk-inp"
+            class="pg-filtro-inp"
             placeholder="Nombre, marca o código…"
             autocomplete="off"
           />
         </label>
       </div>
 
-      <div class="stk-barra-col stk-barra-col--cat">
-        <label class="stk-etq-bl" for="stk-filtro-cat">
-          <span class="stk-etiqueta-bl">Categoría</span>
-          <select id="stk-filtro-cat" v-model="categoriaSeleccionada" class="stk-inp">
+      <div class="pg-barra-col pg-barra-col--cat">
+        <label class="pg-filtro-bl" for="stk-filtro-cat">
+          <span class="pg-filtro-etiq">Categoría</span>
+          <select id="stk-filtro-cat" v-model="categoriaSeleccionada" class="pg-filtro-inp">
             <option value="">Todas</option>
             <option v-for="c in opcionesCategoriaParaFiltro" :key="c.valor" :value="c.valor">
               {{ c.etiqueta }}
@@ -237,9 +272,9 @@ function guardarModalEntrada(): void {
         </label>
       </div>
 
-      <div class="stk-barra-col stk-barra-col--atajos">
-        <div class="stk-etq-bl">
-          <span id="stk-leyenda-atajos" class="stk-etiqueta-bl">Filtros rápidos</span>
+      <div class="pg-barra-col pg-barra-col--atajos">
+        <div class="pg-filtro-bl">
+          <span id="stk-leyenda-atajos" class="pg-filtro-etiq">Filtros rápidos</span>
           <div class="stk-filtros-cheq" role="group" aria-labelledby="stk-leyenda-atajos">
             <label class="stk-cheq-wrap">
               <input v-model="soloStockCritico" type="checkbox" class="stk-cheq" />
@@ -253,10 +288,10 @@ function guardarModalEntrada(): void {
         </div>
       </div>
 
-      <div class="stk-barra-col stk-barra-col--reinicio">
-        <div class="stk-etq-bl">
-          <span class="stk-etiqueta-bl">Reinicio</span>
-          <button type="button" class="stk-btn-sec stk-btn-reset" @click="limpiarFiltros">
+      <div class="pg-barra-col pg-barra-col--reinicio">
+        <div class="pg-filtro-bl">
+          <span class="pg-filtro-etiq">Reinicio</span>
+          <button type="button" class="pg-btn-reset-filtros" @click="limpiarFiltros">
             <RefreshCw :size="16" aria-hidden="true" />
             Limpiar filtros
           </button>
@@ -264,8 +299,8 @@ function guardarModalEntrada(): void {
       </div>
     </div>
 
-    <div class="stk-tab-wrap" role="region" aria-label="Existencias por producto">
-      <table class="stk-tabla">
+    <div class="pg-tabla-cuerpo" role="region" aria-label="Existencias por producto">
+      <div class="pg-tabla-scroll pg-tabla-scroll--libre"><table class="pg-tabla pg-tabla--estado">
         <thead>
           <tr>
             <th scope="col">Producto</th>
@@ -278,24 +313,26 @@ function guardarModalEntrada(): void {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="{ producto: p, existencia } in filasFiltradas" :key="p.id">
-            <td class="stk-nombre">{{ p.nombre }}</td>
+          <tr v-for="fila in filasFiltradas" :key="fila.variante.id">
+            <td class="stk-nombre">{{ fila.producto.nombre }}</td>
             <td>
-              {{ p.marca }}
-              <span class="stk-mute stk-mono-mini"> · {{ p.tipoPrenda }}</span>
+              {{ fila.producto.marca }}
+              <span class="stk-mute stk-mono-mini">
+                · {{ etiquetaTalleColor(fila.variante.talle, fila.variante.color) }}
+              </span>
             </td>
-            <td class="stk-mute stk-col-corta">{{ catalogoStore.nombreCategoria(p.categoriaId) }}</td>
-            <td class="stk-mono stk-col-corta">{{ p.codigoBarras?.trim() || '—' }}</td>
-            <td class="stk-der stk-mono stk-cant">{{ existencia }}</td>
+            <td class="stk-mute stk-col-corta">{{ catalogoStore.nombreCategoria(fila.producto.categoriaId) }}</td>
+            <td class="stk-mono stk-col-corta">{{ fila.variante.codigoBarras?.trim() || '—' }}</td>
+            <td class="stk-der stk-mono stk-cant">{{ fila.existencia }}</td>
             <td>
-              <span :class="claseEstadoCantidad(existencia)">{{ textoEstadoCantidad(existencia) }}</span>
+              <span :class="claseEstadoCantidad(fila.existencia)">{{ textoEstadoCantidad(fila.existencia) }}</span>
             </td>
             <td v-if="puedeGestionar" class="stk-acc-cel stk-der stk-acc-h">
-              <button type="button" class="stk-ac-mini" title="Registrar conteo físico" @click="abrirModalConteo(p)">
+              <button type="button" class="stk-ac-mini" title="Registrar conteo físico" @click="abrirModalConteo(fila)">
                 <ClipboardList class="stk-ac-mini-ico" :size="17" aria-hidden="true" />
                 Conteo
               </button>
-              <button type="button" class="stk-ac-mini stk-ac-mini--entr" title="Entrada tipo compra manual" @click="abrirModalEntrada(p)">
+              <button type="button" class="stk-ac-mini stk-ac-mini--entr" title="Entrada tipo compra manual" @click="abrirModalEntrada(fila)">
                 <PackagePlus class="stk-ac-mini-ico" :size="17" aria-hidden="true" />
                 Entrada
               </button>
@@ -308,6 +345,8 @@ function guardarModalEntrada(): void {
           </tr>
         </tbody>
       </table>
+      </div>
+    </div>
     </div>
 
     <Teleport to="body">
@@ -317,36 +356,47 @@ function guardarModalEntrada(): void {
         aria-labelledby="stk-dlg-conte-h"
         @close="alCerrarModalConteo"
       >
-        <div v-if="productoConteoSeleccionado" class="stk-dlg-pane" @click.stop>
+        <div
+          v-if="varianteConteoSeleccionada && productoConteoSeleccionado"
+          class="stk-dlg-pane"
+          @click.stop
+        >
           <header class="stk-dlg-cap">
-            <h2 id="stk-dlg-conte-h">Conteo físico · {{ productoConteoSeleccionado.nombre }}</h2>
+            <h2 id="stk-dlg-conte-h">
+              Conteo físico ·
+              {{
+                tituloVariante({
+                  variante: varianteConteoSeleccionada,
+                  producto: productoConteoSeleccionado,
+                  existencia: 0,
+                })
+              }}
+            </h2>
             <button type="button" class="stk-dlg-x" aria-label="Cerrar" @click="cerrarModalConteo">
               ×
             </button>
           </header>
           <p class="stk-dlg-ley">
-            Indicá cuántas unidades contaste en el depósito o en el punto de venta. El sistema toma esa
-            cifra como la existencia nueva y registra una variación contra el estado contable anterior.
+            Indicá cuántas unidades contaste de esta variante. El sistema registra la variación contra el
+            estado contable anterior.
           </p>
           <p class="stk-dlg-mini">
             <span class="stk-mono-mini">Cantidad antes (contable)</span>:
-            {{
-              stockStore.cantidadActual(productoConteoSeleccionado.id)
-            }}
+            {{ stockStore.cantidadActual(varianteConteoSeleccionada.id) }}
             unidades
           </p>
           <label class="stk-dlg-lab stk-etq-bl">
-            <span class="stk-etiqueta-bl">Unidades físicas contadas</span>
+            <span class="pg-filtro-etiq">Unidades físicas contadas</span>
             <input
               v-model="cantidadContadaTexto"
               type="text"
               inputmode="numeric"
-              class="stk-inp"
+              class="pg-filtro-inp"
               autocomplete="off"
             />
           </label>
           <label class="stk-dlg-lab stk-etq-bl">
-            <span class="stk-etiqueta-bl">Observaciones opcionales</span>
+            <span class="pg-filtro-etiq">Observaciones opcionales</span>
             <textarea
               v-model="observacionConteoTexto"
               class="stk-txt"
@@ -385,18 +435,18 @@ function guardarModalEntrada(): void {
             IVA hasta que existan remitos electrónicos reales enlazados.
           </p>
           <label class="stk-dlg-lab stk-etq-bl">
-            <span class="stk-etiqueta-bl">Unidades nuevas disponibles para ventas</span>
+            <span class="pg-filtro-etiq">Unidades nuevas disponibles para ventas</span>
             <input
               v-model="unidadesEntradaTexto"
               type="text"
               inputmode="decimal"
-              class="stk-inp"
+              class="pg-filtro-inp"
               autocomplete="off"
               placeholder="Ej. 120"
             />
           </label>
           <label class="stk-dlg-lab stk-etq-bl">
-            <span class="stk-etiqueta-bl">Referencias (opcional)</span>
+            <span class="pg-filtro-etiq">Referencias (opcional)</span>
             <textarea
               v-model="observacionEntradaTexto"
               class="stk-txt"
@@ -506,47 +556,47 @@ function guardarModalEntrada(): void {
   background: var(--color-fondo-elevado);
 }
 
-.stk-barra-col {
+.pg-barra-col {
   display: flex;
   flex-direction: column;
   gap: 0.28rem;
   min-width: 0;
 }
 
-.stk-barra-col--busq {
+.pg-barra-col--busq {
   flex: 1 1 12rem;
   min-width: min(100%, 11.5rem);
 }
 
-.stk-barra-col--cat {
+.pg-barra-col--cat {
   flex: 0 1 10.75rem;
   min-width: min(100%, 9.5rem);
 }
 
-.stk-barra-col--atajos {
+.pg-barra-col--atajos {
   flex: 1 1 15rem;
   min-width: min(100%, 14rem);
 }
 
-.stk-barra-col--reinicio {
+.pg-barra-col--reinicio {
   flex: 0 0 auto;
   margin-left: auto;
 }
 
-.stk-barra-col--reinicio .stk-btn-reset {
+.pg-barra-col--reinicio .stk-btn-reset {
   width: 100%;
   justify-content: center;
 }
 
 @media (min-width: 720px) {
-  .stk-barra-col--reinicio .stk-btn-reset {
+  .pg-barra-col--reinicio .stk-btn-reset {
     width: auto;
     min-width: 10.5rem;
   }
 }
 
 @media (max-width: 719px) {
-  .stk-barra-col--reinicio {
+  .pg-barra-col--reinicio {
     margin-left: 0;
     flex: 1 1 100%;
   }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import { etiquetaCondicionCompra } from '../../datos/condicionesCompra';
@@ -88,37 +88,38 @@ function alCerrarDialogoRegistrar() {
 </script>
 
 <template>
-  <section class="rcp" aria-labelledby="tit-reg-comp">
-    <header class="rcp-cab">
+  <section class="pg-wrap" aria-labelledby="tit-reg-comp">
+    <div class="pg-marco">
+    <header class="pg-cab">
       <div>
-        <h1 id="tit-reg-comp" class="rcp-tit">Registro de compras</h1>
-        <p class="rcp-sub">
+        <h1 id="tit-reg-comp" class="pg-titulo">Registro de compras</h1>
+        <p class="pg-sub">
           Listado local de compras registradas contra proveedores. El detalle muestra líneas recibidas; más adelante
           se enlazarán con ingreso de stock y facturación.
         </p>
       </div>
     </header>
 
-    <div class="rcp-barra">
+    <div class="pg-barra">
       <div class="rcp-busq-wrap">
-        <label class="rcp-etq" for="rcp-busq-proveedor">Buscar proveedor</label>
+        <label class="pg-filtro-etiq" for="rcp-busq-proveedor">Buscar proveedor</label>
         <input
           id="rcp-busq-proveedor"
           v-model="busquedaProveedor"
           type="search"
-          class="rcp-inp"
+          class="pg-filtro-inp"
           placeholder="Nombre del proveedor…"
           autocomplete="off"
         />
       </div>
       <div class="rcp-fechas">
         <div class="rcp-fecha-item">
-          <label class="rcp-etq" for="rcp-desde">Desde</label>
-          <input id="rcp-desde" v-model="fechaDesde" type="date" class="rcp-inp" />
+          <label class="pg-filtro-etiq" for="rcp-desde">Desde</label>
+          <input id="rcp-desde" v-model="fechaDesde" type="date" class="pg-filtro-inp" />
         </div>
         <div class="rcp-fecha-item">
-          <label class="rcp-etq" for="rcp-hasta">Hasta</label>
-          <input id="rcp-hasta" v-model="fechaHasta" type="date" class="rcp-inp" />
+          <label class="pg-filtro-etiq" for="rcp-hasta">Hasta</label>
+          <input id="rcp-hasta" v-model="fechaHasta" type="date" class="pg-filtro-inp" />
         </div>
       </div>
       <div class="rcp-acciones">
@@ -127,8 +128,8 @@ function alCerrarDialogoRegistrar() {
       </div>
     </div>
 
-    <div class="rcp-tab-wrap" role="region" aria-label="Historial de compras">
-      <table class="rcp-tabla">
+    <div class="pg-tabla-cuerpo" role="region" aria-label="Historial de compras">
+      <table class="pg-tabla pg-tabla--estado">
         <thead>
           <tr>
             <th scope="col">Fecha / hora</th>
@@ -157,6 +158,8 @@ function alCerrarDialogoRegistrar() {
           </tr>
         </tbody>
       </table>
+    </div>
+
     </div>
 
     <Teleport to="body">
@@ -232,20 +235,20 @@ function alCerrarDialogoRegistrar() {
   margin: 0 auto;
 }
 
-.rcp-tit {
+.pg-titulo {
   margin: 0;
   font-size: 1.35rem;
   font-weight: 700;
 }
 
-.rcp-sub {
+.pg-sub {
   margin: 0.45rem 0 0;
   font-size: 0.84rem;
   line-height: 1.53;
   color: var(--color-texto-apagado);
 }
 
-.rcp-barra {
+.pg-barra {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -256,7 +259,7 @@ function alCerrarDialogoRegistrar() {
 }
 
 @media (min-width: 720px) {
-  .rcp-barra {
+  .pg-barra {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-end;
@@ -278,7 +281,7 @@ function alCerrarDialogoRegistrar() {
   }
 }
 
-.rcp-etq {
+.pg-filtro-etiq {
   display: block;
   margin-bottom: 0.3rem;
   font-size: 0.72rem;
@@ -288,7 +291,7 @@ function alCerrarDialogoRegistrar() {
   color: var(--color-texto-apagado);
 }
 
-.rcp-inp {
+.pg-filtro-inp {
   width: 100%;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--color-borde);
@@ -345,28 +348,28 @@ function alCerrarDialogoRegistrar() {
   filter: brightness(1.06);
 }
 
-.rcp-tab-wrap {
+.pg-tabla-cuerpo {
   overflow-x: auto;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-control);
   background: var(--color-fondo-elevado);
 }
 
-.rcp-tabla {
+.pg-tabla pg-tabla--estado {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
 
-.rcp-tabla th,
-.rcp-tabla td {
+.pg-tabla pg-tabla--estado th,
+.pg-tabla pg-tabla--estado td {
   padding: 0.55rem 0.7rem;
   text-align: left;
   border-bottom: 1px solid var(--color-borde);
   vertical-align: middle;
 }
 
-.rcp-tabla thead th {
+.pg-tabla pg-tabla--estado thead th {
   font-weight: 600;
   color: var(--color-texto-suave);
   background: var(--color-fondo-cabecera);

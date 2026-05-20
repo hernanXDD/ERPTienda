@@ -29,6 +29,7 @@ const esMovil = useMediaQuery('(max-width: 767px)');
 
 <style scoped>
 .shell {
+  height: 100dvh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -60,9 +61,36 @@ const esMovil = useMediaQuery('(max-width: 767px)');
   width: 100%;
 }
 
+.relleno:has(.pg-wrap) {
+  max-width: none;
+  padding-inline: clamp(0.35rem, 1.5vw, 0.75rem);
+}
+
+.contenido:has(.centro-ventas) {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.relleno:has(.centro-ventas) {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-width: none;
+  padding: 0.12rem 0.45rem 0.15rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 @media (min-width: 768px) {
   .relleno {
     padding: 1.25rem 1.5rem 1.5rem;
+  }
+
+  .relleno:has(.centro-ventas) {
+    padding: 0.15rem 0.65rem 0.2rem;
   }
 }
 </style>
