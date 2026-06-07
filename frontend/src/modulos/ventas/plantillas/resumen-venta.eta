@@ -1,0 +1,107 @@
+<style><%~ it.estilos %></style>
+<article class="rv-doc">
+  <header class="rv-cab">
+    <div class="rv-cab-emisor">
+      <span class="rv-cab-logo" aria-hidden="true"><%= it.negocioIniciales %></span>
+      <div class="rv-cab-datos">
+        <p class="rv-cab-marca"><%= it.negocioNombre %></p>
+        <% if (it.tieneCuit) { %><p class="rv-cab-cuit">CUIT <%= it.negocioCuit %></p><% } %>
+        <% if (it.tieneDireccion || it.tieneLocalidad) { %>
+        <p class="rv-cab-ubicacion">
+          <% if (it.tieneDireccion) { %><%= it.negocioDireccion %><% } %>
+          <% if (it.tieneDireccion && it.tieneLocalidad) { %> · <% } %>
+          <% if (it.tieneLocalidad) { %><%= it.negocioLocalidad %><% } %>
+        </p>
+        <% } %>
+        <% if (it.tieneTelefono || it.tieneCorreo) { %>
+        <p class="rv-cab-contacto">
+          <% if (it.tieneTelefono) { %>Tel. <%= it.negocioTelefono %><% } %>
+          <% if (it.tieneTelefono && it.tieneCorreo) { %> · <% } %>
+          <% if (it.tieneCorreo) { %><%= it.negocioCorreo %><% } %>
+        </p>
+        <% } %>
+      </div>
+    </div>
+    <div class="rv-cab-doc">
+      <p class="rv-cab-doc-etiq">Comprobante de compra</p>
+      <p class="rv-cab-gracias">Gracias por su compra</p>
+    </div>
+  </header>
+
+  <section class="rv-id" aria-label="Identificación del comprobante">
+    <div class="rv-id-item">
+      <span class="rv-etiq">N.º de operación</span>
+      <strong class="rv-num"><%= it.numero %></strong>
+    </div>
+    <div class="rv-id-item rv-id-item--fecha">
+      <span class="rv-etiq">Fecha y hora</span>
+      <p class="rv-fecha"><%= it.fecha %> · <%= it.hora %></p>
+    </div>
+  </section>
+
+  <section class="rv-resumen" aria-label="Datos de la compra">
+    <div class="rv-resumen-fila">
+      <span class="rv-etiq">Cliente</span>
+      <p class="rv-valor"><%= it.cliente %></p>
+    </div>
+    <div class="rv-resumen-fila">
+      <span class="rv-etiq">Forma de pago</span>
+      <p class="rv-valor rv-valor--pago"><%= it.metodoPago %></p>
+    </div>
+  </section>
+
+  <section class="rv-detalle" aria-label="Detalle de productos">
+    <h2 class="rv-seccion-tit">Detalle de su compra</h2>
+    <p class="rv-detalle-res"><%= it.cantidadLineas %> · <%= it.cantidadArticulos %></p>
+    <table class="rv-tabla">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="der">Cant.</th>
+          <th class="der">P. unit.</th>
+          <th class="der">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+      <% it.lineas.forEach(function (ln) { %>
+        <tr>
+          <td class="rv-tabla-prod"><%= ln.nombre %></td>
+          <td class="der"><%= ln.cantidad %></td>
+          <td class="der"><%= ln.precioUnitario %></td>
+          <td class="der rv-tabla-sub"><%= ln.importe %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">Total abonado</td>
+          <td class="der rv-tabla-total"><%= it.totalPagado %></td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  <% if (it.tieneObservaciones) { %>
+  <section class="rv-obs" aria-label="Observaciones">
+    <span class="rv-etiq">Observaciones</span>
+    <p class="rv-obs-txt"><%= it.observaciones %></p>
+  </section>
+  <% } %>
+
+  <footer class="rv-pie">
+    <% if (it.tieneRedesSociales) { %>
+    <div class="rv-pie-redes">
+      <% it.redesSociales.forEach(function (red) { %>
+      <span class="rv-pie-red"><strong><%= red.etiqueta %>:</strong> <%= red.texto %></span>
+      <% }) %>
+    </div>
+    <% } %>
+    <% if (it.tieneAtendidoPor) { %>
+    <p class="rv-pie-atendido">Le atendió: <%= it.atendidoPor %></p>
+    <% } %>
+    <p class="rv-pie-legal">
+      Este documento es un comprobante interno de compra. No reemplaza factura ni comprobante fiscal.
+    </p>
+    <p class="rv-pie-emision">Emitido el <%= it.generadoEl %></p>
+  </footer>
+</article>

@@ -1,0 +1,37 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc">
+  <!-- PIE_REPORTE -->
+  <header class="rep-enc-pro">
+    <!-- EMISOR_REPORTE -->
+    <div class="rep-doc-meta">
+      <div class="rep-meta-grid">
+        <div class="rep-meta-item"><strong>Período</strong><span><%= it.rangoLegible %></span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="rep-kpis">
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Auditorías</span><span class="rep-kpi-val"><%= it.totalAuditorias %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Ventas</span><span class="rep-kpi-val"><%= it.cantidadVentas %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Compras</span><span class="rep-kpi-val"><%= it.cantidadCompras %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Conteos</span><span class="rep-kpi-val"><%= it.cantidadConteos %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Variación neta</span><span class="rep-kpi-val"><%= it.variacionNetaTotal %></span></div>
+  </div>
+
+  <% if (it.sinFilas) { %>
+  <p class="rep-vacio">No hay movimientos de stock registrados en el período seleccionado.</p>
+  <% } else { %>
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Historial de auditorías</h2>
+    <table class="rep-tabla">
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Operación</th><th>Referencia</th><th class="der">Movs.</th><th class="der">Var. neta</th><th>Registrado</th></tr></thead>
+      <tbody>
+      <% it.filas.forEach(function (f) { %>
+        <tr><td><%= f.fecha %></td><td><%= f.tipo %></td><td><%= f.titulo %></td><td><%= f.referencia %></td><td class="der"><%= f.movimientos %></td><td class="der"><%= f.variacionNeta %></td><td><%= f.registradoPor %></td></tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </section>
+  <% } %>
+
+</article>

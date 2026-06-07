@@ -1,0 +1,36 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc">
+  <!-- PIE_REPORTE -->
+  <header class="rep-enc-pro">
+    <!-- EMISOR_REPORTE -->
+    <div class="rep-doc-meta">
+      <div class="rep-meta-grid">
+        <div class="rep-meta-item"><strong>Período</strong><span><%= it.rangoLegible %></span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="rep-kpis">
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Categorías con ventas</span><span class="rep-kpi-val"><%= it.categoriasConVentas %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Unidades vendidas</span><span class="rep-kpi-val"><%= it.unidadesVendidas %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Facturación total</span><span class="rep-kpi-val"><%= it.importeTotal %></span></div>
+  </div>
+
+  <% if (it.sinFilas) { %>
+  <p class="rep-vacio">No hay ventas registradas en el período seleccionado.</p>
+  <% } else { %>
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Desglose por rubro</h2>
+    <table class="rep-tabla">
+      <thead><tr><th>Categoría</th><th class="der">Unidades</th><th class="der">Importe</th><th class="der">%</th></tr></thead>
+      <tbody>
+      <% it.filas.forEach(function (f) { %>
+        <tr><td><%= f.categoria %></td><td class="der"><%= f.unidades %></td><td class="der"><%= f.importe %></td><td class="der"><%= f.porcentaje %></td></tr>
+      <% }) %>
+      </tbody>
+      <tfoot><tr><td>Total período</td><td class="der"><%= it.unidadesVendidas %></td><td class="der"><%= it.importeTotal %></td><td></td></tr></tfoot>
+    </table>
+  </section>
+  <% } %>
+
+</article>

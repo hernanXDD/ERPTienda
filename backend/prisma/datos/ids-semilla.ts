@@ -1,0 +1,60 @@
+/** IDs de semilla — 6 dígitos por tabla (000001, 000002, …). */
+
+export const ID_USUARIO_ADMIN = '000001';
+export const ID_USUARIO_DUENO = '000002';
+export const ID_USUARIO_EMPLEADO = '000003';
+
+export const ID_CATEGORIA_REMERA = '000001';
+export const ID_CATEGORIA_PANTALON = '000002';
+export const ID_CATEGORIA_BUZO = '000003';
+export const ID_CATEGORIA_CALZADO = '000004';
+export const ID_CATEGORIA_ACCESORIOS = '000005';
+export const ID_CATEGORIA_CAMPERA = '000006';
+export const ID_CATEGORIA_DEPORTIVO = '000007';
+export const ID_CATEGORIA_INFANTIL = '000008';
+
+export const ID_PRODUCTO_REMERA = '000001';
+export const ID_PRODUCTO_PANTALON = '000002';
+export const ID_PRODUCTO_BUZO = '000003';
+export const ID_PRODUCTO_ZAPATILLA = '000004';
+export const ID_PRODUCTO_CAMPERA = '000005';
+export const ID_PRODUCTO_GORRA = '000006';
+export const ID_PRODUCTO_REMERA_OVERSIZE = '000007';
+export const ID_PRODUCTO_SHORT = '000008';
+export const ID_PRODUCTO_JEAN = '000009';
+export const ID_PRODUCTO_REMERA_NINO = '000010';
+
+export const ID_VARIANTE_REMERA_S_NEGRO = '000001';
+export const ID_VARIANTE_REMERA_M_NEGRO = '000002';
+export const ID_VARIANTE_REMERA_L_NEGRO = '000003';
+export const ID_VARIANTE_REMERA_M_ROJO = '000004';
+export const ID_VARIANTE_PANTALON_40_AZUL = '000005';
+export const ID_VARIANTE_PANTALON_42_AZUL = '000006';
+export const ID_VARIANTE_BUZO_M_GRIS = '000007';
+export const ID_VARIANTE_ZAPATILLA_40_NEGRO = '000008';
+export const ID_VARIANTE_ZAPATILLA_41_NEGRO = '000009';
+export const ID_VARIANTE_CAMPERA_M_NEGRO = '000010';
+export const ID_VARIANTE_GORRA_UNICA_NEGRO = '000011';
+export const ID_VARIANTE_REMERA_OVERSIZE_L_BLANCO = '000012';
+export const ID_VARIANTE_SHORT_M_AZUL = '000013';
+export const ID_VARIANTE_JEAN_38_AZUL = '000014';
+export const ID_VARIANTE_JEAN_40_AZUL = '000015';
+export const ID_VARIANTE_BUZO_L_GRIS = '000016';
+export const ID_VARIANTE_REMERA_S_BLANCO = '000017';
+export const ID_VARIANTE_REMERA_NINO_10_AZUL = '000018';
+
+export const ID_CLIENTE_001 = '000001';
+export const ID_CLIENTE_002 = '000002';
+export const ID_CLIENTE_003 = '000003';
+export const ID_CLIENTE_004 = '000004';
+export const ID_CLIENTE_005 = '000005';
+
+export const ID_PROVEEDOR_001 = '000001';
+export const ID_PROVEEDOR_002 = '000002';
+export const ID_PROVEEDOR_003 = '000003';
+
+/** Registro único de configuración del negocio / tienda. */
+export const ID_NEGOCIO = '000001';
+
+export const ID_ESTADO_FACTURACION_PENDIENTE = '000001';
+export const ID_ESTADO_FACTURACION_FACTURADA = '000002';

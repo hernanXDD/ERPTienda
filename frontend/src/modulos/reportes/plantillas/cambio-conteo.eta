@@ -1,0 +1,53 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc">
+  <!-- PIE_REPORTE -->
+  <header class="rep-enc-pro">
+    <!-- EMISOR_REPORTE -->
+    <div class="rep-doc-meta">
+      <div class="rep-meta-grid">
+        <div class="rep-meta-item"><strong>Operador</strong><span><%= it.operador %></span></div>
+        <div class="rep-meta-item"><strong>Archivo origen</strong><span><%= it.archivoOrigen %></span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="rep-kpis">
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Artículos ajustados</span><span class="rep-kpi-val"><%= it.cantidadCambios %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Unidades en variación</span><span class="rep-kpi-val"><%= it.totalUnidadesVariacion %></span></div>
+  </div>
+
+  <% if (it.observacion !== '—') { %>
+  <p class="rep-nota"><strong>Observación:</strong> <%= it.observacion %></p>
+  <% } %>
+
+  <% if (it.sinFilas) { %>
+  <p class="rep-vacio">No hay cambios de stock para mostrar.</p>
+  <% } else { %>
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Detalle de ajustes por conteo físico</h2>
+    <table class="rep-tabla">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th class="der">Stock inicial</th>
+          <th class="der">Stock final</th>
+          <th class="der">Variación</th>
+        </tr>
+      </thead>
+      <tbody>
+      <% it.filas.forEach(function (f) { %>
+        <tr>
+          <td><%= f.codigo %></td>
+          <td><%= f.articulo %></td>
+          <td class="der"><%= f.stockInicial %></td>
+          <td class="der"><%= f.stockFinal %></td>
+          <td class="der"><%= f.variacion %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </section>
+  <% } %>
+
+</article>

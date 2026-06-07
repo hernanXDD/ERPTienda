@@ -1,0 +1,426 @@
+// ERP Tienda — esquema inicial (3FN, tablas en singular)
+// Alineado con tipos del frontend Vue (mocks → API real)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// —— Enums ——
+
+enum RolUsuario {
+  ADMIN
+  DUENO
+  EMPLEADO
+
+  @@map("rol_usuario")
+}
+
+enum FormaPagoVenta {
+  EFECTIVO
+  DEBITO
+  CREDITO
+  TRANSFERENCIA
+  CUENTA_CORRIENTE
+
+  @@map("forma_pago_venta")
+}
+
+enum CondicionCompra {
+  CONTADO
+  CUENTA_PROVEEDOR
+
+  @@map("condicion_compra")
+}
+
+enum CondicionIvaCliente {
+  CONSUMIDOR_FINAL
+  RESPONSABLE_INSCRIPTO
+  MONOTRIBUTO
+  EXENTO
+  NO_RESPONSABLE
+
+  @@map("condicion_iva_cliente")
+}
+
+enum TipoMovimientoCuentaCorriente {
+  cargo
+  pagoRegistrado
+
+  @@map("tipo_movimiento_cuenta_corriente")
+}
+
+enum TipoAuditoriaStock {
+  venta
+  compra
+  conteo
+
+  @@map("tipo_auditoria_stock")
+}
+
+// —— Usuarios y seguridad ——
+
+model Usuario {
+  id                       String     @id @db.Char(6)
+  nombre                   String     @db.VarChar(64)
+  apellido                 String     @db.VarChar(64)
+  nombreUsuario            String     @unique @map("nombre_usuario") @db.VarChar(64)
+  contrasenaHash           String     @map("contrasena_hash") @db.VarChar(255)
+  contrasenaEstaBlanqueada Boolean    @default(false) @map("contrasena_esta_blanqueada")
+  rol                      RolUsuario
+  habilitado               Boolean    @default(true)
+  /// Permisos operativos + menús visibles (JSON, mismo shape que frontend)
+  permisosJson             Json       @map("permisos_json")
+  fechaCreacion            DateTime   @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion       DateTime   @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  fechaEliminacion         DateTime?  @map("fecha_eliminacion") @db.Timestamptz(3)
+
+  movimientosStock           MovimientoStock[]
+  movimientosCuentaCorriente MovimientoCuentaCorriente[] @relation("MovimientoCcRegistradoPor")
+  auditoriasStock            AuditoriaStock[]
+
+  @@index([habilitado])
+  @@index([rol])
+  @@map("usuario")
+}
+
+// —— Catálogo ——
+
+model Categoria {
+  id                 String   @id @db.Char(6)
+  nombre             String   @unique @db.VarChar(120)
+  descripcion        String   @default("") @db.VarChar(500)
+  fechaCreacion      DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+
+  productos Producto[]
+
+  @@map("categoria")
+}
+
+model Producto {
+  id                 String    @id @db.Char(6)
+  nombre             String    @db.VarChar(200)
+  marca              String    @db.VarChar(120)
+  descripcion        String    @default("") @db.VarChar(1000)
+  categoriaId        String    @map("categoria_id") @db.Char(6)
+  precioVenta        Decimal   @map("precio_venta") @db.Decimal(14, 2)
+  fechaCreacion      DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  fechaEliminacion   DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
+
+  categoria Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  variantes Variante[]
+
+  @@index([categoriaId])
+  @@index([nombre])
+  @@map("producto")
+}
+
+model Variante {
+  id                 String   @id @db.Char(6)
+  productoId         String   @map("producto_id") @db.Char(6)
+  talle              String   @db.VarChar(32)
+  color              String   @db.VarChar(64)
+  codigoBarras       String   @default("") @map("codigo_barras") @db.VarChar(64)
+  activa             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+
+  producto         Producto          @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  stock            StockVariante?
+  movimientosStock MovimientoStock[]
+  lineasVenta      VentaLinea[]
+  lineasCompra     CompraLinea[]
+
+  @@unique([productoId, talle, color])
+  @@index([codigoBarras])
+  @@index([activa])
+  @@map("variante")
+}
+
+/// Saldo vigente por variante (una fila por SKU)
+model StockVariante {
+  varianteId         String   @id @map("variante_id") @db.Char(6)
+  cantidadActual     Int      @default(0) @map("cantidad_actual")
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+
+  variante Variante @relation(fields: [varianteId], references: [id], onDelete: Cascade)
+
+  @@map("stock_variante")
+}
+
+/// Agrupación de movimientos de stock (venta, compra o conteo físico).
+model AuditoriaStock {
+  id                    String             @id @db.Char(6)
+  tipo                  TipoAuditoriaStock
+  fecha                 DateTime           @default(now()) @db.Timestamptz(3)
+  titulo                String             @db.VarChar(255)
+  referencia            String?            @db.VarChar(32)
+  nota                  String?            @db.VarChar(500)
+  variacionNeta         Int                @default(0) @map("variacion_neta")
+  cantidadMovimientos   Int                @default(0) @map("cantidad_movimientos")
+  ventaId               String?            @map("venta_id") @db.Char(6)
+  compraId              String?            @map("compra_id") @db.Char(6)
+  ejecutadoPorUsuarioId String?            @map("ejecutado_por_usuario_id") @db.Char(6)
+  fechaCreacion         DateTime           @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+
+  venta               Venta?            @relation(fields: [ventaId], references: [id], onDelete: SetNull)
+  compra              Compra?           @relation(fields: [compraId], references: [id], onDelete: SetNull)
+  ejecutadoPorUsuario Usuario?          @relation(fields: [ejecutadoPorUsuarioId], references: [id], onDelete: SetNull)
+  movimientos         MovimientoStock[]
+
+  @@index([fecha(sort: Desc)])
+  @@index([tipo])
+  @@index([ventaId])
+  @@index([compraId])
+  @@map("auditoria_stock")
+}
+
+/// Catálogo de motivos para movimientos de stock.
+model Motivo {
+  id                 String   @id @db.Char(6)
+  nombre             String   @db.VarChar(120)
+  descripcion        String   @default("") @db.VarChar(500)
+  activo             Boolean  @default(true)
+  fechaCreacion      DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+
+  movimientosStock MovimientoStock[]
+
+  @@index([activo])
+  @@map("motivo")
+}
+
+model MovimientoStock {
+  id                    String                @id @db.Char(6)
+  fecha                 DateTime              @default(now()) @db.Timestamptz(3)
+  varianteId            String                @map("variante_id") @db.Char(6)
+  nombreVariante        String                @map("nombre_variante") @db.VarChar(255)
+  motivoId              String                @map("motivo_id") @db.Char(6)
+  cantidadVariacion     Int                   @map("cantidad_variacion")
+  stockResultante       Int                   @map("stock_resultante")
+  ventaId               String?               @map("venta_id") @db.Char(6)
+  numeroVenta           String?               @map("numero_venta") @db.VarChar(32)
+  compraId              String?               @map("compra_id") @db.Char(6)
+  auditoriaStockId      String?               @map("auditoria_stock_id") @db.Char(6)
+  nota                  String?               @db.VarChar(500)
+  ejecutadoPorUsuarioId String?               @map("ejecutado_por_usuario_id") @db.Char(6)
+  fechaCreacion         DateTime              @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+
+  variante            Variante        @relation(fields: [varianteId], references: [id], onDelete: Restrict)
+  motivo              Motivo          @relation(fields: [motivoId], references: [id], onDelete: Restrict)
+  venta               Venta?          @relation(fields: [ventaId], references: [id], onDelete: SetNull)
+  compra              Compra?         @relation(fields: [compraId], references: [id], onDelete: SetNull)
+  auditoriaStock      AuditoriaStock? @relation(fields: [auditoriaStockId], references: [id], onDelete: SetNull)
+  ejecutadoPorUsuario Usuario?        @relation(fields: [ejecutadoPorUsuarioId], references: [id], onDelete: SetNull)
+
+  @@index([varianteId, fecha(sort: Desc)])
+  @@index([motivoId])
+  @@index([ventaId])
+  @@index([compraId])
+  @@index([auditoriaStockId])
+  @@map("movimiento_stock")
+}
+
+// —— Clientes y cuenta corriente ——
+
+model Cliente {
+  id                          String    @id @db.Char(6)
+  nombre                      String    @db.VarChar(200)
+  documento                   String    @unique @db.VarChar(32)
+  correoElectronico           String    @default("") @map("correo_electronico") @db.VarChar(255)
+  telefonoPrincipal           String    @default("") @map("telefono_principal") @db.VarChar(32)
+  telefonoAlternativo         String    @default("") @map("telefono_alternativo") @db.VarChar(32)
+  direccion                   String              @default("") @db.VarChar(500)
+  condicionIva                CondicionIvaCliente @default(CONSUMIDOR_FINAL) @map("condicion_iva")
+  limiteCompraCuentaCorriente Decimal             @default(0) @map("limite_compra_cuenta_corriente") @db.Decimal(14, 2)
+  cuentaCorrienteHabilitada   Boolean   @default(false) @map("cuenta_corriente_habilitada")
+  habilitado                  Boolean   @default(true)
+  fechaCreacion               DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion          DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  fechaEliminacion            DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
+
+  ventas                     Venta[]
+  movimientosCuentaCorriente MovimientoCuentaCorriente[]
+
+  @@index([habilitado])
+  @@index([nombre])
+  @@map("cliente")
+}
+
+model MovimientoCuentaCorriente {
+  id                     String                        @id @db.Char(6)
+  clienteId              String                        @map("cliente_id") @db.Char(6)
+  fecha                  DateTime                      @default(now()) @db.Timestamptz(3)
+  tipoMovimiento         TipoMovimientoCuentaCorriente @map("tipo_movimiento")
+  importe                Decimal                       @db.Decimal(14, 2)
+  descripcion            String                        @db.VarChar(500)
+  auditoriaPagoJson      Json?                         @map("auditoria_pago_json")
+  registradoPorUsuarioId String?                       @map("registrado_por_usuario_id") @db.Char(6)
+  fechaCreacion          DateTime                      @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+
+  cliente              Cliente  @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  registradoPorUsuario Usuario? @relation("MovimientoCcRegistradoPor", fields: [registradoPorUsuarioId], references: [id], onDelete: SetNull)
+
+  @@index([clienteId, fecha(sort: Desc)])
+  @@map("movimiento_cuenta_corriente")
+}
+
+// —— Proveedores y compras ——
+
+model Proveedor {
+  id                        String    @id @db.Char(6)
+  nombre                    String    @db.VarChar(200)
+  documento                 String    @unique @db.VarChar(32)
+  correoElectronico         String    @default("") @map("correo_electronico") @db.VarChar(255)
+  telefonoPrincipal         String    @default("") @map("telefono_principal") @db.VarChar(32)
+  telefonoAlternativo       String    @default("") @map("telefono_alternativo") @db.VarChar(32)
+  direccion                 String    @default("") @db.VarChar(500)
+  limiteCreditoCompras      Decimal   @default(0) @map("limite_credito_compras") @db.Decimal(14, 2)
+  comprasCreditoHabilitadas Boolean   @default(false) @map("compras_credito_habilitadas")
+  habilitado                Boolean   @default(true)
+  fechaCreacion             DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion        DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  fechaEliminacion          DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
+
+  compras Compra[]
+
+  @@index([habilitado])
+  @@map("proveedor")
+}
+
+model Compra {
+  id                     String          @id @db.Char(6)
+  numero                 String          @unique @db.VarChar(32)
+  fecha                  DateTime        @default(now()) @db.Timestamptz(3)
+  proveedorId            String          @map("proveedor_id") @db.Char(6)
+  nombreProveedorMostrar String          @map("nombre_proveedor_mostrar") @db.VarChar(200)
+  condicionCompra        CondicionCompra @map("condicion_compra")
+  total                  Decimal         @db.Decimal(14, 2)
+  observaciones          String          @default("") @db.VarChar(1000)
+  fechaCreacion          DateTime        @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+
+  proveedor Proveedor     @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  lineas    CompraLinea[]
+  auditoriasStock AuditoriaStock[]
+  movimientosStock MovimientoStock[]
+
+  @@index([fecha(sort: Desc)])
+  @@index([proveedorId])
+  @@map("compra")
+}
+
+model CompraLinea {
+  id            String  @id @db.Char(6)
+  compraId      String  @map("compra_id") @db.Char(6)
+  varianteId    String? @map("variante_id") @db.Char(6)
+  nombre        String  @db.VarChar(255)
+  cantidad      Int
+  costoUnitario Decimal @map("costo_unitario") @db.Decimal(14, 2)
+  subtotal      Decimal @db.Decimal(14, 2)
+
+  compra   Compra    @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  variante Variante? @relation(fields: [varianteId], references: [id], onDelete: SetNull)
+
+  @@index([compraId])
+  @@map("compra_linea")
+}
+
+// —— Ventas ——
+
+model EstadoFacturacion {
+  id              String   @id @db.Char(6)
+  codigo          String   @unique @db.VarChar(32)
+  nombre          String   @db.VarChar(64)
+  fechaCreacion   DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+
+  ventas Venta[]
+
+  @@map("estado_facturacion")
+}
+
+model Venta {
+  id                      String              @id @db.Char(6)
+  numero                  String              @unique @db.VarChar(32)
+  fecha                   DateTime            @default(now()) @db.Timestamptz(3)
+  clienteId               String?             @map("cliente_id") @db.Char(6)
+  nombreClienteMostrar    String              @map("nombre_cliente_mostrar") @db.VarChar(200)
+  documentoClienteMostrar String              @default("") @map("documento_cliente_mostrar") @db.VarChar(32)
+  condicionIvaCliente     CondicionIvaCliente @default(CONSUMIDOR_FINAL) @map("condicion_iva_cliente")
+  formaPago               FormaPagoVenta      @map("forma_pago")
+  total                   Decimal             @db.Decimal(14, 2)
+  facturacion             String              @default("") @db.VarChar(32)
+  estadoFacturacionId     String              @map("estado_facturacion_id") @db.Char(6)
+  observaciones           String              @default("") @db.VarChar(1000)
+  fechaCreacion           DateTime            @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+
+  cliente           Cliente?          @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  estadoFacturacion EstadoFacturacion @relation(fields: [estadoFacturacionId], references: [id], onDelete: Restrict)
+  lineas            VentaLinea[]
+  movimientosStock  MovimientoStock[]
+  auditoriasStock   AuditoriaStock[]
+
+  @@index([fecha(sort: Desc)])
+  @@index([clienteId])
+  @@index([estadoFacturacionId])
+  @@map("venta")
+}
+
+model VentaLinea {
+  id             String  @id @db.Char(6)
+  ventaId        String  @map("venta_id") @db.Char(6)
+  varianteId     String  @map("variante_id") @db.Char(6)
+  nombre         String  @db.VarChar(255)
+  cantidad       Int
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(14, 2)
+  subtotal       Decimal @db.Decimal(14, 2)
+
+  venta    Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  variante Variante @relation(fields: [varianteId], references: [id], onDelete: Restrict)
+
+  @@index([ventaId])
+  @@map("venta_linea")
+}
+
+// —— Configuración del negocio (fila única) ——
+
+model Negocio {
+  id                String   @id @db.Char(6)
+  nombre            String   @db.VarChar(200)
+  cuit              String   @default("") @db.VarChar(20)
+  correoElectronico String   @default("") @map("correo_electronico") @db.VarChar(255)
+  telefono          String   @default("") @db.VarChar(32)
+  direccion         String   @default("") @db.VarChar(500)
+  ciudad            String   @default("") @db.VarChar(120)
+  provincia         String   @default("") @db.VarChar(120)
+  codigoPostal      String   @default("") @map("codigo_postal") @db.VarChar(16)
+  instagram         String   @default("") @db.VarChar(120)
+  mostrarInstagram  Boolean  @default(false) @map("mostrar_instagram")
+  twitter           String   @default("") @db.VarChar(120)
+  mostrarTwitter    Boolean  @default(false) @map("mostrar_twitter")
+  tiktok            String   @default("") @db.VarChar(120)
+  mostrarTiktok     Boolean  @default(false) @map("mostrar_tiktok")
+  fechaCreacion     DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+
+  @@map("negocio")
+}
+
+// —— Parámetros operativos de la tienda (fila única) ——
+
+model ConfiguracionSistema {
+  id                         String   @id @db.Char(6)
+  maximoCuentaCorriente      Decimal  @default(500000) @map("maximo_cuenta_corriente") @db.Decimal(14, 2)
+  porcentajeGananciaSugerida Decimal  @default(35) @map("porcentaje_ganancia_sugerida") @db.Decimal(6, 2)
+  diasDeudaCuentaCorriente   Int      @default(30) @map("dias_deuda_cuenta_corriente")
+  stockMinimoAlerta          Int      @default(5) @map("stock_minimo_alerta")
+  fechaCreacion              DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion         DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+
+  @@map("configuracion_sistema")
+}

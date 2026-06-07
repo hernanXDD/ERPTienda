@@ -1,0 +1,513 @@
+/* Cuerpo de formularios · Configuración (Negocio / Sistema). Encabezados pg-cab fuera de alcance. */
+
+.cfg-ficha-vista {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: min(97vw, 1320px);
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.cfg-ficha-marco {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cfg-ficha-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(12, 18, 32, 0.3) 0%, rgba(7, 11, 20, 0.12) 100%);
+}
+
+.cfg-ficha-carga {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  color: var(--color-texto-apagado);
+  font-size: 0.88rem;
+}
+
+.cfg-ficha-carga-pulso {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  border: 2px solid rgba(124, 140, 240, 0.22);
+  border-top-color: var(--color-acento);
+  animation: cfg-ficha-girar 0.7s linear infinite;
+}
+
+@keyframes cfg-ficha-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cfg-ficha-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.cfg-ficha-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.72rem clamp(1rem, 3vw, 1.55rem) 0.6rem;
+}
+
+.cfg-ficha-contenido {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  justify-content: space-evenly;
+}
+
+.cfg-ficha-bloque {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(52, 68, 96, 0.52);
+  background: rgba(14, 20, 34, 0.74);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 6px 22px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+}
+
+.cfg-ficha-bloque-enc {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  padding: 0.58rem 0.9rem;
+  border-bottom: 1px solid rgba(52, 68, 96, 0.42);
+  background: rgba(21, 29, 46, 0.4);
+}
+
+.cfg-ficha-bloque-ico {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 8px;
+  color: var(--color-acento-hover);
+  background: rgba(124, 140, 240, 0.11);
+  border: 1px solid rgba(124, 140, 240, 0.22);
+}
+
+.cfg-ficha-bloque-tit {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--color-texto);
+  line-height: 1.28;
+}
+
+.cfg-ficha-bloque-cuerpo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.72rem 0.9rem 0.82rem;
+}
+
+.cfg-ficha-grid {
+  display: grid;
+  gap: 0.62rem;
+  align-content: center;
+}
+
+@media (min-width: 640px) {
+  .cfg-ficha-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0.85rem;
+  }
+
+  .cfg-ficha-grid--tres {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cfg-ficha-grid--vertical {
+    grid-template-columns: 1fr;
+  }
+
+  .cfg-ficha-campo--ancho {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 900px) {
+  .cfg-ficha-contenido--negocio {
+    max-width: 58rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 0.72rem;
+    justify-content: stretch;
+  }
+
+  .cfg-ficha-contenido--negocio .cfg-ficha-bloque:nth-child(3),
+  .cfg-ficha-contenido--negocio .cfg-ficha-bloque:nth-child(4) {
+    grid-column: auto;
+  }
+
+  .cfg-ficha-contenido--negocio .cfg-ficha-feedback {
+    grid-column: 1 / -1;
+  }
+
+  .cfg-ficha-contenido--sistema {
+    max-width: 58rem;
+  }
+}
+
+.cfg-ficha-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.cfg-ficha-etiq {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-texto);
+  line-height: 1.3;
+}
+
+.cfg-ficha-ayuda {
+  margin: 0 0 0.15rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--color-texto-apagado);
+}
+
+.cfg-ficha-inp-grupo {
+  display: flex;
+  align-items: stretch;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .cfg-ficha-inp-grupo--corto {
+    max-width: 15.5rem;
+  }
+}
+
+.cfg-ficha-inp-prefijo,
+.cfg-ficha-inp-sufijo {
+  display: flex;
+  align-items: center;
+  padding: 0 0.68rem;
+  border: 1px solid rgba(52, 68, 96, 0.75);
+  background: rgba(21, 29, 46, 0.55);
+  color: var(--color-texto-apagado);
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cfg-ficha-inp-prefijo {
+  border-right: none;
+  border-radius: 9px 0 0 9px;
+}
+
+.cfg-ficha-inp-sufijo {
+  border-left: none;
+  border-radius: 0 9px 9px 0;
+}
+
+.cfg-ficha-inp {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 2.45rem;
+  padding: 0.52rem 0.78rem;
+  border: 1px solid rgba(52, 68, 96, 0.75);
+  border-radius: 9px;
+  background: rgba(7, 11, 20, 0.62);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.32;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.cfg-ficha-inp--prefijo {
+  border-radius: 0 9px 9px 0;
+}
+
+.cfg-ficha-inp--sufijo {
+  border-radius: 9px 0 0 9px;
+}
+
+.cfg-ficha-inp-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.cfg-ficha-inp::placeholder {
+  color: rgba(148, 163, 184, 0.45);
+}
+
+.cfg-ficha-inp:hover {
+  border-color: rgba(124, 140, 240, 0.38);
+  background: rgba(7, 11, 20, 0.78);
+}
+
+.cfg-ficha-inp:focus {
+  outline: none;
+  border-color: rgba(124, 140, 240, 0.72);
+  background: rgba(7, 11, 20, 0.82);
+  box-shadow: 0 0 0 3px rgba(124, 140, 240, 0.15);
+}
+
+.cfg-ficha-inp:disabled {
+  opacity: 1;
+  cursor: default;
+  color: var(--color-texto);
+  border-color: rgba(52, 68, 96, 0.42);
+  background: rgba(7, 11, 20, 0.38);
+  box-shadow: none;
+}
+
+.cfg-ficha-inp:disabled:hover {
+  border-color: rgba(52, 68, 96, 0.42);
+  background: rgba(7, 11, 20, 0.38);
+}
+
+.cfg-ficha-form--solo-lectura .cfg-ficha-inp-grupo {
+  opacity: 0.92;
+}
+
+.cfg-ficha-form--solo-lectura .cfg-ficha-inp-prefijo,
+.cfg-ficha-form--solo-lectura .cfg-ficha-inp-sufijo {
+  background: rgba(21, 29, 46, 0.38);
+  border-color: rgba(52, 68, 96, 0.42);
+  color: var(--color-texto-apagado);
+}
+
+.cfg-ficha-redes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+}
+
+.cfg-ficha-red {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
+.cfg-ficha-red-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.cfg-ficha-red-nom {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.cfg-ficha-red-sw {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.cfg-ficha-red-sw-txt {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-texto-apagado);
+  min-width: 3.2rem;
+  text-align: right;
+}
+
+.cfg-ficha-red-sw-txt--activa {
+  color: var(--color-acento-hover);
+}
+
+.cfg-ficha-sw {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.cfg-ficha-sw-input {
+  position: absolute;
+  inset: 0;
+  width: 2.35rem;
+  height: 1.28rem;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.cfg-ficha-sw-input:disabled {
+  cursor: not-allowed;
+}
+
+.cfg-ficha-sw-ui {
+  position: relative;
+  display: block;
+  width: 2.35rem;
+  height: 1.28rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-borde);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+.cfg-ficha-sw-ui::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0.16rem;
+  width: 0.92rem;
+  height: 0.92rem;
+  border-radius: 50%;
+  background: var(--color-texto-apagado);
+  transform: translate(0, -50%);
+  transition:
+    transform 0.18s ease,
+    background 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.cfg-ficha-sw-input:focus-visible + .cfg-ficha-sw-ui {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
+.cfg-ficha-sw-input:checked + .cfg-ficha-sw-ui {
+  background: rgba(124, 140, 240, 0.38);
+  border-color: rgba(124, 140, 240, 0.58);
+}
+
+.cfg-ficha-sw-input:checked + .cfg-ficha-sw-ui::after {
+  transform: translate(1.05rem, -50%);
+  background: var(--color-acento-hover);
+}
+
+.cfg-ficha-sw-input:disabled + .cfg-ficha-sw-ui {
+  opacity: 0.72;
+}
+
+.cfg-ficha-inp--red-oculta {
+  opacity: 0.72;
+}
+
+.cfg-ficha-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.62rem 0.75rem;
+  border-radius: 9px;
+  border: 1px solid rgba(124, 140, 240, 0.2);
+  background: rgba(124, 140, 240, 0.06);
+}
+
+.cfg-ficha-nota-ico {
+  flex-shrink: 0;
+  margin-top: 0.08rem;
+  color: var(--color-acento-hover);
+  opacity: 0.88;
+}
+
+.cfg-ficha-nota-txt {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.42;
+  color: var(--color-texto-apagado);
+}
+
+.cfg-ficha-feedback {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cfg-ficha-alerta {
+  margin: 0;
+  padding: 0.62rem 0.82rem;
+  border-radius: 9px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.38;
+}
+
+.cfg-ficha-alerta--error {
+  color: #fda4af;
+  background: rgba(251, 113, 133, 0.08);
+  border: 1px solid rgba(251, 113, 133, 0.32);
+}
+
+.cfg-ficha-alerta--ok {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.32);
+}
+
+.cfg-ficha-pie {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.72rem clamp(1rem, 3vw, 1.55rem) 0.82rem;
+  border-top: 1px solid rgba(52, 68, 96, 0.52);
+  background: rgba(14, 20, 34, 0.92);
+  backdrop-filter: blur(6px);
+}
+
+.cfg-ficha-pie .pg-btn-primario {
+  min-width: 11.5rem;
+  min-height: 2.35rem;
+  padding: 0.48rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+.cfg-ficha-pie .pg-btn-primario:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  filter: none;
+}

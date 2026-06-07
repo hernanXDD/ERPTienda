@@ -1,0 +1,37 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc">
+  <!-- PIE_REPORTE -->
+  <header class="rep-enc-pro">
+    <!-- EMISOR_REPORTE -->
+    <div class="rep-doc-meta">
+      <div class="rep-meta-grid">
+        <div class="rep-meta-item"><strong>Período consulta</strong><span><%= it.rangoLegible %></span></div>
+      </div>
+    </div>
+  </header>
+
+  <p class="rep-nota"><%= it.notaCorte %></p>
+
+  <div class="rep-kpis">
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Alertas totales</span><span class="rep-kpi-val"><%= it.totalAlertas %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Agotados</span><span class="rep-kpi-val"><%= it.cantidadAgotados %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Críticos (≤ <%= it.umbralLegible %>)</span><span class="rep-kpi-val"><%= it.cantidadCriticos %></span></div>
+  </div>
+
+  <% if (it.sinFilas) { %>
+  <p class="rep-vacio">No hay variantes con stock crítico o agotado en el sistema.</p>
+  <% } else { %>
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Artículos a reponer</h2>
+    <table class="rep-tabla">
+      <thead><tr><th>SKU</th><th>Artículo</th><th>Categoría</th><th class="der">Cant.</th><th>Estado</th></tr></thead>
+      <tbody>
+      <% it.filas.forEach(function (f) { %>
+        <tr><td><%= f.sku %></td><td><%= f.articulo %></td><td><%= f.categoria %></td><td class="der"><%= f.cantidad %></td><td><%= f.estado %></td></tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </section>
+  <% } %>
+
+</article>

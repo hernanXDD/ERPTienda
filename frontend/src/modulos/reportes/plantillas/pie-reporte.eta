@@ -1,0 +1,29 @@
+<footer class="rep-pie-pagina" data-rep-pie='<%~ it.repPieDatosJson %>'>
+  <% if (it.tieneDatosContacto) { %>
+  <div class="rep-pie-contacto">
+    <% if (it.tieneDireccion) { %><p class="rep-pie-dir"><%= it.negocioDireccion %></p><% } %>
+    <% if (it.tieneLocalidad) { %><p class="rep-pie-loc"><%= it.negocioLocalidad %></p><% } %>
+    <% if (it.tieneTelefono || it.tieneCorreo) { %>
+    <p class="rep-pie-medios">
+      <% if (it.tieneTelefono) { %><span>Tel. <%= it.negocioTelefono %></span><% } %>
+      <% if (it.tieneTelefono && it.tieneCorreo) { %><span class="rep-pie-sep" aria-hidden="true">·</span><% } %>
+      <% if (it.tieneCorreo) { %><span><%= it.negocioCorreo %></span><% } %>
+    </p>
+    <% } %>
+  </div>
+  <% } %>
+  <% if (it.tieneRedesSociales) { %>
+  <div class="rep-pie-pagina-redes">
+    <% it.redesSociales.forEach(function (red) { %>
+    <span class="rep-pie-pagina-red">
+      <span class="rep-pie-pagina-red-nom"><%= red.etiqueta %></span>
+      <a class="rep-pie-pagina-red-val" href="<%= red.enlace %>" target="_blank" rel="noopener noreferrer"><%= red.texto %></a>
+    </span>
+    <% }) %>
+  </div>
+  <% } %>
+  <div class="rep-pie-pagina-barra">
+    <span class="rep-pie-pagina-nota"><%= it.notaPieReporte %></span>
+    <span class="rep-pie-pagina-pag"></span>
+  </div>
+</footer>

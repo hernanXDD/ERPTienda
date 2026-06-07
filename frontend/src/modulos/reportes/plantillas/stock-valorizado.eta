@@ -1,0 +1,39 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc">
+  <!-- PIE_REPORTE -->
+  <header class="rep-enc-pro">
+    <!-- EMISOR_REPORTE -->
+    <div class="rep-doc-meta">
+      <div class="rep-meta-grid">
+        <div class="rep-meta-item"><strong>Período consulta</strong><span><%= it.rangoLegible %></span></div>
+      </div>
+    </div>
+  </header>
+
+  <p class="rep-nota"><%= it.notaCorte %></p>
+
+  <div class="rep-kpis">
+    <div class="rep-kpi"><span class="rep-kpi-etiq">SKUs con stock</span><span class="rep-kpi-val"><%= it.cantidadSkus %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Unidades</span><span class="rep-kpi-val"><%= it.totalUnidades %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Valor inventario</span><span class="rep-kpi-val"><%= it.totalValorizado %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Vendidas en período</span><span class="rep-kpi-val"><%= it.unidadesVendidasPeriodo %></span></div>
+  </div>
+
+  <% if (it.sinFilas) { %>
+  <p class="rep-vacio">No hay variantes con existencia positiva en el sistema.</p>
+  <% } else { %>
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Detalle por variante (precio de venta)</h2>
+    <table class="rep-tabla">
+      <thead><tr><th>SKU</th><th>Artículo</th><th>Categoría</th><th class="der">Cant.</th><th class="der">P. unit.</th><th class="der">Valor</th></tr></thead>
+      <tbody>
+      <% it.filas.forEach(function (f) { %>
+        <tr><td><%= f.sku %></td><td><%= f.articulo %></td><td><%= f.categoria %></td><td class="der"><%= f.cantidad %></td><td class="der"><%= f.precioUnitario %></td><td class="der"><%= f.valorTotal %></td></tr>
+      <% }) %>
+      </tbody>
+      <tfoot><tr><td colspan="5">Total valorizado</td><td class="der"><%= it.totalValorizado %></td></tr></tfoot>
+    </table>
+  </section>
+  <% } %>
+
+</article>

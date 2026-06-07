@@ -1,0 +1,158 @@
+================================================================================
+ERP TIENDA — Comandos para levantar y probar el sistema (local)
+================================================================================
+
+Requisitos: Node.js 20+, Docker, npm.
+
+Rutas: ejecutar desde /home/hernan/Proyectos/ERPTienda salvo que diga otra carpeta.
+
+
+--------------------------------------------------------------------------------
+1) CONFIGURACIÓN INICIAL (solo la primera vez)
+--------------------------------------------------------------------------------
+
+cd /home/hernan/Proyectos/ERPTienda
+
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# Si el puerto 5432 ya está ocupado por otro PostgreSQL:
+#   - En .env (raíz): POSTGRES_PORT=5433
+#   - En backend/.env: DATABASE_URL=postgresql://sa:6561@localhost:5433/ERPTienda?schema=public
+
+cd backend
+npm install
+
+cd ../frontend
+npm install
+
+
+--------------------------------------------------------------------------------
+2) BASE DE DATOS (Docker)
+--------------------------------------------------------------------------------
+
+cd /home/hernan/Proyectos/ERPTienda
+docker compose up -d
+docker compose ps
+
+# Ver logs de PostgreSQL (opcional):
+# docker compose logs -f postgres
+
+
+--------------------------------------------------------------------------------
+3) BACKEND — migraciones, semilla y API
+--------------------------------------------------------------------------------
+
+cd /home/hernan/Proyectos/ERPTienda/backend
+
+npx prisma generate
+npx prisma migrate deploy
+npx prisma db seed
+
+# Desarrollo (recarga automática al guardar código):
+npm run start:dev
+
+# Producción local (compilar y ejecutar):
+# npm run build
+# npm run start:prod
+
+# Comprobar que la API responde:
+# http://localhost:3000/api/salud
+
+
+--------------------------------------------------------------------------------
+4) FRONTEND — interfaz web
+--------------------------------------------------------------------------------
+
+cd /home/hernan/Proyectos/ERPTienda/frontend
+
+npm run dev
+
+# Abrir en el navegador:
+# http://localhost:5173
+# (si el puerto está ocupado, Vite puede usar 5174 u otro — mirar la consola)
+
+# El frontend usa la API real (frontend/.env):
+#   VITE_USAR_SIMULADOR=false
+# Las peticiones /api se redirigen a http://localhost:3000
+
+
+--------------------------------------------------------------------------------
+5) LEVANTAR TODO (resumen — 3 terminales)
+--------------------------------------------------------------------------------
+
+Terminal 1 — PostgreSQL:
+  cd /home/hernan/Proyectos/ERPTienda
+  docker compose up -d
+
+Terminal 2 — Backend:
+  cd /home/hernan/Proyectos/ERPTienda/backend
+  npm run start:dev
+
+Terminal 3 — Frontend:
+  cd /home/hernan/Proyectos/ERPTienda/frontend
+  npm run dev
+
+
+--------------------------------------------------------------------------------
+6) LOGIN DE PRUEBA (después de npx prisma db seed)
+--------------------------------------------------------------------------------
+
+Usuario          Contraseña
+-------          ----------
+admin            Ophhre43u
+dueño            dueño
+empleado         empleado
+
+
+--------------------------------------------------------------------------------
+7) PRIMERA MIGRACIÓN (solo si la base está vacía y no hay migraciones aplicadas)
+--------------------------------------------------------------------------------
+
+cd /home/hernan/Proyectos/ERPTienda/backend
+npx prisma migrate dev --name inicial
+npx prisma db seed
+
+
+--------------------------------------------------------------------------------
+8) REINICIAR BASE DESDE CERO (borra todos los datos — solo desarrollo)
+--------------------------------------------------------------------------------
+
+cd /home/hernan/Proyectos/ERPTienda/backend
+npx prisma migrate reset
+npx prisma db seed
+
+
+--------------------------------------------------------------------------------
+9) DETENER SERVICIOS
+--------------------------------------------------------------------------------
+
+# Backend / Frontend: Ctrl+C en cada terminal
+
+# PostgreSQL (Docker):
+cd /home/hernan/Proyectos/ERPTienda
+docker compose down
+
+
+--------------------------------------------------------------------------------
+10) COMANDOS ÚTILES
+--------------------------------------------------------------------------------
+
+# Prisma Studio (explorar datos en el navegador):
+cd backend
+npx prisma studio
+
+# Build de verificación (frontend):
+cd frontend
+npm run build
+
+# Build de verificación (backend):
+cd backend
+npm run build
+
+# Estado de migraciones:
+cd backend
+npx prisma migrate status
+
+================================================================================
