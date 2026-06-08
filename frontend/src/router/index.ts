@@ -6,7 +6,6 @@ import {
   primeraRutaNombreSegunMenus,
   rutaRequiereConfiguracionApp,
 } from '../modulos/nucleo/menuPrincipal';
-import { useGestionUsuariosStore } from '../stores/gestionUsuarios';
 import { cargarDatosMaestros } from '../stores/inicializacionDatos';
 import { useSesionStore } from '../stores/sesion';
 
@@ -248,9 +247,7 @@ router.beforeEach(async (to) => {
     return { name: 'inicio-sesion', query: { siguiente } };
   }
 
-  await cargarDatosMaestros().catch(() => {
-    /* Si falla la carga inicial, igual se permite navegar (p. ej. pantalla en blanco evitada). */
-  });
+  await cargarDatosMaestros();
 
   if (rutaRequiereConfiguracionApp(to.name)) {
     if (!esUsuarioConfiguracionApp(sesion.usuario)) {
@@ -261,11 +258,7 @@ router.beforeEach(async (to) => {
 
   const claveMenu = claveMenuRequeridaPorRuta(to.name);
   if (claveMenu) {
-    const gestionUsuarios = useGestionUsuariosStore();
-    const usuarioGestion = sesion.usuario
-      ? gestionUsuarios.obtenerPorId(sesion.usuario.id)
-      : undefined;
-    const menus = menusVisiblesResueltos(usuarioGestion?.permisos.menusVisibles);
+    const menus = menusVisiblesResueltos(sesion.usuario?.permisos.menusVisibles);
     if (!menus[claveMenu]) {
       const destino = primeraRutaNombreSegunMenus(menus, sesion.usuario);
       if (destino !== to.name) {

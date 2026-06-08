@@ -11,7 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
-import { RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_CATEGORIAS } from '../../comunes/permisos/menus-lectura';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
 import { CategoriasService } from './categorias.service';
@@ -24,6 +25,7 @@ export class CategoriasController {
   constructor(private readonly categoriasService: CategoriasService) {}
 
   @Get()
+  @RequiereAlgunoMenu(...MENUS_LECTURA_CATEGORIAS)
   async listar() {
     const datos = await this.categoriasService.listar();
     return respuestaOk(datos, 'Categorías obtenidas correctamente.');

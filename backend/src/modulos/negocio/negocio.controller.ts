@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
-import { RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_NEGOCIO } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
@@ -12,6 +13,7 @@ export class NegocioController {
   constructor(private readonly negocioService: NegocioService) {}
 
   @Get()
+  @RequiereAlgunoMenu(...MENUS_LECTURA_NEGOCIO)
   async obtener() {
     const datos = await this.negocioService.obtener();
     return respuestaOk(datos, 'Datos del negocio obtenidos correctamente.');

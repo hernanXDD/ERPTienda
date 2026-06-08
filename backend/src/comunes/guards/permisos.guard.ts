@@ -8,6 +8,7 @@ import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import {
   CLAVE_MENU_REQUERIDO,
+  CLAVE_MENUS_ALTERNATIVOS,
   CLAVE_PERMISO_REQUERIDO,
   REQUIERE_ROL_ELEVADO,
 } from '../decoradores/requiere-permiso.decorator';
@@ -31,12 +32,15 @@ export class PermisosGuard implements CanActivate {
       CLAVE_MENU_REQUERIDO,
       [contexto.getHandler(), contexto.getClass()],
     );
+    const menusAlternativos = this.reflector.getAllAndOverride<
+      ClaveMenuPrincipal[] | undefined
+    >(CLAVE_MENUS_ALTERNATIVOS, [contexto.getHandler(), contexto.getClass()]);
     const rolElevado = this.reflector.getAllAndOverride<boolean>(REQUIERE_ROL_ELEVADO, [
       contexto.getHandler(),
       contexto.getClass(),
     ]);
 
-    if (!permiso && !menu && !rolElevado) return true;
+    if (!permiso && !menu && !menusAlternativos?.length && !rolElevado) return true;
 
     const solicitud = contexto.switchToHttp().getRequest<Request & { user?: UsuarioSesion }>();
     const operador = solicitud.user;
@@ -64,6 +68,16 @@ export class PermisosGuard implements CanActivate {
     if (menu) {
       const visible = await this.permisosUsuario.tieneMenuVisible(operador.id, menu);
       if (!visible) {
+        throw new ForbiddenException('No tenés acceso a este módulo.');
+      }
+    }
+
+    if (menusAlternativos?.length) {
+      const algunoVisible = await this.permisosUsuario.tieneAlgunoMenuVisible(
+        operador.id,
+        menusAlternativos,
+      );
+      if (!algunoVisible) {
         throw new ForbiddenException('No tenés acceso a este módulo.');
       }
     }

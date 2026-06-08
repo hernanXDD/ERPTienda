@@ -2,16 +2,21 @@ import { computed } from 'vue';
 import { useGestionUsuariosStore } from '../stores/gestionUsuarios';
 import { useSesionStore } from '../stores/sesion';
 import {
+  menusVisiblesPorDefecto,
   permisosPorDefectoSegunRol,
   type ClavePermisoOperativo,
 } from '../modulos/usuarios/permisosUsuario';
-import type { PermisosOperativosUsuario } from '../tipos/usuarioGestion';
+import type { MenusVisiblesUsuario, PermisosOperativosUsuario } from '../tipos/usuarioGestion';
 
 export function usePermisosOperador() {
   const sesionStore = useSesionStore();
   const gestionUsuariosStore = useGestionUsuariosStore();
 
   const permisos = computed((): PermisosOperativosUsuario | null => {
+    if (sesionStore.usuario?.permisos) {
+      return sesionStore.usuario.permisos;
+    }
+
     const id = sesionStore.usuario?.id;
     const rol = sesionStore.usuario?.rol;
     if (!id || !rol) return null;
@@ -22,9 +27,17 @@ export function usePermisosOperador() {
     return permisosPorDefectoSegunRol(rol);
   });
 
+  const menusVisibles = computed((): MenusVisiblesUsuario => {
+    return permisos.value?.menusVisibles ?? menusVisiblesPorDefecto();
+  });
+
   function tienePermiso(clave: ClavePermisoOperativo): boolean {
     return permisos.value?.[clave] === true;
   }
 
-  return { permisos, tienePermiso };
+  function tieneMenu(clave: keyof MenusVisiblesUsuario): boolean {
+    return menusVisibles.value[clave] === true;
+  }
+
+  return { permisos, menusVisibles, tienePermiso, tieneMenu };
 }

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
 import {
+  RequiereMenu,
   RequierePermiso,
   RequiereRolElevado,
 } from '../../comunes/decoradores/requiere-permiso.decorator';
@@ -31,12 +32,14 @@ export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
   @Get()
+  @RequiereMenu('usuarios')
   async listar() {
     const datos = await this.usuariosService.listar();
     return respuestaOk(datos, 'Usuarios obtenidos correctamente.');
   }
 
   @Get(':id')
+  @RequiereMenu('usuarios')
   async obtenerPorId(@Param('id') id: string) {
     const usuario = await this.usuariosService.obtenerPorId(id);
     return respuestaOk(usuario, 'Usuario obtenido correctamente.');

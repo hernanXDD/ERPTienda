@@ -9,8 +9,10 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,prisma}/**/*.ts\" --fix",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:rellenar-auditorias": "ts-node -O '{\"module\":\"CommonJS\"}' prisma/rellenar-auditorias-stock.ts"
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force",
+    "prisma:migrate": "prisma migrate dev"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/semilla.ts"
@@ -26,6 +28,7 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "helmet": "^8.2.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",

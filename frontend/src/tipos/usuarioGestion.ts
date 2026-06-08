@@ -33,7 +33,7 @@ export interface UsuarioGestion {
   nombre: string;
   apellido: string;
   nombreUsuario: string;
-  /** Solo para simulador local; jamás debe persistirse en texto plano en backend real. */
+  /** Vacío en API real; el formulario de alta/edición lo usa solo en memoria. */
   contrasenaPlano: string;
   /** Si es verdadero no puede iniciar sesión hasta que un administrador asigne nueva contraseña. */
   contrasenaEstaBlanqueada: boolean;

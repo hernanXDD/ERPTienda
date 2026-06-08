@@ -10,7 +10,8 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_PROVEEDORES } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
@@ -25,12 +26,14 @@ export class ProveedoresController {
   constructor(private readonly proveedoresService: ProveedoresService) {}
 
   @Get()
+  @RequiereAlgunoMenu(...MENUS_LECTURA_PROVEEDORES)
   async listar() {
     const datos = await this.proveedoresService.listar();
     return respuestaOk(datos, 'Proveedores obtenidos correctamente.');
   }
 
   @Get(':id')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_PROVEEDORES)
   async obtenerPorId(@Param('id') id: string) {
     const proveedor = await this.proveedoresService.obtenerPorId(id);
     return respuestaOk(proveedor, 'Proveedor obtenido correctamente.');

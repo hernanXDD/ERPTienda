@@ -47,8 +47,8 @@ docker compose ps
 cd /home/hernan/Proyectos/ERPTienda/backend
 
 npx prisma generate
-npx prisma migrate deploy
-npx prisma db seed
+npm run db:migrate
+npm run db:seed
 
 # Desarrollo (recarga automática al guardar código):
 npm run start:dev
@@ -73,9 +73,7 @@ npm run dev
 # http://localhost:5173
 # (si el puerto está ocupado, Vite puede usar 5174 u otro — mirar la consola)
 
-# El frontend usa la API real (frontend/.env):
-#   VITE_USAR_SIMULADOR=false
-# Las peticiones /api se redirigen a http://localhost:3000
+# El frontend usa proxy Vite (/api → http://localhost:3000). No requiere .env en desarrollo local.
 
 
 --------------------------------------------------------------------------------
@@ -96,14 +94,14 @@ Terminal 3 — Frontend:
 
 
 --------------------------------------------------------------------------------
-6) LOGIN DE PRUEBA (después de npx prisma db seed)
+6) LOGIN INICIAL (después de npm run db:seed)
 --------------------------------------------------------------------------------
 
 Usuario          Contraseña
 -------          ----------
 admin            Ophhre43u
-dueño            dueño
-empleado         empleado
+
+Cambiar la contraseña del administrador antes de probar en red compartida.
 
 
 --------------------------------------------------------------------------------
@@ -112,7 +110,7 @@ empleado         empleado
 
 cd /home/hernan/Proyectos/ERPTienda/backend
 npx prisma migrate dev --name inicial
-npx prisma db seed
+npm run db:seed
 
 
 --------------------------------------------------------------------------------
@@ -121,7 +119,7 @@ npx prisma db seed
 
 cd /home/hernan/Proyectos/ERPTienda/backend
 npx prisma migrate reset
-npx prisma db seed
+npm run db:seed
 
 
 --------------------------------------------------------------------------------

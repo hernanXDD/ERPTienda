@@ -8,5 +8,7 @@ export function etiquetaRolUsuario(rol: RolUsuario): string {
       return 'Dueño';
     case 'EMPLEADO':
       return 'Empleado';
+    default:
+      return rol;
   }
 }

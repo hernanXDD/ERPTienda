@@ -30,4 +30,3 @@ export async function sembrarEstadosFacturacion(prisma: PrismaClient): Promise<v
   }
 }
 
-export { estadosFacturacionSemilla };

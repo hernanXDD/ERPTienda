@@ -5,7 +5,7 @@ import BarraInferiorMovil from '../componentes/navegacion/BarraInferiorMovil.vue
 import BarraLateral from '../componentes/navegacion/BarraLateral.vue';
 import BarraSubmenuMovil from '../componentes/navegacion/BarraSubmenuMovil.vue';
 import BarraSuperior from '../componentes/navegacion/BarraSuperior.vue';
-import { cargarDatosMaestros } from '../stores/inicializacionDatos';
+import { cargarDatosMaestros, errorCargaDatosMaestros } from '../stores/inicializacionDatos';
 
 const esMovil = useMediaQuery('(max-width: 767px)');
 
@@ -27,6 +27,9 @@ onMounted(() => {
           id="contenido-principal"
           tabindex="-1"
         >
+        <p v-if="errorCargaDatosMaestros" class="aviso-carga-maestros" role="alert">
+          {{ errorCargaDatosMaestros }}
+        </p>
         <div class="relleno">
           <router-view />
         </div>
@@ -132,5 +135,16 @@ onMounted(() => {
   .relleno:has(.cfg-ficha-vista) {
     padding: 0.45rem 0.75rem 0.5rem;
   }
+}
+
+.aviso-carga-maestros {
+  margin: 0 0 0.85rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radio-control);
+  border: 1px solid rgba(240, 120, 120, 0.45);
+  background: rgba(120, 28, 28, 0.22);
+  color: #ffc9c9;
+  font-size: 0.9375rem;
+  line-height: 1.45;
 }
 </style>

@@ -12,6 +12,7 @@ export class ConfiguracionSistemaController {
   constructor(private readonly configuracionSistemaService: ConfiguracionSistemaService) {}
 
   @Get()
+  @RequiereMenu('configuracion')
   async obtener() {
     const datos = await this.configuracionSistemaService.obtener();
     return respuestaOk(datos, 'Configuración del sistema obtenida correctamente.');

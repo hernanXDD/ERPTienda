@@ -43,6 +43,15 @@ export class PermisosUsuarioService {
     return permisos.menusVisibles[menu] === true;
   }
 
+  async tieneAlgunoMenuVisible(
+    idUsuario: string,
+    menus: ClaveMenuPrincipal[],
+  ): Promise<boolean> {
+    if (menus.length === 0) return false;
+    const permisos = await this.permisosDeUsuario(idUsuario);
+    return menus.some((menu) => permisos.menusVisibles[menu] === true);
+  }
+
   async operadorEsElevado(idUsuario: string): Promise<boolean> {
     const usuario = await this.prisma.usuario.findFirst({
       where: { id: idUsuario, fechaEliminacion: null, habilitado: true },

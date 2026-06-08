@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
-import { RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_VENTAS } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
@@ -15,6 +16,7 @@ export class VentasController {
   constructor(private readonly ventasService: VentasService) {}
 
   @Get()
+  @RequiereAlgunoMenu(...MENUS_LECTURA_VENTAS)
   async listar() {
     const datos = await this.ventasService.listar();
     return respuestaOk(datos, 'Ventas obtenidas correctamente.');
@@ -28,6 +30,7 @@ export class VentasController {
   }
 
   @Get(':id')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_VENTAS)
   async obtenerPorId(@Param('id') id: string) {
     const venta = await this.ventasService.obtenerPorId(id);
     return respuestaOk(venta, 'Venta obtenida correctamente.');

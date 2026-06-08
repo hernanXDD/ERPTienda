@@ -20,9 +20,9 @@ export function useElementosMenuFiltrados() {
   const elementosMenuFiltrados = computed(() => {
     void usuarios.value;
     const idSesion = sesionStore.usuario?.id;
-    const menusParciales = idSesion
-      ? gestionUsuariosStore.obtenerPorId(idSesion)?.permisos.menusVisibles
-      : undefined;
+    const menusParciales =
+      sesionStore.usuario?.permisos.menusVisibles ??
+      (idSesion ? gestionUsuariosStore.obtenerPorId(idSesion)?.permisos.menusVisibles : undefined);
     const menus = menusVisiblesResueltos(menusParciales);
     return elementosMenuPrincipal.filter((elemento) =>
       elementoMenuVisibleParaPermisos(elemento, menus, sesionStore.usuario),

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
-import { RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequiereMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_STOCK } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
@@ -21,12 +22,14 @@ export class StockController {
   ) {}
 
   @Get('motivos')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_STOCK)
   async listarMotivos() {
     const datos = await this.motivosStockService.listarActivos();
     return respuestaOk(datos, 'Motivos de stock obtenidos correctamente.');
   }
 
   @Get('movimientos')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_STOCK)
   async listarMovimientos(
     @Query('varianteId') varianteId?: string,
     @Query('fechaDesde') fechaDesde?: string,
@@ -41,24 +44,28 @@ export class StockController {
   }
 
   @Get('cantidad/:varianteId')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_STOCK)
   async obtenerCantidad(@Param('varianteId') varianteId: string) {
     const cantidad = await this.stockService.obtenerCantidad(varianteId);
     return respuestaOk({ varianteId, cantidad }, 'Cantidad obtenida correctamente.');
   }
 
   @Get('resumen')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_STOCK)
   async obtenerResumen() {
     const datos = await this.stockService.obtenerResumen();
     return respuestaOk(datos, 'Resumen de stock obtenido correctamente.');
   }
 
   @Get('auditorias')
+  @RequiereMenu('stock')
   async listarAuditorias(@Query() filtros: ListarAuditoriasDto) {
     const datos = await this.stockService.listarAuditorias(filtros);
     return respuestaOk(datos, 'Auditorías de stock obtenidas correctamente.');
   }
 
   @Get('auditorias/:id')
+  @RequiereMenu('stock')
   async obtenerAuditoria(@Param('id') id: string) {
     const datos = await this.stockService.obtenerAuditoriaPorId(id);
     return respuestaOk(datos, 'Detalle de auditoría obtenido correctamente.');

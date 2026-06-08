@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
-import { RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_CLIENTES } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
@@ -14,12 +15,14 @@ export class CuentaCorrienteController {
   constructor(private readonly cuentaCorrienteService: CuentaCorrienteService) {}
 
   @Get('movimientos')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_CLIENTES)
   async listarMovimientos(@Param('clienteId') clienteId: string) {
     const datos = await this.cuentaCorrienteService.listarMovimientosConSaldo(clienteId);
     return respuestaOk(datos, 'Movimientos obtenidos correctamente.');
   }
 
   @Get('saldo')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_CLIENTES)
   async obtenerSaldo(@Param('clienteId') clienteId: string) {
     const saldo = await this.cuentaCorrienteService.obtenerSaldo(clienteId);
     return respuestaOk({ saldo }, 'Saldo obtenido correctamente.');

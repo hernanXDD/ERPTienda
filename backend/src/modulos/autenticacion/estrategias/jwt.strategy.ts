@@ -2,9 +2,10 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { PermisosUsuarioService } from '../../../comunes/permisos/permisos-usuario.service';
 import { rolDesdeBaseDeDatos } from '../../../comunes/tipos/rol-usuario-api';
 import type { UsuarioSesion } from '../../../comunes/tipos/usuario-sesion';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 export interface PayloadJwt {
   sub: string;
@@ -17,6 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configuracion: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly permisosUsuario: PermisosUsuarioService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -44,10 +46,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       );
     }
 
+    const permisos = await this.permisosUsuario.permisosDeUsuario(usuario.id);
+
     return {
       id: usuario.id,
       nombreUsuario: usuario.nombreUsuario,
       rol: rolDesdeBaseDeDatos(usuario.rol),
+      permisos,
     };
   }
 }

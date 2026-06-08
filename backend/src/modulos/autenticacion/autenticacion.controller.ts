@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { LimiteIntentosLoginGuard } from '../../comunes/guards/limite-intentos-login.guard';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
@@ -11,13 +12,14 @@ export class AutenticacionController {
 
   @Post('inicio-sesion')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(LimiteIntentosLoginGuard)
   iniciarSesion(@Body() datos: InicioSesionDto) {
     return this.autenticacionService.iniciarSesion(datos);
   }
 
   @Get('sesion-actual')
   @UseGuards(JwtAuthGuard)
-  sesionActual(@UsuarioSesionActual() usuario: UsuarioSesion) {
+  async sesionActual(@UsuarioSesionActual() usuario: UsuarioSesion) {
     return this.autenticacionService.obtenerSesionActual(usuario);
   }
 

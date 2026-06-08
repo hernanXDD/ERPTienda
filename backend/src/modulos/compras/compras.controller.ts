@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
-import { RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_COMPRAS } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
@@ -14,12 +15,14 @@ export class ComprasController {
   constructor(private readonly comprasService: ComprasService) {}
 
   @Get()
+  @RequiereAlgunoMenu(...MENUS_LECTURA_COMPRAS)
   async listar() {
     const datos = await this.comprasService.listar();
     return respuestaOk(datos, 'Compras obtenidas correctamente.');
   }
 
   @Get(':id')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_COMPRAS)
   async obtenerPorId(@Param('id') id: string) {
     const compra = await this.comprasService.obtenerPorId(id);
     return respuestaOk(compra, 'Compra obtenida correctamente.');

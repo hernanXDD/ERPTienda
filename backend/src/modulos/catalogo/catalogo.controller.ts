@@ -12,7 +12,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
-import { RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_CATALOGO } from '../../comunes/permisos/menus-lectura';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
 import { CatalogoService } from './catalogo.service';
@@ -27,12 +28,14 @@ export class CatalogoController {
   constructor(private readonly catalogoService: CatalogoService) {}
 
   @Get('productos')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_CATALOGO)
   async listarProductos() {
     const datos = await this.catalogoService.listarProductos();
     return respuestaOk(datos, 'Productos obtenidos correctamente.');
   }
 
   @Get('productos/:id')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_CATALOGO)
   async obtenerProducto(@Param('id') id: string) {
     const producto = await this.catalogoService.obtenerProductoPorId(id);
     return respuestaOk(producto, 'Producto obtenido correctamente.');
@@ -61,6 +64,7 @@ export class CatalogoController {
   }
 
   @Get('variantes')
+  @RequiereAlgunoMenu(...MENUS_LECTURA_CATALOGO)
   async listarVariantes(@Query('productoId') productoId?: string) {
     const variantes = await this.catalogoService.listarVariantes(productoId);
     return respuestaOk(variantes, 'Variantes obtenidas correctamente.');

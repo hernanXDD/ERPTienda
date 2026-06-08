@@ -8,8 +8,8 @@ const router = useRouter();
 const route = useRoute();
 const sesion = useSesionStore();
 
-const nombreUsuario = ref('admin');
-const contrasena = ref('Ophhre43u');
+const nombreUsuario = ref(import.meta.env.DEV ? 'admin' : '');
+const contrasena = ref(import.meta.env.DEV ? 'Ophhre43u' : '');
 const cargando = ref(false);
 const mensajeError = ref('');
 

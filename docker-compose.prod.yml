@@ -1,0 +1,46 @@
+# ERP Tienda — producción (VPS DonWeb)
+# Solo PostgreSQL en Docker. La API corre con Node + PM2 en el host.
+#
+# Uso:
+#   cp .env.production.example .env.production
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# La API se conecta por: localhost:5432 (solo 127.0.0.1, no expuesto a internet).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: erp-tienda-postgres-prod
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ERPTienda}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=40
+      - -c
+      - effective_cache_size=256MB
+      - -c
+      - work_mem=4MB
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-ERPTienda}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  postgres_data_prod:
