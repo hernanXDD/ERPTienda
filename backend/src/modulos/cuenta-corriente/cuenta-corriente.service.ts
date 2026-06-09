@@ -1,13 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   Prisma,
   TipoMovimientoCuentaCorriente,
 } from '@prisma/client';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
+import { TOLERANCIA_MONEDA } from '../../comunes/utilidades/validar-totales-comprobante';
 import { crearCodigoPublicoReciboPagoCuentaCorriente } from '../../comunes/utilidades/codigo-publico-recibo-cc';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { RegistrarCargoDto } from './dto/registrar-cargo.dto';
 import { RegistrarPagoDto } from './dto/registrar-pago.dto';
 
@@ -73,14 +75,42 @@ export class CuentaCorrienteService {
 
   async validarClienteExiste(clienteId: string): Promise<void> {
     const cliente = await this.prisma.cliente.findFirst({
-      where: { id: clienteId, fechaEliminacion: null },
+      where: { id: clienteId, ...filtroNoBorrado },
     });
     if (!cliente) throw new NotFoundException('Cliente no encontrado.');
   }
 
   async obtenerSaldo(clienteId: string): Promise<number> {
     await this.validarClienteExiste(clienteId);
-    const movimientos = await this.prisma.movimientoCuentaCorriente.findMany({
+    return this.obtenerSaldoInterno(clienteId);
+  }
+
+  /**
+   * Verifica que un cargo no supere el límite de crédito del cliente.
+   * Si `limiteCompra <= 0`, se interpreta como crédito sin tope.
+   */
+  async validarCreditoDisponibleParaCargo(
+    clienteId: string,
+    importeCargo: number,
+    limiteCompra: number,
+    tx?: ClienteTx,
+  ): Promise<void> {
+    if (limiteCompra <= 0) return;
+
+    const saldoActual = await this.obtenerSaldoInterno(clienteId, tx);
+    const saldoTrasCargo = saldoActual + importeCargo;
+
+    if (saldoTrasCargo - limiteCompra > TOLERANCIA_MONEDA) {
+      const disponible = Math.max(0, limiteCompra - saldoActual);
+      throw new ConflictException(
+        `El cliente supera el límite de cuenta corriente. Crédito disponible: $${disponible.toFixed(0)}.`,
+      );
+    }
+  }
+
+  private async obtenerSaldoInterno(clienteId: string, tx?: ClienteTx): Promise<number> {
+    const prisma = tx ?? this.prisma;
+    const movimientos = await prisma.movimientoCuentaCorriente.findMany({
       where: { clienteId },
       orderBy: [{ fecha: 'asc' }, { id: 'asc' }],
     });

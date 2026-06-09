@@ -22,13 +22,20 @@ import {
   type CambioFacturacionPrevisto,
 } from '../../modulos/ventas/importarFacturacionesExcel';
 import { exportarComprobanteVentaPdf } from '../../modulos/ventas/impresionResumenVenta';
+import { usePermisosOperador } from '../../composables/usePermisosOperador';
+import { notificarError } from '../../utilidades/notificacion';
 import { CODIGO_ESTADO_FACTURACION_FACTURADA } from '../../tipos/venta';
 import { useVentasStore } from '../../stores/ventas';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 import type { IdFormaPago, VentaRegistrada } from '../../tipos/venta';
 import {
   formatearFechaDiaMesAnio,
   formatearHoraAmPm,
 } from '../../utilidades/formatoFechaHora';
+
+const descripcionPagina = obtenerDescripcionPagina('ventas-historial');
+const { tienePermiso } = usePermisosOperador();
+const puedeCargarFacturaciones = computed(() => tienePermiso('puedeCargarFacturaciones'));
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -37,10 +44,10 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 });
 
 const ventasStore = useVentasStore();
-const { ventas } = storeToRefs(ventasStore);
+const { ventas, cargandoVentas, errorVentas } = storeToRefs(ventasStore);
 
 onMounted(() => {
-  void ventasStore.cargarVentas();
+  void ventasStore.cargarVentas({ forzar: true });
 });
 
 const busquedaCliente = ref('');
@@ -123,7 +130,7 @@ async function alSeleccionarArchivoFacturaciones(event: Event): Promise<void> {
     erroresImportacionFacturacion.value = resultado.errores;
 
     if (resultado.cambios.length === 0) {
-      window.alert(
+      notificarError(
         resultado.errores.join('\n') ||
           'No se encontraron facturaciones nuevas para cargar en el archivo.',
       );
@@ -133,7 +140,7 @@ async function alSeleccionarArchivoFacturaciones(event: Event): Promise<void> {
     cambiosFacturacionPendientes.value = resultado.cambios;
     refConfirmarFacturaciones.value?.showModal();
   } catch (error: unknown) {
-    window.alert(
+    notificarError(
       error instanceof Error ? error.message : 'No se pudo leer el archivo de facturaciones.',
     );
   } finally {
@@ -163,7 +170,7 @@ async function confirmarCargaFacturaciones(): Promise<void> {
     cantidadFacturasImportadas.value = cantidadImportada;
     refExitoFacturaciones.value?.showModal();
   } catch (error: unknown) {
-    window.alert(mensajeErrorHttp(error, 'No se pudieron cargar las facturaciones.'));
+    notificarError(mensajeErrorHttp(error, 'No se pudieron cargar las facturaciones.'));
   } finally {
     confirmandoFacturaciones.value = false;
   }
@@ -202,7 +209,7 @@ async function imprimirDetalleVenta() {
   } catch (error: unknown) {
     const mensaje =
       error instanceof Error ? error.message : 'No se pudo exportar el comprobante de compra.';
-    window.alert(mensaje);
+    notificarError(mensaje);
   }
 }
 
@@ -223,10 +230,7 @@ function limpiarFiltros() {
           <div>
             <p class="pg-eyebrow">Ventas · Historial</p>
             <h1 id="titulo-historial-ventas" class="pg-titulo">Historial de ventas</h1>
-            <p class="pg-sub">
-              Consultá ventas registradas, filtrá por cliente o rango de fechas y revisá el detalle de
-              cada operación.
-            </p>
+            <p class="pg-sub">{{ descripcionPagina }}</p>
           </div>
         </div>
       </div>
@@ -276,7 +280,7 @@ function limpiarFiltros() {
         </div>
       </div>
 
-      <div class="pg-barra-col pg-barra-col--facturacion">
+      <div v-if="puedeCargarFacturaciones" class="pg-barra-col pg-barra-col--facturacion">
         <div class="pg-filtro-bl">
           <span class="pg-filtro-etiq">Facturación</span>
           <button
@@ -300,6 +304,18 @@ function limpiarFiltros() {
         </div>
       </div>
     </div>
+
+    <p v-if="errorVentas" class="lv-alerta-carga" role="alert">
+      {{ errorVentas }}
+      <button type="button" class="lv-alerta-reintentar" @click="ventasStore.cargarVentas({ forzar: true })">
+        Reintentar
+      </button>
+    </p>
+
+    <p v-else-if="cargandoVentas && ventas.length === 0" class="lv-cargando" role="status">
+      <Loader2 :size="18" class="lv-btn-cargar-fact-ico--girar" aria-hidden="true" />
+      Cargando ventas desde el servidor…
+    </p>
 
     <p class="pg-resumen pg-resumen--flex" role="status">
       <span>
@@ -376,8 +392,8 @@ function limpiarFiltros() {
           <tr v-if="ventasFiltradas.length === 0">
             <td colspan="8" class="pg-vacio">
               <template v-if="ventas.length === 0">
-                Todavía no hay ventas registradas en esta sesión. Las operaciones confirmadas en el
-                centro de ventas aparecerán aquí.
+                No hay ventas registradas en el sistema todavía. Las operaciones confirmadas en el
+                centro de ventas se guardan en la base y aparecerán aquí.
               </template>
               <template v-else>
                 No hay ventas que coincidan con los filtros elegidos. Probá ampliar el rango de
@@ -1011,6 +1027,38 @@ function limpiarFiltros() {
 .lv-det:hover {
   border-color: var(--color-acento-borde);
   background: var(--color-acento-suave);
+}
+
+.lv-alerta-carga {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  background: rgba(251, 113, 133, 0.1);
+  color: var(--color-peligro);
+  font-size: 0.9rem;
+}
+
+.lv-alerta-reintentar {
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  background: var(--color-fondo-elevado);
+  color: var(--color-texto);
+  font-size: 0.85rem;
+}
+
+.lv-cargando {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  color: var(--color-texto-apagado);
+  font-size: 0.9rem;
 }
 
 .lv-vacio {

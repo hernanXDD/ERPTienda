@@ -12,6 +12,7 @@ import {
 import { esRangoFechasValido } from '../../modulos/reportes/filtroFechasReporte';
 import { useClientesStore } from '../../stores/clientes';
 import { useVentasStore } from '../../stores/ventas';
+import { notificarError } from '../../utilidades/notificacion';
 
 const ventasStore = useVentasStore();
 const clientesStore = useClientesStore();
@@ -71,7 +72,7 @@ async function exportarExcel(): Promise<void> {
     const mensaje =
       error instanceof Error ? error.message : 'No se pudo generar el archivo Excel.';
     refContenedor.value?.registrarErrorExportacion(mensaje);
-    window.alert(mensaje);
+    notificarError(mensaje);
   } finally {
     exportandoExcel.value = false;
   }

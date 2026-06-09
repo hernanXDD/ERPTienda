@@ -3,7 +3,11 @@ import { computed, ref, watch } from 'vue';
 import { LayoutGrid, ShieldCheck } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
-import { menusVisiblesPorDefecto, menusVisiblesResueltos } from '../../modulos/usuarios/permisosUsuario';
+import {
+  menusVisiblesPorDefecto,
+  menusVisiblesResueltos,
+  permisosPorDefectoSegunRol,
+} from '../../modulos/usuarios/permisosUsuario';
 import {
   contarPermisosOperativosActivos,
   DEFINICIONES_MENU_PERMISO,
@@ -23,6 +27,9 @@ import type {
   PermisosOperativosUsuario,
   UsuarioGestion,
 } from '../../tipos/usuarioGestion';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('usuarios-permisos');
 
 const gestionStore = useGestionUsuariosStore();
 const sesionStore = useSesionStore();
@@ -96,13 +103,7 @@ function manejarAccionPermisos(): void {
 
 const idUsuarioSeleccionado = ref('');
 const borradorPermisos = ref<PermisosOperativosUsuario>({
-  puedeAjustarStock: false,
-  puedeRegistrarCompras: false,
-  puedeGestionarCatalogoProductos: false,
-  puedeGestionarFichasDeUsuario: false,
-  puedeInhabilitarUsuario: false,
-  puedeEliminarUsuario: false,
-  puedeBlanquearContrasenaUsuario: false,
+  ...permisosPorDefectoSegunRol('EMPLEADO'),
   menusVisibles: menusVisiblesPorDefecto(),
 });
 
@@ -243,10 +244,7 @@ function guardarCambiosPermisos(): void {
             <div>
               <p class="pg-eyebrow">Usuarios · Gestión</p>
               <h1 id="tit-permisos-usuarios" class="pg-titulo">Permisos por cuenta</h1>
-              <p class="pg-sub">
-                Módulos visibles en el menú y permisos operativos de la tienda. Editá y confirmá
-                con «Guardar cambios». <strong>Inicio</strong> queda siempre habilitado.
-              </p>
+              <p class="pg-sub">{{ descripcionPagina }}</p>
             </div>
           </div>
         </div>

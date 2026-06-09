@@ -30,11 +30,19 @@ import { useGestionUsuariosStore } from '../../stores/gestionUsuarios';
 import { useSesionStore } from '../../stores/sesion';
 import { useStockStore } from '../../stores/stock';
 import { useVentasStore } from '../../stores/ventas';
+import { useNegocioStore } from '../../stores/negocio';
+import {
+  mensajeNegocioIncompleto,
+  negocioRequiereConfiguracion,
+} from '../../modulos/negocio/evaluarConfiguracionNegocio';
 import {
   formatearFechaDiaMesAnio,
   formatearHoraAmPm,
   obtenerDiaComparableDesdeValor,
 } from '../../utilidades/formatoFechaHora';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('inicio');
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -46,6 +54,7 @@ const CANTIDAD_ACTIVIDAD_RECIENTE = 5;
 
 const sesionStore = useSesionStore();
 const ventasStore = useVentasStore();
+const negocioStore = useNegocioStore();
 const stockStore = useStockStore();
 const catalogoStore = useCatalogoStore();
 const clientesStore = useClientesStore();
@@ -59,6 +68,15 @@ const { variantes } = storeToRefs(catalogoStore);
 const { clientes } = storeToRefs(clientesStore);
 const { parametros: parametrosSistema } = storeToRefs(configuracionSistemaStore);
 const { movimientos: movimientosCuentaCorriente } = storeToRefs(cuentaCorrienteStore);
+const { negocio } = storeToRefs(negocioStore);
+
+const puedeVerConfiguracion = computed(() => menusVisibles.value.configuracion);
+
+const avisoNegocioIncompleto = computed(
+  () => puedeVerConfiguracion.value && negocioRequiereConfiguracion(negocio.value),
+);
+
+const textoAvisoNegocio = computed(() => mensajeNegocioIncompleto(negocio.value));
 
 const diaHoyComparable = computed(() => obtenerDiaComparableDesdeValor(new Date()));
 const fechaTitulo = computed(() => formatearFechaTituloInicio(new Date()));
@@ -132,7 +150,8 @@ const etiquetaRolSesion = computed(() => {
             />
             <div>
               <h1 id="titulo-inicio" class="pg-titulo">Inicio</h1>
-              <p class="pg-sub">
+              <p class="pg-sub">{{ descripcionPagina }}</p>
+              <p class="ini-saludo">
                 Hola,
                 <strong class="ini-nom">{{ sesionStore.usuario?.nombreUsuario }}</strong
                 ><span v-if="etiquetaRolSesion" class="ini-rol"> · {{ etiquetaRolSesion }}</span>
@@ -142,6 +161,14 @@ const etiquetaRolSesion = computed(() => {
           </div>
         </div>
       </header>
+
+      <div v-if="avisoNegocioIncompleto" class="ini-aviso-config" role="status">
+        <p class="ini-aviso-config-txt">{{ textoAvisoNegocio }}</p>
+        <RouterLink :to="{ name: 'configuracion-negocio' }" class="ini-aviso-config-link">
+          Completar datos del negocio
+          <ArrowRight :size="16" aria-hidden="true" />
+        </RouterLink>
+      </div>
 
       <div class="pg-cuerpo ini-cuerpo">
         <section
@@ -298,7 +325,7 @@ const etiquetaRolSesion = computed(() => {
             </RouterLink>
           </li>
         </ul>
-        <p v-else class="ini-panel-vacio">Sin ventas registradas en esta sesión.</p>
+        <p v-else class="ini-panel-vacio">Todavía no hay ventas registradas.</p>
       </section>
 
       <section
@@ -343,15 +370,14 @@ const etiquetaRolSesion = computed(() => {
           </li>
         </ul>
         <p v-else class="ini-panel-vacio">
-          Sin movimientos en esta sesión. Ventas, entradas y conteos aparecerán aquí.
+          Sin movimientos recientes. Ventas, entradas y conteos aparecerán aquí.
         </p>
       </section>
         </div>
 
         <p class="ini-pie" role="note">
           <Package :size="14" stroke-width="2" class="ini-pie-ico" aria-hidden="true" />
-          Resumen calculado con los datos cargados en esta sesión. Los totales del día usan la fecha
-          local del equipo.
+          Los totales del día se calculan con la fecha local del equipo.
         </p>
       </div>
     </div>
@@ -363,6 +389,41 @@ const etiquetaRolSesion = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.ini-aviso-config {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin: 0 clamp(1rem, 3vw, 1.65rem) 0.85rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radio-control);
+  border: 1px solid rgba(251, 191, 36, 0.38);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.ini-aviso-config-txt {
+  margin: 0;
+  flex: 1 1 14rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-texto);
+}
+
+.ini-aviso-config-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-acento-hover);
+  text-decoration: none;
+}
+
+.ini-aviso-config-link:hover {
+  text-decoration: underline;
 }
 
 .ini-nom {
@@ -380,6 +441,13 @@ const etiquetaRolSesion = computed(() => {
   font-size: 0.8rem;
   color: var(--color-texto-apagado);
   text-transform: capitalize;
+}
+
+.ini-saludo {
+  margin: 0.35rem 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--color-texto-suave);
 }
 
 .ini-cuerpo .pg-kpi-valor {

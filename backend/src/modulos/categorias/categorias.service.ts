@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { datosMarcarBorrado, filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActualizarCategoriaDto } from './dto/actualizar-categoria.dto';
@@ -30,13 +31,18 @@ export class CategoriasService {
   }
 
   async listar(): Promise<CategoriaApi[]> {
-    const filas = await this.prisma.categoria.findMany({ orderBy: { nombre: 'asc' } });
+    const filas = await this.prisma.categoria.findMany({
+      where: filtroNoBorrado,
+      orderBy: { nombre: 'asc' },
+    });
     return filas.map((c) => this.mapear(c));
   }
 
   async crear(datos: CrearCategoriaDto): Promise<CategoriaApi> {
     const nombre = datos.nombre.trim();
-    const existente = await this.prisma.categoria.findUnique({ where: { nombre } });
+    const existente = await this.prisma.categoria.findFirst({
+      where: { nombre, ...filtroNoBorrado },
+    });
     if (existente) {
       throw new ConflictException('Ya existe una categoría con ese nombre.');
     }
@@ -56,7 +62,7 @@ export class CategoriasService {
     await this.obtenerOError(id);
     const nombre = datos.nombre.trim();
     const duplicada = await this.prisma.categoria.findFirst({
-      where: { nombre, NOT: { id } },
+      where: { nombre, ...filtroNoBorrado, NOT: { id } },
     });
     if (duplicada) {
       throw new ConflictException('Ya existe otra categoría con ese nombre.');
@@ -75,18 +81,23 @@ export class CategoriasService {
   async eliminar(id: string): Promise<void> {
     await this.obtenerOError(id);
     const productos = await this.prisma.producto.count({
-      where: { categoriaId: id, fechaEliminacion: null },
+      where: { categoriaId: id, ...filtroNoBorrado },
     });
     if (productos > 0) {
       throw new ConflictException(
         'No se puede eliminar la categoría porque tiene productos asociados.',
       );
     }
-    await this.prisma.categoria.delete({ where: { id } });
+    await this.prisma.categoria.update({
+      where: { id },
+      data: datosMarcarBorrado(),
+    });
   }
 
   private async obtenerOError(id: string) {
-    const categoria = await this.prisma.categoria.findUnique({ where: { id } });
+    const categoria = await this.prisma.categoria.findFirst({
+      where: { id, ...filtroNoBorrado },
+    });
     if (!categoria) throw new NotFoundException('Categoría no encontrada.');
     return categoria;
   }

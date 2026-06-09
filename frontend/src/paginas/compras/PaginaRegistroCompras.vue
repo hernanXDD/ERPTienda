@@ -8,6 +8,9 @@ import { useRegistroComprasStore } from '../../stores/registroCompras';
 import type { CompraRegistrada } from '../../tipos/compraRegistrada';
 import { formatearFechaYHora } from '../../utilidades/formatoFechaHora';
 import FormularioNuevaCompra from './FormularioNuevaCompra.vue';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('compras-registro');
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -101,9 +104,7 @@ function alCerrarDialogoRegistrar() {
           <div>
             <p class="pg-eyebrow">Compras · Registro</p>
             <h1 id="tit-reg-comp" class="pg-titulo">Registro de compras</h1>
-            <p class="pg-sub">
-              Compras registradas contra proveedores con impacto en stock e inventario.
-            </p>
+            <p class="pg-sub">{{ descripcionPagina }}</p>
           </div>
         </div>
       </div>

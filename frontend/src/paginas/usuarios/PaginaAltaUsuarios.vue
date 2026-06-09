@@ -11,6 +11,13 @@ import {
   useGestionUsuariosStore,
 } from '../../stores/gestionUsuarios';
 import type { UsuarioGestion } from '../../tipos/usuarioGestion';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import {
+  AYUDA_POLITICA_CONTRASENA,
+  validarPoliticaContrasena,
+} from '../../utilidades/politicaContrasena';
+
+const descripcionPagina = obtenerDescripcionPagina('usuarios-alta');
 
 type ModoFormularioUsuario = 'alta' | 'detalle';
 
@@ -115,7 +122,7 @@ const puedeEliminarUsuario = computed(() => permisosOperador.value?.puedeElimina
 
 const idSesionUsuario = computed(() => sesionStore.usuario?.id ?? '');
 
-/** Dueño no ve ni opera sobre cuentas Administrador (política de negocio demo). */
+/** Dueño no ve ni opera sobre cuentas Administrador (política de negocio). */
 const sesionEsDueño = computed(() => sesionStore.usuario?.rol === 'DUEÑO');
 
 const rolAdministradorEsSoloLectura = computed(
@@ -265,8 +272,36 @@ function alCerrarDialogo() {
   mensajeFormulario.value = '';
 }
 
+function validarContrasenaEnFormulario(): string | null {
+  const texto = borradorContrasena.value;
+  const esAlta = modoFormulario.value === 'alta';
+  const requierePorBlanqueo =
+    modoFormulario.value === 'detalle' && contrasenaEstaBlanqueadaEnModal.value;
+
+  if (esAlta || requierePorBlanqueo) {
+    if (!texto.trim()) {
+      return requierePorBlanqueo
+        ? 'Debés cargar una contraseña nueva para levantar el bloqueo.'
+        : 'La contraseña inicial es obligatoria.';
+    }
+    return validarPoliticaContrasena(texto);
+  }
+
+  if (texto.trim().length > 0) {
+    return validarPoliticaContrasena(texto);
+  }
+
+  return null;
+}
+
 async function guardarFormulario() {
   mensajeFormulario.value = '';
+
+  const errorContrasena = validarContrasenaEnFormulario();
+  if (errorContrasena) {
+    mensajeFormulario.value = errorContrasena;
+    return;
+  }
 
   if (
     (modoFormulario.value === 'alta' || borradorPersistido.value?.rol !== 'ADMIN') &&
@@ -384,7 +419,7 @@ function accionEliminarUsuario(usuarioGestor: UsuarioGestion) {
   }
   if (
     !window.confirm(
-      `¿Eliminar definitivamente al usuario "${usuarioGestor.nombreUsuario}" (${usuarioGestor.nombre} ${usuarioGestor.apellido})? Esta acción no se puede deshacer en el modo demo.`
+      `¿Eliminar definitivamente al usuario "${usuarioGestor.nombreUsuario}" (${usuarioGestor.nombre} ${usuarioGestor.apellido})? Esta acción no se puede deshacer.`
     )
   ) {
     return;
@@ -413,12 +448,7 @@ void onToggleHabilitadoSesion;
             <div>
               <p class="pg-eyebrow">Usuarios · Gestión</p>
               <h1 id="titulo-alta-usuarios" class="pg-titulo">Alta y fichas de usuario</h1>
-              <p class="pg-sub">
-                Entorno demo: creación y mantenimiento de cuentas locales. Las acciones sensibles (fichas, inhabilitar,
-                blanquear o eliminar) dependen de lo definido en
-                <strong>Permisos usuario</strong>
-                ; por defecto las gestionan Administrador y Dueño.
-              </p>
+              <p class="pg-sub">{{ descripcionPagina }}</p>
             </div>
           </div>
         </div>
@@ -725,9 +755,12 @@ void onToggleHabilitadoSesion;
                           ? contrasenaEstaBlanqueadaEnModal
                             ? 'Debés cargar nueva contraseña para levantar el bloqueo…'
                             : 'Dejar vacío para no cambiar…'
-                          : ''
+                          : 'Ej. MiTienda2026'
                       "
                     />
+                    <p v-if="formularioUsuarioEditable" class="ua-ed-ayuda-pass">
+                      {{ AYUDA_POLITICA_CONTRASENA }}
+                    </p>
                     <input
                       v-else
                       id="ua-ed-pass"
@@ -1663,6 +1696,13 @@ void onToggleHabilitadoSesion;
   font-weight: 600;
   line-height: 1.3;
   color: var(--color-texto-suave);
+}
+
+.ua-ed-ayuda-pass {
+  margin: 0.2rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--color-texto-apagado);
 }
 
 .ua-ed-inp {

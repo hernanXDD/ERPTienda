@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
-import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
 import { MENUS_LECTURA_CLIENTES } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
@@ -29,7 +29,7 @@ export class CuentaCorrienteController {
   }
 
   @Post('pago')
-  @RequiereMenu('clientes')
+  @RequierePermiso('puedeGestionarCuentaCorriente')
   async registrarPago(
     @Param('clienteId') clienteId: string,
     @Body() datos: RegistrarPagoDto,

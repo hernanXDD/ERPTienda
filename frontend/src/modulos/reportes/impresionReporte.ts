@@ -1,5 +1,5 @@
 import type { FiltroFechasReporte } from './filtroFechasReporte';
-import { estilosBaseReporteCss, claseExportacionPdfReporte } from './estilosReporteCss';
+import { claseExportacionPdfReporte } from './estilosReporteCss';
 import {
   dibujarPieEnTodasLasPaginasPdf,
   leerDatosPieDesdeDocumento,
@@ -360,34 +360,4 @@ export async function exportarVistaReporteComoPdf(
   }
 
   await exportarReporteComoPdf(htmlReporte, nombreArchivo);
-}
-
-/** @deprecated Usar exportarVistaReporteComoPdf para abrir el PDF en una nueva pestaña. */
-export function abrirImpresionReporte(cuerpoHtml: string, tituloDocumento: string): void {
-  const tituloSeguro = tituloDocumento.replace(/</g, '');
-  const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="utf-8"/>
-<title>${tituloSeguro}</title>
-<style>
-body { margin: 0; padding: 1.25rem 1.5rem; background: #fff; }
-${estilosBaseReporteCss}
-</style>
-</head>
-<body>
-${cuerpoHtml}
-</body>
-</html>`;
-
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const ventana = window.open(url, '_blank', 'noopener,noreferrer');
-  URL.revokeObjectURL(url);
-
-  if (!ventana) {
-    throw new Error(
-      'El navegador bloqueó la ventana emergente. Permití ventanas desde este sitio o usá «Exportar PDF».'
-    );
-  }
 }

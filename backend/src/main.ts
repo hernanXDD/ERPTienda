@@ -6,6 +6,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { obtenerOrigenesCorsPermitidos } from './config/cors.config';
 import { ExcepcionHttpFiltro } from './comunes/filtros/excepcion-http.filtro';
+import { CambioContrasenaPendienteInterceptor } from './comunes/interceptores/cambio-contrasena-pendiente.interceptor';
 import { claveIpSolicitud, limiteSolicitudes } from './comunes/seguridad/limite-solicitudes';
 
 async function bootstrap(): Promise<void> {
@@ -71,6 +72,8 @@ async function bootstrap(): Promise<void> {
   });
 
   app.useGlobalFilters(new ExcepcionHttpFiltro());
+
+  app.useGlobalInterceptors(new CambioContrasenaPendienteInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({

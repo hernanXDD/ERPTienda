@@ -1,7 +1,6 @@
 ﻿<script setup lang="ts">
 import { Eye, RefreshCw, ScrollText, X } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue';
-import { RouterLink } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { etiquetaTipoAuditoriaStock } from '../../modulos/inventario/etiquetasAuditoriaStock';
 import { etiquetaMotivoMovimientoStock } from '../../modulos/inventario/etiquetasMovimientoStock';
@@ -9,6 +8,9 @@ import { etiquetaRegistradoMovimientoStock } from '../../modulos/inventario/usua
 import { useStockStore } from '../../stores/stock';
 import type { AuditoriaStockDetalle, AuditoriaStockResumen, TipoAuditoriaStock } from '../../tipos/stock';
 import { formatearFechaYHora } from '../../utilidades/formatoFechaHora';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('stock-auditorias');
 
 const stockStore = useStockStore();
 const { auditorias, cargandoAuditorias } = storeToRefs(stockStore);
@@ -104,14 +106,7 @@ function alCerrarDetalleAuditoria(): void {
             <ScrollText :size="22" class="pg-cab-ico" aria-hidden="true" stroke-width="1.85" />
             <div>
               <h1 id="tit-auditorias-stock" class="pg-titulo">Auditorías de stock</h1>
-              <p class="pg-sub">
-                Cada fila es una auditoría: un conjunto de movimientos por venta, compra o conteo
-                físico. Para el saldo vigente volvé a
-                <RouterLink class="aud-enlace-interno" :to="{ name: 'stock-actual' }">
-                  Stock actual
-                </RouterLink>
-                .
-              </p>
+              <p class="pg-sub">{{ descripcionPagina }}</p>
             </div>
           </div>
         </div>

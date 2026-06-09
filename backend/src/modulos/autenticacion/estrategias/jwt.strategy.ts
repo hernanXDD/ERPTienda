@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { filtroNoBorrado } from '../../../comunes/utilidades/borrado-logico';
 import { PermisosUsuarioService } from '../../../comunes/permisos/permisos-usuario.service';
 import { rolDesdeBaseDeDatos } from '../../../comunes/tipos/rol-usuario-api';
 import type { UsuarioSesion } from '../../../comunes/tipos/usuario-sesion';
@@ -31,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const usuario = await this.prisma.usuario.findFirst({
       where: {
         id: payload.sub,
-        fechaEliminacion: null,
+        ...filtroNoBorrado,
         habilitado: true,
       },
     });
@@ -53,6 +54,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       nombreUsuario: usuario.nombreUsuario,
       rol: rolDesdeBaseDeDatos(usuario.rol),
       permisos,
+      debeCambiarContrasena: usuario.debeCambiarContrasena,
     };
   }
 }

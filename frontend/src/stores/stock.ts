@@ -17,8 +17,14 @@ import type {
   MovimientoStock,
 } from '../tipos/stock';
 import type { LineaVentaRegistro } from '../tipos/venta';
+import {
+  crearSincronizadorListaRemota,
+  type OpcionesCargaLista,
+} from '../utilidades/sincronizacionListaRemota';
 
 const MAXIMO_MOVIMIENTOS_ENMEMORIA = 400;
+const sincronizador = crearSincronizadorListaRemota();
+const sincronizadorAuditorias = crearSincronizadorListaRemota();
 
 export const useStockStore = defineStore('stock', () => {
   const cantidadesPorVarianteId = ref<Record<string, number>>({});
@@ -28,24 +34,33 @@ export const useStockStore = defineStore('stock', () => {
   const cargandoAuditorias = ref(false);
   let sincronizado = false;
 
-  async function cargar(): Promise<void> {
-    if (cargando.value) return;
-    cargando.value = true;
-    try {
-      const [resumen, movs] = await Promise.all([
-        obtenerResumenStockApi(),
-        listarMovimientosStockApi(),
-      ]);
-      const mapa: Record<string, number> = {};
-      for (const fila of resumen) {
-        mapa[fila.varianteId] = fila.cantidadActual;
+  async function cargar(opciones?: OpcionesCargaLista): Promise<void> {
+    if (sincronizado && !opciones?.forzar) return;
+
+    await sincronizador.serializarCarga(async () => {
+      if (sincronizado && !opciones?.forzar) return;
+
+      const generacion = sincronizador.generacionAlIniciarCarga();
+      cargando.value = true;
+      try {
+        const [resumen, movs] = await Promise.all([
+          obtenerResumenStockApi(),
+          listarMovimientosStockApi(),
+        ]);
+        if (sincronizador.esRespuestaObsoleta(generacion)) return;
+        const mapa: Record<string, number> = {};
+        for (const fila of resumen) {
+          mapa[fila.varianteId] = fila.cantidadActual;
+        }
+        cantidadesPorVarianteId.value = mapa;
+        movimientos.value = movs.slice(0, MAXIMO_MOVIMIENTOS_ENMEMORIA);
+        sincronizado = true;
+      } finally {
+        if (!sincronizador.esRespuestaObsoleta(generacion)) {
+          cargando.value = false;
+        }
       }
-      cantidadesPorVarianteId.value = mapa;
-      movimientos.value = movs.slice(0, MAXIMO_MOVIMIENTOS_ENMEMORIA);
-      sincronizado = true;
-    } finally {
-      cargando.value = false;
-    }
+    });
   }
 
   async function asegurarCargado(): Promise<void> {
@@ -83,6 +98,7 @@ export const useStockStore = defineStore('stock', () => {
   ): Promise<{ anterior: number; nuevo: number; delta: number }> {
     let destino = Math.floor(Number(cantidadFisicaContada));
     if (!Number.isFinite(destino) || destino < 0) destino = 0;
+    sincronizador.marcarMutacionLocal();
     const resultado = await ajusteConteoStockApi({
       varianteId,
       cantidadFisicaContada: destino,
@@ -104,6 +120,7 @@ export const useStockStore = defineStore('stock', () => {
     lineasProcesadas: number;
     lineasSinCambio: number;
   }> {
+    sincronizador.marcarMutacionLocal();
     const resultado = await importarConteoMasivoStockApi({ lineas, observacion });
     const siguiente = { ...cantidadesPorVarianteId.value };
     for (const fila of resultado.detalle) {
@@ -126,6 +143,7 @@ export const useStockStore = defineStore('stock', () => {
   ): Promise<void> {
     const u = Math.floor(unidadesAgregadas);
     if (!Number.isFinite(u) || u <= 0) return;
+    sincronizador.marcarMutacionLocal();
     const resultado = await entradaManualStockApi({
       varianteId,
       cantidad: u,
@@ -144,14 +162,24 @@ export const useStockStore = defineStore('stock', () => {
     movimientos.value = movs.slice(0, MAXIMO_MOVIMIENTOS_ENMEMORIA);
   }
 
-  async function cargarAuditorias(filtros?: FiltrosAuditoriasStock): Promise<void> {
-    if (cargandoAuditorias.value) return;
-    cargandoAuditorias.value = true;
-    try {
-      auditorias.value = await listarAuditoriasStockApi(filtros);
-    } finally {
-      cargandoAuditorias.value = false;
-    }
+  async function cargarAuditorias(
+    filtros?: FiltrosAuditoriasStock,
+    opciones?: OpcionesCargaLista,
+  ): Promise<void> {
+    await sincronizadorAuditorias.serializarCarga(async () => {
+      const generacion = sincronizadorAuditorias.generacionAlIniciarCarga();
+      if (cargandoAuditorias.value && !opciones?.forzar) return;
+      cargandoAuditorias.value = true;
+      try {
+        const lista = await listarAuditoriasStockApi(filtros);
+        if (sincronizadorAuditorias.esRespuestaObsoleta(generacion)) return;
+        auditorias.value = lista;
+      } finally {
+        if (!sincronizadorAuditorias.esRespuestaObsoleta(generacion)) {
+          cargandoAuditorias.value = false;
+        }
+      }
+    });
   }
 
   async function obtenerDetalleAuditoria(id: string): Promise<AuditoriaStockDetalle> {
@@ -159,6 +187,7 @@ export const useStockStore = defineStore('stock', () => {
   }
 
   function quitarVariante(varianteId: string): void {
+    sincronizador.marcarMutacionLocal();
     const siguiente = { ...cantidadesPorVarianteId.value };
     delete siguiente[varianteId];
     cantidadesPorVarianteId.value = siguiente;
@@ -166,6 +195,7 @@ export const useStockStore = defineStore('stock', () => {
 
   function quitarVariantes(idsVariantes: string[]): void {
     if (idsVariantes.length === 0) return;
+    sincronizador.marcarMutacionLocal();
     const siguiente = { ...cantidadesPorVarianteId.value };
     for (const id of idsVariantes) delete siguiente[id];
     cantidadesPorVarianteId.value = siguiente;

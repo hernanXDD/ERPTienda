@@ -1,12 +1,19 @@
 # Primera prueba en producción — ERP Tienda
 
-Arquitectura objetivo:
+Guía paso a paso para el **primer despliegue de prueba** en el negocio.
+
+Orden recomendado: **Git → Vercel (frontend) → VPS (base + API + CORS)**.  
+Subí el frontend primero para obtener la URL exacta de Vercel y configurar `CORS_ORIGENES` en el backend.
+
+---
+
+## Resumen de arquitectura
 
 | Componente | Dónde | Cómo |
 |------------|-------|------|
 | Frontend (Vue) | Vercel | Build automático desde Git |
-| PostgreSQL | VPS DonWeb | **Docker** (solo la base) |
-| API (NestJS) | VPS DonWeb | **Git + Node 20 + PM2** |
+| PostgreSQL | VPS DonWeb | Docker (`docker-compose.prod.yml`) |
+| API (NestJS) | VPS DonWeb | Git + Node 20 + PM2 + nginx |
 
 ### VPS (DonWeb / DattaWeb)
 
@@ -15,10 +22,9 @@ Arquitectura objetivo:
 | **IP** | `200.58.99.253` |
 | **Host** | `vps-6055529-x.dattaweb.com` |
 | **API pública** | `https://vps-6055529-x.dattaweb.com/api` |
-| CPU | 2 vCPU Standard |
+| CPU | 2 vCPU |
 | RAM | 2 GB |
 | Disco | 20 GB SSD |
-| Transferencia | 1 TB/mes |
 
 Conexión SSH:
 
@@ -28,162 +34,267 @@ ssh usuario@200.58.99.253
 ssh usuario@vps-6055529-x.dattaweb.com
 ```
 
-Distribución de RAM orientativa:
+RAM orientativa en el VPS:
 
 | Proceso | Límite |
 |---------|--------|
-| PostgreSQL (Docker) | 512 MB (`mem_limit` en compose) |
-| API Node (PM2) | 450 MB (`max_memory_restart`) |
+| PostgreSQL (Docker) | 512 MB |
+| API Node (PM2) | 450 MB |
 | nginx + SO | resto (~1 GB) |
 
 ---
 
-## 1. Requisitos previos en el VPS
+## Datos que vas anotando
 
-- Ubuntu/Debian con acceso SSH.
-- **Docker** y **Docker Compose v2**.
-- **Node.js 20 LTS** ([nodesource](https://github.com/nodesource/distributions) o `nvm`).
-- **PM2** global: `npm install -g pm2`.
-- **nginx** + **Certbot** (HTTPS).
-- **Git** y clave SSH al repositorio.
-- El host `vps-6055529-x.dattaweb.com` debe resolver a `200.58.99.253` (viene así en DonWeb).
+Completá esto a medida que avanzás (copiá y pegá en un bloc de notas):
 
-Firewall: abrir solo **22**, **80** y **443**. No exponer **5432** ni **3000** a internet.
-
----
-
-## 2. Clonar el proyecto
-
-```bash
-cd /opt   # o el directorio que prefieras
-git clone git@github.com:TU_USUARIO/ERPTienda.git
-cd ERPTienda
+```
+Repositorio Git:     _______________________________________________
+URL frontend Vercel:   _______________________________________________
+VITE_API_BASE_URL:     https://vps-6055529-x.dattaweb.com/api
+CORS_ORIGENES (VPS):   _______________________________________________
+POSTGRES_USER:         erp  (o el que elijas)
+POSTGRES_PASSWORD:     _______________________________________________
+JWT_SECRETO:           _______________________________________________
+Usuario SSH VPS:       _______________________________________________
+Ruta del repo en VPS:  /opt/ERPTienda  (o la que uses)
 ```
 
+> **CORS:** la URL de Vercel debe coincidir **exactamente** (con `https://`, sin barra final).  
+> Si Vercel te da preview en otra URL, agregala separada por coma en `CORS_ORIGENES`.
+
 ---
 
-## 3. PostgreSQL (Docker)
+## Fase 1 — Subir el código a Git
+
+Desde tu máquina de desarrollo (con los cambios listos):
+
+```bash
+cd ERPTienda
+git status
+git add -A
+git commit -m "Preparar primera prueba en producción"
+git push origin main
+```
+
+Vercel y el VPS van a desplegar **desde este repositorio**. Cada mejora futura: commit → push → Vercel redeploy automático y en el VPS `./deploy/actualizar-api.sh`.
+
+---
+
+## Fase 2 — Vercel (frontend primero)
+
+Objetivo: tener la **URL pública del frontend** antes de cerrar la configuración del backend.
+
+### 2.1 Crear el proyecto
+
+1. Entrá a [vercel.com](https://vercel.com) → **Add New Project**.
+2. Importá el repositorio de GitHub/GitLab.
+3. Configuración del proyecto:
+
+| Campo | Valor |
+|-------|-------|
+| **Root Directory** | `frontend` |
+| **Framework Preset** | Vite (detectado automáticamente) |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `dist` |
+
+### 2.2 Variable de entorno en Vercel
+
+En **Settings → Environment Variables → Production**:
+
+| Nombre | Valor |
+|--------|-------|
+| `VITE_API_BASE_URL` | `https://vps-6055529-x.dattaweb.com/api` |
+
+Referencia local: `frontend/.env.production.example`.
+
+> La API puede no responder todavía; no importa. Lo que necesitás ahora es la **URL de Vercel** (ej. `https://erp-tienda.vercel.app` o la que asigne el proyecto).
+
+### 2.3 Primer deploy
+
+1. Clic en **Deploy**.
+2. Cuando termine, copiá la URL de producción (ej. `https://erp-tienda.vercel.app`).
+3. Anotala en **CORS_ORIGENES** — la vas a usar en la Fase 4.
+
+### 2.4 Dominio propio (opcional)
+
+Si más adelante usás un dominio custom en Vercel, agregalo también a `CORS_ORIGENES` en el VPS y volvé a cargar PM2.
+
+---
+
+## Fase 3 — VPS: requisitos y clonar
+
+### 3.1 Software en el servidor
+
+- Ubuntu/Debian con SSH.
+- **Docker** + **Docker Compose v2**.
+- **Node.js 20 LTS**.
+- **PM2:** `npm install -g pm2`.
+- **nginx** + **Certbot** (HTTPS).
+- **Git** + acceso al repositorio (SSH o HTTPS).
+
+Firewall: solo puertos **22**, **80** y **443**.  
+**No** exponer **5432** (Postgres) ni **3000** (API) a internet.
+
+### 3.2 Clonar el proyecto
+
+```bash
+cd /opt
+git clone https://github.com/hernanXDD/ERPTienda.git
+cd ERPTienda
+git pull origin main
+```
+
+Reemplazá `TU_USUARIO/ERPTienda` por tu repo real.
+
+---
+
+## Fase 4 — VPS: PostgreSQL (Docker)
 
 ```bash
 cp .env.production.example .env.production
+nano .env.production   # o el editor que uses
 ```
 
-Editar `.env.production`:
+Contenido de `.env.production` (referencia: `.env.production.example`):
 
-- `POSTGRES_USER` / `POSTGRES_PASSWORD` — contraseña fuerte.
-- `POSTGRES_DB` — por defecto `ERPTienda`.
+```env
+POSTGRES_USER=erp
+POSTGRES_PASSWORD=TU_PASSWORD_FUERTE
+POSTGRES_DB=ERPTienda
+```
 
-Levantar solo la base:
+Levantar la base:
 
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 docker compose -f docker-compose.prod.yml ps
 ```
 
-PostgreSQL queda en **`127.0.0.1:5432`** (solo accesible desde el propio VPS).
+PostgreSQL queda en **`127.0.0.1:5432`** (solo desde el propio VPS).
 
 ---
 
-## 4. Variables de la API
+## Fase 5 — VPS: variables de la API
 
 ```bash
 cp backend/.env.production.example backend/.env
+nano backend/.env
 ```
 
-Editar `backend/.env`:
-
-| Variable | Valor |
-|----------|-------|
-| `DATABASE_URL` | `postgresql://USUARIO:PASSWORD@127.0.0.1:5432/ERPTienda?schema=public` |
+| Variable | Qué poner |
+|----------|-----------|
+| `NODE_ENV` | `production` |
+| `HOST` | `127.0.0.1` |
+| `PUERTO` | `3000` |
+| `DATABASE_URL` | `postgresql://erp:TU_PASSWORD@127.0.0.1:5432/ERPTienda?schema=public` |
 | `JWT_SECRETO` | Aleatorio, **mínimo 32 caracteres** |
-| `CORS_ORIGENES` | URL **exacta** de Vercel (ej. `https://erp-tienda.vercel.app`) |
-| `HOST` | `127.0.0.1` (solo nginx accede a la API) |
+| `JWT_EXPIRES_IN` | `8h` |
+| `CORS_ORIGENES` | **URL exacta de Vercel** (Fase 2), ej. `https://erp-tienda.vercel.app` |
 | `TRUST_PROXY` | `true` |
 
-Generar JWT:
+Generar `JWT_SECRETO`:
 
 ```bash
 openssl rand -base64 48
 ```
 
-> `USUARIO` y `PASSWORD` deben coincidir con `.env.production` de PostgreSQL.
+> `erp` y `TU_PASSWORD` deben coincidir con `.env.production` de PostgreSQL.
+
+Ejemplo de `CORS_ORIGENES` con producción + preview:
+
+```env
+CORS_ORIGENES=https://erp-tienda.vercel.app,https://erp-tienda-git-main-tuusuario.vercel.app
+```
 
 ---
 
-## 5. Instalar y arrancar la API
+## Fase 6 — VPS: instalar y arrancar la API
 
 ```bash
 chmod +x deploy/instalar-api.sh deploy/actualizar-api.sh
 ./deploy/instalar-api.sh
 ```
 
-Semilla (**solo la primera vez**):
+Semilla (**solo la primera vez**, crea usuario `admin`):
 
 ```bash
 cd backend && npm run db:seed
 ```
 
-Credenciales iniciales (cambiar tras el primer login):
+Credenciales iniciales — **cambiar en el primer login**:
 
 | Usuario | Contraseña |
 |---------|------------|
-| admin | Ophhre43u |
+| admin | 12345678 |
 
-Comprobar:
+Comprobar en el VPS:
 
 ```bash
 curl -s http://127.0.0.1:3000/api/salud
 pm2 status
 ```
 
-PM2 al reiniciar el VPS:
+PM2 al reiniciar el VPS (una sola vez):
 
 ```bash
-pm2 startup    # ejecutar el comando que imprime (una sola vez)
+pm2 startup    # ejecutar el comando que imprime
 pm2 save
 ```
 
 ---
 
-## 6. nginx + HTTPS
+## Fase 7 — VPS: nginx + HTTPS
 
-1. Copiar y adaptar `deploy/nginx/erp-tienda-api.conf.example`.
-2. Certificado: `sudo certbot --nginx -d vps-6055529-x.dattaweb.com`.
-3. Recargar: `sudo nginx -t && sudo systemctl reload nginx`.
+1. Copiar y adaptar `deploy/nginx/erp-tienda-api.conf.example` a `/etc/nginx/sites-available/`.
+2. Certificado:
 
-Desde fuera del VPS:
+   ```bash
+   sudo certbot --nginx -d vps-6055529-x.dattaweb.com
+   ```
+
+3. Activar sitio y recargar:
+
+   ```bash
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+Comprobar desde **tu PC** (fuera del VPS):
 
 ```bash
 curl -s https://vps-6055529-x.dattaweb.com/api/salud
 ```
 
----
-
-## 7. Vercel — frontend
-
-1. Importar el repositorio.
-2. **Root Directory:** `frontend`
-3. **Build Command:** `npm run build`
-4. **Output Directory:** `dist`
-5. Variable **Production:**
-
-   ```
-   VITE_API_BASE_URL=https://vps-6055529-x.dattaweb.com/api
-   ```
-
-6. Desplegar.
+Debería responder JSON con estado OK.
 
 ---
 
-## 8. Migraciones (ventaja de Node directo)
+## Fase 8 — Probar el frontend contra la API
 
-Tras cambios de esquema en el repo:
+1. Abrí la URL de Vercel en el navegador.
+2. Iniciá sesión con `admin` / `12345678`.
+3. El sistema pedirá **cambio de contraseña** en el primer acceso.
+4. Completá **Configuración → Datos del negocio** (nombre, CUIT, etc.).
+
+Si el login falla con error de CORS en la consola del navegador:
+
+- Revisá que `CORS_ORIGENES` en `backend/.env` sea **exactamente** la URL de Vercel.
+- Editá `backend/.env` y recargá: `pm2 reload erp-tienda-api`.
+
+---
+
+## Actualizaciones futuras
+
+Tras `git push` con cambios de código o migraciones:
 
 ```bash
+cd /opt/ERPTienda
 ./deploy/actualizar-api.sh
 ```
 
-Equivale a: `git pull` → `npm ci` → `build` → `prisma migrate deploy` → `pm2 reload`.
+Eso hace: `git pull` → `npm ci` → `build` → `prisma migrate deploy` → `pm2 reload`.
+
+Vercel redeploya el frontend solo al detectar el push (si está conectado al repo).
 
 Migración manual si hace falta:
 
@@ -195,29 +306,20 @@ pm2 reload erp-tienda-api
 
 ---
 
-## 9. Checklist de humo
+## Errores frecuentes
 
-- [ ] `GET https://vps-6055529-x.dattaweb.com/api/salud` → OK
-- [ ] Login en Vercel sin credenciales precargadas
-- [ ] Login `admin` → inicio sin error CORS
-- [ ] Navegar menús (productos, clientes, etc.)
-- [ ] Cambiar contraseña del administrador
-- [ ] `pm2 status` → `online`
-- [ ] `docker compose -f docker-compose.prod.yml ps` → postgres healthy
-
-### Errores frecuentes
-
-| Síntoma | Causa probable |
-|---------|----------------|
-| CORS | `CORS_ORIGENES` no coincide con la URL de Vercel |
-| 502 Bad Gateway | PM2 caído (`pm2 logs erp-tienda-api`) |
-| ECONNREFUSED DB | Postgres no levantado o `DATABASE_URL` incorrecta |
-| Login 401 | No se ejecutó `npm run db:seed` |
-| API reinicia sola | Falta RAM — revisar `pm2 logs` y `docker stats` |
+| Síntoma | Causa probable | Qué hacer |
+|---------|----------------|-----------|
+| Error CORS en el navegador | `CORS_ORIGENES` no coincide con la URL de Vercel | Corregir `backend/.env` y `pm2 reload erp-tienda-api` |
+| 502 Bad Gateway | PM2 caído o API no escucha | `pm2 logs erp-tienda-api` / `pm2 restart erp-tienda-api` |
+| ECONNREFUSED / error de DB | Postgres apagado o `DATABASE_URL` mal | `docker compose -f docker-compose.prod.yml ps` |
+| Login 401 | Semilla no ejecutada | `cd backend && npm run db:seed` |
+| API se reinicia sola | Poca RAM (2 GB) | `free -h`, `docker stats`, `pm2 logs` |
+| Frontend no llama a la API | `VITE_API_BASE_URL` mal en Vercel | Revisar variable y **Redeploy** en Vercel |
 
 ---
 
-## 10. Comandos útiles
+## Comandos útiles en el VPS
 
 ```bash
 # Logs API
@@ -230,24 +332,31 @@ pm2 restart erp-tienda-api
 free -h
 docker stats --no-stream
 
-# Backup volumen Postgres (ejemplo)
+# Backup Postgres (ejemplo manual)
 docker compose -f docker-compose.prod.yml exec postgres \
   pg_dump -U erp ERPTienda > backup-$(date +%F).sql
 ```
 
 ---
 
-## 11. Seguridad antes de pruebas amplias
+## Seguridad mínima antes de usar datos reales
 
-- [ ] Contraseña de `admin` cambiada
-- [ ] `JWT_SECRETO` y `POSTGRES_PASSWORD` fuertes
-- [ ] Puerto 5432 solo en `127.0.0.1`
-- [ ] API en `HOST=127.0.0.1` (no expuesta sin nginx)
-- [ ] Firewall: 22, 80, 443 únicamente
+- Cambiar contraseña de `admin` en el primer login.
+- `JWT_SECRETO` y `POSTGRES_PASSWORD` fuertes y únicos.
+- Postgres solo en `127.0.0.1:5432`.
+- API en `HOST=127.0.0.1` (nginx como única puerta pública).
+- Firewall: 22, 80, 443 únicamente.
+- Backup de la base antes de cargar datos del negocio.
 
 ---
 
-## 12. Desarrollo local
+## Desarrollo local
 
-Sigue usando `docker compose up -d` (dev) y `dev.sh`.  
-`docker-compose.prod.yml` es solo PostgreSQL en producción; la API en dev sigue con `npm run start:dev`.
+Sigue igual que siempre:
+
+```bash
+docker compose up -d          # Postgres local
+./dev.sh                      # o backend + frontend por separado
+```
+
+`docker-compose.prod.yml` es **solo** para PostgreSQL en el VPS; la API en desarrollo usa `npm run start:dev`.

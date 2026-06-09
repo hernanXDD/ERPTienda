@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
 import { MENUS_LECTURA_PROVEEDORES } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
@@ -40,21 +40,21 @@ export class ProveedoresController {
   }
 
   @Post()
-  @RequiereMenu('compras')
+  @RequierePermiso('puedeGestionarProveedores')
   async crear(@Body() datos: CrearProveedorDto) {
     const proveedor = await this.proveedoresService.crear(datos);
     return respuestaOk(proveedor, 'Proveedor creado correctamente.');
   }
 
   @Patch(':id')
-  @RequiereMenu('compras')
+  @RequierePermiso('puedeGestionarProveedores')
   async actualizar(@Param('id') id: string, @Body() datos: ActualizarProveedorDto) {
     const proveedor = await this.proveedoresService.actualizar(id, datos);
     return respuestaOk(proveedor, 'Proveedor actualizado correctamente.');
   }
 
   @Patch(':id/habilitado')
-  @RequiereMenu('compras')
+  @RequierePermiso('puedeGestionarProveedores')
   async establecerHabilitacion(
     @Param('id') id: string,
     @Body() datos: HabilitacionProveedorDto,
@@ -65,7 +65,7 @@ export class ProveedoresController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @RequiereMenu('compras')
+  @RequierePermiso('puedeGestionarProveedores')
   async eliminar(@Param('id') id: string) {
     await this.proveedoresService.eliminar(id);
     return respuestaOk(null, 'Proveedor eliminado correctamente.');

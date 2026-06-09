@@ -4,20 +4,21 @@
  */
 import { Prisma, PrismaClient, RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { RONDAS_BCRYPT } from '../src/comunes/seguridad/bcrypt.config';
+import { datosMarcarBorrado, filtroNoBorrado } from '../src/comunes/utilidades/borrado-logico';
 import { permisosPorDefectoSegunRol } from '../src/comunes/tipos/permisos-usuario';
 import { ID_USUARIO_ADMIN, ID_USUARIO_DUENO, ID_USUARIO_EMPLEADO } from './datos/ids-semilla';
 import { sembrarEstadosFacturacion } from './semilla-estados-facturacion';
 import { sembrarMotivosStock } from './semilla-motivos-stock';
 
 const prisma = new PrismaClient();
-const RONDAS_BCRYPT = 10;
 
 const ADMIN_SEMILLA = {
   id: ID_USUARIO_ADMIN,
   nombre: 'Administrador',
   apellido: '',
   nombreUsuario: 'admin',
-  contrasenaPlano: 'Ophhre43u',
+  contrasenaPlano: '12345678',
   rol: RolUsuario.ADMIN,
 } as const;
 
@@ -34,6 +35,7 @@ async function sembrarUsuarioAdministrador(): Promise<void> {
       nombreUsuario: ADMIN_SEMILLA.nombreUsuario,
       contrasenaHash,
       contrasenaEstaBlanqueada: false,
+      debeCambiarContrasena: true,
       rol: ADMIN_SEMILLA.rol,
       habilitado: true,
       permisosJson,
@@ -44,9 +46,11 @@ async function sembrarUsuarioAdministrador(): Promise<void> {
       nombreUsuario: ADMIN_SEMILLA.nombreUsuario,
       contrasenaHash,
       contrasenaEstaBlanqueada: false,
+      debeCambiarContrasena: true,
       rol: ADMIN_SEMILLA.rol,
       habilitado: true,
       permisosJson,
+      borrado: false,
       fechaEliminacion: null,
     },
   });
@@ -56,9 +60,9 @@ async function retirarUsuariosDemoAnteriores(): Promise<void> {
   await prisma.usuario.updateMany({
     where: {
       id: { in: [ID_USUARIO_DUENO, ID_USUARIO_EMPLEADO] },
-      fechaEliminacion: null,
+      ...filtroNoBorrado,
     },
-    data: { fechaEliminacion: new Date() },
+    data: datosMarcarBorrado(),
   });
 }
 
@@ -69,7 +73,7 @@ async function main(): Promise<void> {
   await retirarUsuariosDemoAnteriores();
 
   const cantidadUsuarios = await prisma.usuario.count({
-    where: { fechaEliminacion: null },
+    where: filtroNoBorrado,
   });
 
   // eslint-disable-next-line no-console

@@ -39,6 +39,27 @@ export class ActualizarPermisosUsuarioDto implements PermisosOperativosUsuario {
   puedeGestionarCatalogoProductos!: boolean;
 
   @IsBoolean()
+  puedeGestionarClientes!: boolean;
+
+  @IsBoolean()
+  puedeGestionarCuentaCorriente!: boolean;
+
+  @IsBoolean()
+  puedeRegistrarVentas!: boolean;
+
+  @IsBoolean()
+  puedeCargarFacturaciones!: boolean;
+
+  @IsBoolean()
+  puedeGestionarProveedores!: boolean;
+
+  @IsBoolean()
+  puedeEditarConfiguracionNegocio!: boolean;
+
+  @IsBoolean()
+  puedeEditarConfiguracionSistema!: boolean;
+
+  @IsBoolean()
   puedeGestionarFichasDeUsuario!: boolean;
 
   @IsBoolean()

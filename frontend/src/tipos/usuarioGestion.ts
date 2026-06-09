@@ -18,6 +18,13 @@ export interface PermisosOperativosUsuario {
   puedeAjustarStock: boolean;
   puedeRegistrarCompras: boolean;
   puedeGestionarCatalogoProductos: boolean;
+  puedeGestionarClientes: boolean;
+  puedeGestionarCuentaCorriente: boolean;
+  puedeRegistrarVentas: boolean;
+  puedeCargarFacturaciones: boolean;
+  puedeGestionarProveedores: boolean;
+  puedeEditarConfiguracionNegocio: boolean;
+  puedeEditarConfiguracionSistema: boolean;
   /** Alta y edición de nombre, apellido, usuario de login, rol y contraseña (salvo blanqueo explícito). */
   puedeGestionarFichasDeUsuario: boolean;
   puedeInhabilitarUsuario: boolean;

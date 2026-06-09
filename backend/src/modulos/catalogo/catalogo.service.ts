@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { datosMarcarBorrado, filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { claveUnicaVariante } from '../../comunes/utilidades/clave-variante';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { armarNombreLineaComercial } from '../../comunes/utilidades/nombre-linea-comercial';
@@ -48,7 +49,7 @@ export class CatalogoService {
       where: { id: varianteId },
       include: { producto: true },
     });
-    if (!variante || variante.producto.fechaEliminacion) return 'Artículo';
+    if (!variante || variante.borrado || variante.producto.borrado) return 'Artículo';
     return armarNombreLineaComercial(
       variante.producto.nombre,
       variante.talle,
@@ -58,7 +59,7 @@ export class CatalogoService {
 
   async listarProductos(): Promise<ProductoConCategoriaApi[]> {
     const filas = await this.prisma.producto.findMany({
-      where: { fechaEliminacion: null },
+      where: filtroNoBorrado,
       include: { categoria: true },
       orderBy: { nombre: 'asc' },
     });
@@ -75,7 +76,7 @@ export class CatalogoService {
 
   async obtenerProductoPorId(id: string): Promise<ProductoConCategoriaApi> {
     const producto = await this.prisma.producto.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
       include: { categoria: true },
     });
     if (!producto) throw new NotFoundException('Producto no encontrado.');
@@ -144,22 +145,22 @@ export class CatalogoService {
     await this.obtenerProductoOError(id);
     await this.prisma.producto.update({
       where: { id },
-      data: { fechaEliminacion: new Date() },
+      data: datosMarcarBorrado(),
     });
   }
 
   async listarVariantes(productoId?: string): Promise<VarianteApi[]> {
     if (productoId) {
       const producto = await this.prisma.producto.findFirst({
-        where: { id: productoId, fechaEliminacion: null },
+        where: { id: productoId, ...filtroNoBorrado },
       });
       if (!producto) throw new NotFoundException('Producto no encontrado.');
     }
 
     const variantes = await this.prisma.variante.findMany({
       where: productoId
-        ? { productoId, producto: { fechaEliminacion: null } }
-        : { producto: { fechaEliminacion: null } },
+        ? { productoId, ...filtroNoBorrado, producto: filtroNoBorrado }
+        : { ...filtroNoBorrado, producto: filtroNoBorrado },
       orderBy: [{ talle: 'asc' }, { color: 'asc' }],
     });
     return variantes.map((v) => this.mapearVariante(v));
@@ -193,7 +194,9 @@ export class CatalogoService {
   }
 
   async actualizarVariante(id: string, datos: ActualizarVarianteDto): Promise<VarianteApi> {
-    const anterior = await this.prisma.variante.findUnique({ where: { id } });
+    const anterior = await this.prisma.variante.findFirst({
+      where: { id, ...filtroNoBorrado },
+    });
     if (!anterior) throw new NotFoundException('Variante no encontrada.');
     await this.obtenerProductoOError(datos.productoId);
 
@@ -222,11 +225,13 @@ export class CatalogoService {
   }
 
   async eliminarVariante(id: string): Promise<void> {
-    const variante = await this.prisma.variante.findUnique({ where: { id } });
+    const variante = await this.prisma.variante.findFirst({
+      where: { id, ...filtroNoBorrado },
+    });
     if (!variante) throw new NotFoundException('Variante no encontrada.');
 
     const activas = await this.prisma.variante.count({
-      where: { productoId: variante.productoId, activa: true },
+      where: { productoId: variante.productoId, activa: true, ...filtroNoBorrado },
     });
     if (activas <= 1 && variante.activa) {
       throw new ConflictException(
@@ -234,7 +239,10 @@ export class CatalogoService {
       );
     }
 
-    await this.prisma.variante.delete({ where: { id } });
+    await this.prisma.variante.update({
+      where: { id },
+      data: datosMarcarBorrado(),
+    });
   }
 
   private mapearVariante(variante: {
@@ -262,7 +270,9 @@ export class CatalogoService {
     excluirVarianteId?: string,
   ): Promise<boolean> {
     const clave = claveUnicaVariante(talle, color);
-    const variantes = await this.prisma.variante.findMany({ where: { productoId } });
+    const variantes = await this.prisma.variante.findMany({
+      where: { productoId, ...filtroNoBorrado },
+    });
     return variantes.some(
       (v) =>
         v.id !== excluirVarianteId && claveUnicaVariante(v.talle, v.color) === clave,
@@ -271,14 +281,16 @@ export class CatalogoService {
 
   private async obtenerProductoOError(id: string) {
     const producto = await this.prisma.producto.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!producto) throw new NotFoundException('Producto no encontrado.');
     return producto;
   }
 
   private async validarCategoriaExiste(categoriaId: string): Promise<void> {
-    const categoria = await this.prisma.categoria.findUnique({ where: { id: categoriaId } });
+    const categoria = await this.prisma.categoria.findFirst({
+      where: { id: categoriaId, ...filtroNoBorrado },
+    });
     if (!categoria) throw new NotFoundException('Categoría no encontrada.');
   }
 }

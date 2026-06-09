@@ -15,6 +15,9 @@ import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema'
 import { useRegistroComprasStore } from '../../stores/registroCompras';
 import { useStockStore } from '../../stores/stock';
 import type { Producto, Variante } from '../../tipos/catalogo';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('productos-catalogo');
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -398,10 +401,7 @@ onMounted(() => {
             <div>
               <p class="pg-eyebrow">Productos · Catálogo</p>
               <h1 id="titulo-prod" class="pg-titulo">Catálogo de productos</h1>
-              <p class="pg-sub">
-                Artículos del negocio con variantes por talle y color. El stock y las ventas operan
-                sobre cada variante; el precio de referencia aplica a todo el producto.
-              </p>
+              <p class="pg-sub">{{ descripcionPagina }}</p>
             </div>
           </div>
         </div>

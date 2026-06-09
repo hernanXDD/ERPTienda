@@ -16,6 +16,13 @@ export interface PermisosOperativosUsuario {
   puedeAjustarStock: boolean;
   puedeRegistrarCompras: boolean;
   puedeGestionarCatalogoProductos: boolean;
+  puedeGestionarClientes: boolean;
+  puedeGestionarCuentaCorriente: boolean;
+  puedeRegistrarVentas: boolean;
+  puedeCargarFacturaciones: boolean;
+  puedeGestionarProveedores: boolean;
+  puedeEditarConfiguracionNegocio: boolean;
+  puedeEditarConfiguracionSistema: boolean;
   puedeGestionarFichasDeUsuario: boolean;
   puedeInhabilitarUsuario: boolean;
   puedeEliminarUsuario: boolean;
@@ -46,6 +53,13 @@ export function permisosPorDefectoSegunRol(rol: RolUsuario): PermisosOperativosU
     puedeAjustarStock: esElevado,
     puedeRegistrarCompras: esElevado,
     puedeGestionarCatalogoProductos: esElevado,
+    puedeGestionarClientes: esElevado,
+    puedeGestionarCuentaCorriente: esElevado,
+    puedeRegistrarVentas: esElevado,
+    puedeCargarFacturaciones: esElevado,
+    puedeGestionarProveedores: esElevado,
+    puedeEditarConfiguracionNegocio: esElevado,
+    puedeEditarConfiguracionSistema: esElevado,
     puedeGestionarFichasDeUsuario: esElevado,
     puedeInhabilitarUsuario: esElevado,
     puedeEliminarUsuario: esElevado,

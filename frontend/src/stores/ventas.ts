@@ -6,6 +6,7 @@ import {
   registrarVentaApi,
   type VentaRegistradaApi,
 } from '../servicios/ventas.servicio';
+import { mensajeErrorHttp } from '../servicios/apiUtil';
 import type {
   IdFormaPago,
   ItemCargarFacturacion,
@@ -17,6 +18,10 @@ import { CONDICION_IVA_POR_DEFECTO } from '../tipos/condicionIva';
 import { ESTADO_FACTURACION_PENDIENTE } from '../tipos/venta';
 import type { RegistroOperador } from '../tipos/registroOperador';
 import { crearRegistroOperadorDesdeSesion } from '../utilidades/registroOperadorSesion';
+import {
+  crearSincronizadorListaRemota,
+  type OpcionesCargaLista,
+} from '../utilidades/sincronizacionListaRemota';
 
 export interface DatosRegistrarVenta {
   clienteId: string | null;
@@ -53,21 +58,39 @@ function mapearVentaApi(
   };
 }
 
+const sincronizador = crearSincronizadorListaRemota();
+
 export const useVentasStore = defineStore('ventas', () => {
   const ventas = ref<VentaRegistrada[]>([]);
   const cargandoVentas = ref(false);
+  const errorVentas = ref<string | null>(null);
   let ventasSincronizadas = false;
 
-  async function cargarVentas(): Promise<void> {
-    if (cargandoVentas.value) return;
-    cargandoVentas.value = true;
-    try {
-      const lista = await listarVentasApi();
-      ventas.value = lista.map((v) => mapearVentaApi(v));
-      ventasSincronizadas = true;
-    } finally {
-      cargandoVentas.value = false;
-    }
+  async function cargarVentas(opciones?: OpcionesCargaLista): Promise<void> {
+    if (ventasSincronizadas && !opciones?.forzar) return;
+
+    await sincronizador.serializarCarga(async () => {
+      if (ventasSincronizadas && !opciones?.forzar) return;
+
+      const generacion = sincronizador.generacionAlIniciarCarga();
+      cargandoVentas.value = true;
+      errorVentas.value = null;
+      try {
+        const lista = await listarVentasApi();
+        if (sincronizador.esRespuestaObsoleta(generacion)) return;
+        ventas.value = lista.map((v) => mapearVentaApi(v));
+        ventasSincronizadas = true;
+      } catch (error: unknown) {
+        if (!sincronizador.esRespuestaObsoleta(generacion)) {
+          errorVentas.value = mensajeErrorHttp(error, 'No se pudieron cargar las ventas desde el servidor.');
+        }
+        throw error;
+      } finally {
+        if (!sincronizador.esRespuestaObsoleta(generacion)) {
+          cargandoVentas.value = false;
+        }
+      }
+    });
   }
 
   async function asegurarVentasCargadas(): Promise<void> {
@@ -75,14 +98,17 @@ export const useVentasStore = defineStore('ventas', () => {
   }
 
   async function registrarVenta(datos: DatosRegistrarVenta): Promise<VentaRegistrada> {
+    sincronizador.marcarMutacionLocal();
     const registradaApi = await registrarVentaApi(datos);
     const registrada = mapearVentaApi(registradaApi, crearRegistroOperadorDesdeSesion());
     ventas.value = [registrada, ...ventas.value.filter((v) => v.id !== registrada.id)];
     ventasSincronizadas = true;
+    errorVentas.value = null;
     return registrada;
   }
 
   async function cargarFacturaciones(items: ItemCargarFacturacion[]): Promise<void> {
+    sincronizador.marcarMutacionLocal();
     const actualizadasApi = await cargarFacturacionesApi(items);
     const actualizadas = actualizadasApi.map((venta) => mapearVentaApi(venta));
     const porId = new Map(actualizadas.map((venta) => [venta.id, venta]));
@@ -90,12 +116,22 @@ export const useVentasStore = defineStore('ventas', () => {
     ventasSincronizadas = true;
   }
 
+  function reiniciar(): void {
+    ventas.value = [];
+    cargandoVentas.value = false;
+    errorVentas.value = null;
+    ventasSincronizadas = false;
+    sincronizador.marcarMutacionLocal();
+  }
+
   return {
     ventas,
     cargandoVentas,
+    errorVentas,
     cargarVentas,
     asegurarVentasCargadas,
     registrarVenta,
     cargarFacturaciones,
+    reiniciar,
   };
 });

@@ -4,28 +4,24 @@ ERP TIENDA — Comandos para levantar y probar el sistema (local)
 
 Requisitos: Node.js 20+, Docker, npm.
 
-Rutas: ejecutar desde /home/hernan/Proyectos/ERPTienda salvo que diga otra carpeta.
+Rutas: ejecutar desde la raíz del proyecto (donde está docker-compose.yml).
 
 
 --------------------------------------------------------------------------------
-1) CONFIGURACIÓN INICIAL (solo la primera vez)
+1) CONFIGURACIÓN INICIAL / REACTIVAR DESARROLLO LOCAL
 --------------------------------------------------------------------------------
 
-cd /home/hernan/Proyectos/ERPTienda
+cd /ruta/al/proyecto/ERPTienda
 
-cp .env.example .env
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+# Un solo comando: .env, Docker, dependencias, migraciones y semilla:
+chmod +x scripts/preparar-desarrollo-local.sh dev.sh
+./scripts/preparar-desarrollo-local.sh
 
-# Si el puerto 5432 ya está ocupado por otro PostgreSQL:
-#   - En .env (raíz): POSTGRES_PORT=5433
-#   - En backend/.env: DATABASE_URL=postgresql://sa:6561@localhost:5433/ERPTienda?schema=public
+# Fedora: si 5432 está ocupado por PostgreSQL del sistema, .env ya usa 5433.
+# Verificar que backend/.env tenga el mismo puerto en DATABASE_URL.
 
-cd backend
-npm install
-
-cd ../frontend
-npm install
+# Levantar todo (PostgreSQL + API + frontend):
+./dev.sh
 
 
 --------------------------------------------------------------------------------
@@ -77,20 +73,17 @@ npm run dev
 
 
 --------------------------------------------------------------------------------
-5) LEVANTAR TODO (resumen — 3 terminales)
+5) LEVANTAR TODO
 --------------------------------------------------------------------------------
 
-Terminal 1 — PostgreSQL:
+Opción A — un comando (recomendado):
   cd /home/hernan/Proyectos/ERPTienda
-  docker compose up -d
+  ./dev.sh
 
-Terminal 2 — Backend:
-  cd /home/hernan/Proyectos/ERPTienda/backend
-  npm run start:dev
-
-Terminal 3 — Frontend:
-  cd /home/hernan/Proyectos/ERPTienda/frontend
-  npm run dev
+Opción B — 3 terminales:
+  Terminal 1: docker compose up -d
+  Terminal 2: cd backend && npm run start:dev
+  Terminal 3: cd frontend && npm run dev
 
 
 --------------------------------------------------------------------------------
@@ -99,7 +92,7 @@ Terminal 3 — Frontend:
 
 Usuario          Contraseña
 -------          ----------
-admin            Ophhre43u
+admin            12345678
 
 Cambiar la contraseña del administrador antes de probar en red compartida.
 
@@ -114,12 +107,17 @@ npm run db:seed
 
 
 --------------------------------------------------------------------------------
-8) REINICIAR BASE DESDE CERO (borra todos los datos — solo desarrollo)
+8) REINICIAR BASE DESDE CERO (como primera migración — borra todos los datos)
 --------------------------------------------------------------------------------
 
-cd /home/hernan/Proyectos/ERPTienda/backend
-npx prisma migrate reset
-npm run db:seed
+cd /home/hernan/Proyectos/ERPTienda
+chmod +x scripts/reiniciar-base-local.sh
+./scripts/reiniciar-base-local.sh
+
+# Equivalente manual:
+#   docker compose down -v
+#   docker compose up -d
+#   cd backend && npx prisma generate && npm run db:migrate && npm run db:seed
 
 
 --------------------------------------------------------------------------------

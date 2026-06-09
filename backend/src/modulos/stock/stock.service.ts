@@ -6,6 +6,7 @@ import {
   ID_MOTIVO_SALIDA_VENTA,
 } from '../../comunes/constantes/ids-motivo-stock';
 import { armarNombreLineaComercial } from '../../comunes/utilidades/nombre-linea-comercial';
+import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogoService } from '../catalogo/catalogo.service';
@@ -253,7 +254,7 @@ export class StockService {
     const resumen: ResumenStockVarianteApi[] = [];
     for (const fila of filas) {
       const { variante } = fila;
-      if (variante.producto.fechaEliminacion) continue;
+      if (variante.borrado || variante.producto.borrado) continue;
       resumen.push({
         varianteId: variante.id,
         productoId: variante.productoId,
@@ -454,7 +455,7 @@ export class StockService {
 
     return this.prisma.$transaction(async (tx) => {
       const variantes = await tx.variante.findMany({
-        where: { id: { in: idsVariantes }, activa: true, producto: { fechaEliminacion: null } },
+        where: { id: { in: idsVariantes }, activa: true, ...filtroNoBorrado, producto: filtroNoBorrado },
         include: { producto: true },
       });
       const mapaVariantes = new Map(variantes.map((v) => [v.id, v]));
@@ -700,7 +701,7 @@ export class StockService {
       where: { id: varianteId },
       include: { producto: true },
     });
-    if (!variante || variante.producto.fechaEliminacion) {
+    if (!variante || variante.borrado || variante.producto.borrado) {
       throw new NotFoundException('Variante no encontrada.');
     }
   }

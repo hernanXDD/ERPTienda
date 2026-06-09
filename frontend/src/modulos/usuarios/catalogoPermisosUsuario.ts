@@ -2,6 +2,8 @@ import type { Component } from 'vue';
 import {
   Boxes,
   LayoutGrid,
+  Receipt,
+  Settings,
   UserCog,
 } from 'lucide-vue-next';
 import { elementosMenuPrincipal } from '../nucleo/elementosNavegacion';
@@ -70,7 +72,13 @@ export const GRUPOS_PERMISOS_OPERATIVOS: GrupoPermisosOperativos[] = [
       {
         clave: 'puedeRegistrarCompras',
         etiqueta: 'Registro de compras',
-        descripcion: 'Alta de proveedores y carga de compras contra inventario.',
+        descripcion: 'Carga de compras contra inventario.',
+        sensibilidad: 'normal',
+      },
+      {
+        clave: 'puedeGestionarProveedores',
+        etiqueta: 'Proveedores',
+        descripcion: 'Alta, edición y baja de proveedores.',
         sensibilidad: 'normal',
       },
       {
@@ -82,9 +90,61 @@ export const GRUPOS_PERMISOS_OPERATIVOS: GrupoPermisosOperativos[] = [
     ],
   },
   {
+    id: 'ventas-cobranzas',
+    titulo: 'Ventas y cobranzas',
+    descripcion: 'Operación comercial con clientes y cuenta corriente.',
+    icono: Receipt,
+    permisos: [
+      {
+        clave: 'puedeRegistrarVentas',
+        etiqueta: 'Registrar ventas',
+        descripcion: 'Confirmar ventas desde el centro de ventas.',
+        sensibilidad: 'normal',
+      },
+      {
+        clave: 'puedeCargarFacturaciones',
+        etiqueta: 'Carga de facturaciones',
+        descripcion: 'Importar números de facturación en el historial de ventas.',
+        sensibilidad: 'normal',
+      },
+      {
+        clave: 'puedeGestionarClientes',
+        etiqueta: 'Fichas de clientes',
+        descripcion: 'Alta, edición y baja de clientes.',
+        sensibilidad: 'normal',
+      },
+      {
+        clave: 'puedeGestionarCuentaCorriente',
+        etiqueta: 'Cobranzas en cuenta corriente',
+        descripcion: 'Registrar pagos y emitir recibos de cobro.',
+        sensibilidad: 'elevada',
+      },
+    ],
+  },
+  {
+    id: 'configuracion',
+    titulo: 'Configuración del sistema',
+    descripcion: 'Datos institucionales y parámetros globales.',
+    icono: Settings,
+    permisos: [
+      {
+        clave: 'puedeEditarConfiguracionNegocio',
+        etiqueta: 'Datos del negocio',
+        descripcion: 'Editar razón social, CUIT, contacto y redes.',
+        sensibilidad: 'elevada',
+      },
+      {
+        clave: 'puedeEditarConfiguracionSistema',
+        etiqueta: 'Parámetros del sistema',
+        descripcion: 'Límites operativos y preferencias globales.',
+        sensibilidad: 'elevada',
+      },
+    ],
+  },
+  {
     id: 'usuarios',
     titulo: 'Administración de usuarios',
-    descripcion: 'Control del directorio local de cuentas del personal.',
+    descripcion: 'Control del directorio de cuentas del personal.',
     icono: UserCog,
     permisos: [
       {

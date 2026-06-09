@@ -14,6 +14,12 @@ import {
 import type { RolUsuario } from '../tipos/sesion';
 import type { PermisosOperativosUsuario, UsuarioGestion } from '../tipos/usuarioGestion';
 import { useSesionStore } from './sesion';
+import {
+  crearSincronizadorListaRemota,
+  type OpcionesCargaLista,
+} from '../utilidades/sincronizacionListaRemota';
+
+const sincronizador = crearSincronizadorListaRemota();
 
 export interface DatosAltaUsuarioGestion {
   nombre: string;
@@ -42,15 +48,25 @@ export const useGestionUsuariosStore = defineStore('gestionUsuarios', () => {
   const cargando = ref(false);
   let sincronizado = false;
 
-  async function cargar(): Promise<void> {
-    if (cargando.value) return;
-    cargando.value = true;
-    try {
-      usuarios.value = await listarUsuariosApi();
-      sincronizado = true;
-    } finally {
-      cargando.value = false;
-    }
+  async function cargar(opciones?: OpcionesCargaLista): Promise<void> {
+    if (sincronizado && !opciones?.forzar) return;
+
+    await sincronizador.serializarCarga(async () => {
+      if (sincronizado && !opciones?.forzar) return;
+
+      const generacion = sincronizador.generacionAlIniciarCarga();
+      cargando.value = true;
+      try {
+        const lista = await listarUsuariosApi();
+        if (sincronizador.esRespuestaObsoleta(generacion)) return;
+        usuarios.value = lista;
+        sincronizado = true;
+      } finally {
+        if (!sincronizador.esRespuestaObsoleta(generacion)) {
+          cargando.value = false;
+        }
+      }
+    });
   }
 
   async function asegurarCargado(): Promise<void> {
@@ -72,18 +88,21 @@ export const useGestionUsuariosStore = defineStore('gestionUsuarios', () => {
   function reemplazarUsuarioEnLista(actualizado: UsuarioGestion): void {
     const idx = usuarios.value.findIndex((u) => u.id === actualizado.id);
     if (idx === -1) {
-      usuarios.value = [...usuarios.value, actualizado];
+      usuarios.value = [...usuarios.value.filter((u) => u.id !== actualizado.id), actualizado];
       return;
     }
     const copia = [...usuarios.value];
     copia[idx] = actualizado;
     usuarios.value = copia;
+    sincronizado = true;
   }
 
   async function agregarUsuario(datos: DatosAltaUsuarioGestion): Promise<true | string> {
     try {
+      sincronizador.marcarMutacionLocal();
       const creado = await crearUsuarioApi(datos);
-      usuarios.value = [...usuarios.value, creado];
+      usuarios.value = [...usuarios.value.filter((u) => u.id !== creado.id), creado];
+      sincronizado = true;
       return true;
     } catch (error) {
       return mensajeErrorHttp(error, 'No se pudo crear el usuario.');
@@ -95,6 +114,7 @@ export const useGestionUsuariosStore = defineStore('gestionUsuarios', () => {
     datos: DatosActualizacionUsuarioGestion,
   ): Promise<true | string> {
     try {
+      sincronizador.marcarMutacionLocal();
       const payload: Parameters<typeof actualizarUsuarioApi>[1] = {
         nombre: datos.nombre,
         apellido: datos.apellido,
@@ -118,6 +138,7 @@ export const useGestionUsuariosStore = defineStore('gestionUsuarios', () => {
     permisosActualizacion: PermisosOperativosUsuario,
   ): Promise<boolean> {
     try {
+      sincronizador.marcarMutacionLocal();
       const permisos = {
         ...permisosActualizacion,
         menusVisibles: menusVisiblesResueltos(permisosActualizacion.menusVisibles),
@@ -135,6 +156,7 @@ export const useGestionUsuariosStore = defineStore('gestionUsuarios', () => {
     habilitadoValor: boolean,
   ): Promise<true | string> {
     try {
+      sincronizador.marcarMutacionLocal();
       const actualizado = await establecerHabilitacionUsuarioApi(id, habilitadoValor);
       reemplazarUsuarioEnLista(actualizado);
       return true;
@@ -145,6 +167,7 @@ export const useGestionUsuariosStore = defineStore('gestionUsuarios', () => {
 
   async function blanquearContraseniaUsuario(idUsuario: string): Promise<true | string> {
     try {
+      sincronizador.marcarMutacionLocal();
       const actualizado = await blanquearContraseniaUsuarioApi(idUsuario);
       reemplazarUsuarioEnLista(actualizado);
       return true;
@@ -155,8 +178,10 @@ export const useGestionUsuariosStore = defineStore('gestionUsuarios', () => {
 
   async function eliminarUsuario(id: string): Promise<true | string> {
     try {
+      sincronizador.marcarMutacionLocal();
       await eliminarUsuarioApi(id);
       usuarios.value = usuarios.value.filter((u) => u.id !== id);
+      sincronizado = true;
       return true;
     } catch (error) {
       return mensajeErrorHttp(error, 'No se pudo eliminar el usuario.');

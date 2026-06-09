@@ -59,7 +59,7 @@ npm install
 npm run dev
 ```
 
-App: http://localhost:5173 — Login demo: `admin` / `Ophhre43u`
+App: http://localhost:5173 — Login demo: `admin` / `12345678`
 
 ## Documentación API
 

@@ -11,6 +11,12 @@ import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useProveedoresStore } from '../../stores/proveedores';
 import type { Proveedor } from '../../tipos/proveedor';
 import { IdCard, Landmark, MapPin, Phone, Truck } from 'lucide-vue-next';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { usePermisosOperador } from '../../composables/usePermisosOperador';
+
+const descripcionPagina = obtenerDescripcionPagina('compras-proveedores');
+const { tienePermiso } = usePermisosOperador();
+const puedeGestionarProveedores = computed(() => tienePermiso('puedeGestionarProveedores'));
 
 type ModoDialogoProveedor = 'alta' | 'detalle';
 
@@ -287,9 +293,7 @@ function alCerrarDialogo() {
           <div>
             <p class="pg-eyebrow">Compras · Proveedores</p>
             <h1 id="titulo-alta-proveedores" class="pg-titulo">Proveedores</h1>
-            <p class="pg-sub">
-              Fichas de proveedores, contacto y condiciones de compra a crédito.
-            </p>
+            <p class="pg-sub">{{ descripcionPagina }}</p>
           </div>
         </div>
       </div>
@@ -309,7 +313,14 @@ function alCerrarDialogo() {
           />
         </div>
         <div class="prv-acciones">
-          <button type="button" class="pg-btn-primario" @click="abrirAltaProveedor">Nuevo proveedor</button>
+          <button
+            v-if="puedeGestionarProveedores"
+            type="button"
+            class="pg-btn-primario"
+            @click="abrirAltaProveedor"
+          >
+            Nuevo proveedor
+          </button>
         </div>
       </div>
     </div>
@@ -660,7 +671,7 @@ function alCerrarDialogo() {
                 {{ modoDialogoProveedor === 'alta' ? 'Crear proveedor' : 'Guardar cambios' }}
               </button>
               <button
-                v-else
+                v-else-if="puedeGestionarProveedores"
                 type="button"
                 class="prv-btn-pri"
                 @click="activarEdicionProveedor"

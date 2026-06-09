@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
-import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
 import { MENUS_LECTURA_NEGOCIO } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
@@ -20,7 +20,7 @@ export class NegocioController {
   }
 
   @Patch()
-  @RequiereMenu('configuracion')
+  @RequierePermiso('puedeEditarConfiguracionNegocio')
   async actualizar(@Body() datos: ActualizarNegocioDto) {
     const negocio = await this.negocioService.actualizar(datos);
     return respuestaOk(negocio, 'Datos del negocio actualizados correctamente.');

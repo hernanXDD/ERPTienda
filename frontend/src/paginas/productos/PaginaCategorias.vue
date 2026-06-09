@@ -6,6 +6,9 @@ import { usePermisosOperador } from '../../composables/usePermisosOperador';
 import { useCatalogoStore } from '../../stores/catalogo';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import type { Categoria } from '../../tipos/catalogo';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('productos-categorias');
 
 const catalogo = useCatalogoStore();
 const { categorias, productos } = storeToRefs(catalogo);
@@ -158,10 +161,7 @@ onMounted(() => {
             <div>
               <p class="pg-eyebrow">Productos · Catálogo</p>
               <h1 id="titulo-cat" class="pg-titulo">Categorías</h1>
-              <p class="pg-sub">
-                Tipos de producto del negocio (remera, buzo, calzado…). Cada artículo del catálogo
-                debe tener una categoría asignada. No podés borrar una que tenga productos.
-              </p>
+              <p class="pg-sub">{{ descripcionPagina }}</p>
             </div>
           </div>
         </div>

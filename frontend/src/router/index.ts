@@ -247,6 +247,13 @@ router.beforeEach(async (to) => {
     return { name: 'inicio-sesion', query: { siguiente } };
   }
 
+  if (sesion.usuario?.debeCambiarContrasena === true) {
+    if (to.name !== 'inicio') {
+      return { name: 'inicio' };
+    }
+    return true;
+  }
+
   await cargarDatosMaestros();
 
   if (rutaRequiereConfiguracionApp(to.name)) {

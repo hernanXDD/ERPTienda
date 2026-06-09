@@ -21,6 +21,12 @@ import {
   claveUnicaVariante,
 } from '../modulos/catalogo/catalogoPresentacion';
 import type { Categoria, Producto, Variante } from '../tipos/catalogo';
+import {
+  crearSincronizadorListaRemota,
+  type OpcionesCargaLista,
+} from '../utilidades/sincronizacionListaRemota';
+
+const sincronizador = crearSincronizadorListaRemota();
 
 export const useCatalogoStore = defineStore('catalogo', () => {
   const categorias = ref<Categoria[]>([]);
@@ -53,22 +59,31 @@ export const useCatalogoStore = defineStore('catalogo', () => {
     return m;
   });
 
-  async function cargar(): Promise<void> {
-    if (cargando.value) return;
-    cargando.value = true;
-    try {
-      const [cats, prods, vars] = await Promise.all([
-        listarCategoriasApi(),
-        listarProductosApi(),
-        listarVariantesApi(),
-      ]);
-      categorias.value = cats;
-      productos.value = prods;
-      variantes.value = vars;
-      sincronizado = true;
-    } finally {
-      cargando.value = false;
-    }
+  async function cargar(opciones?: OpcionesCargaLista): Promise<void> {
+    if (sincronizado && !opciones?.forzar) return;
+
+    await sincronizador.serializarCarga(async () => {
+      if (sincronizado && !opciones?.forzar) return;
+
+      const generacion = sincronizador.generacionAlIniciarCarga();
+      cargando.value = true;
+      try {
+        const [cats, prods, vars] = await Promise.all([
+          listarCategoriasApi(),
+          listarProductosApi(),
+          listarVariantesApi(),
+        ]);
+        if (sincronizador.esRespuestaObsoleta(generacion)) return;
+        categorias.value = cats;
+        productos.value = prods;
+        variantes.value = vars;
+        sincronizado = true;
+      } finally {
+        if (!sincronizador.esRespuestaObsoleta(generacion)) {
+          cargando.value = false;
+        }
+      }
+    });
   }
 
   async function asegurarCargado(): Promise<void> {
@@ -129,12 +144,15 @@ export const useCatalogoStore = defineStore('catalogo', () => {
   }
 
   async function agregarCategoria(c: Omit<Categoria, 'id'>): Promise<Categoria> {
+    sincronizador.marcarMutacionLocal();
     const nueva = await crearCategoriaApi(c);
-    categorias.value = [...categorias.value, nueva];
+    categorias.value = [...categorias.value.filter((x) => x.id !== nueva.id), nueva];
+    sincronizado = true;
     return nueva;
   }
 
   async function actualizarCategoria(id: string, datos: Omit<Categoria, 'id'>): Promise<void> {
+    sincronizador.marcarMutacionLocal();
     const actualizada = await actualizarCategoriaApi(id, datos);
     const idx = categorias.value.findIndex((x) => x.id === id);
     if (idx === -1) {
@@ -144,43 +162,54 @@ export const useCatalogoStore = defineStore('catalogo', () => {
     const copia = [...categorias.value];
     copia[idx] = actualizada;
     categorias.value = copia;
+    sincronizado = true;
   }
 
   async function eliminarCategoria(id: string): Promise<boolean> {
     const enUso = productos.value.some((p) => p.categoriaId === id);
     if (enUso) return false;
+    sincronizador.marcarMutacionLocal();
     await eliminarCategoriaApi(id);
     categorias.value = categorias.value.filter((c) => c.id !== id);
+    sincronizado = true;
     return true;
   }
 
   async function agregarProducto(p: Omit<Producto, 'id'>): Promise<Producto> {
+    sincronizador.marcarMutacionLocal();
     const nuevo = await crearProductoApi(p);
-    productos.value = [...productos.value, nuevo];
+    productos.value = [...productos.value.filter((x) => x.id !== nuevo.id), nuevo];
+    sincronizado = true;
     return nuevo;
   }
 
   async function actualizarProducto(id: string, datos: Omit<Producto, 'id'>): Promise<void> {
+    sincronizador.marcarMutacionLocal();
     const actualizado = await actualizarProductoApi(id, datos);
     const idx = productos.value.findIndex((x) => x.id === id);
     if (idx === -1) return;
     const copia = [...productos.value];
     copia[idx] = actualizado;
     productos.value = copia;
+    sincronizado = true;
   }
 
   async function eliminarProducto(id: string): Promise<string[]> {
     const idsVariantes = variantes.value.filter((v) => v.productoId === id).map((v) => v.id);
+    sincronizador.marcarMutacionLocal();
     await eliminarProductoApi(id);
     productos.value = productos.value.filter((p) => p.id !== id);
     variantes.value = variantes.value.filter((v) => v.productoId !== id);
+    sincronizado = true;
     return idsVariantes;
   }
 
   async function agregarVariante(v: Omit<Variante, 'id'>): Promise<Variante | null> {
     if (existeCombinacionVariante(v.productoId, v.talle, v.color)) return null;
+    sincronizador.marcarMutacionLocal();
     const nueva = await crearVarianteApi(v);
-    variantes.value = [...variantes.value, nueva];
+    variantes.value = [...variantes.value.filter((x) => x.id !== nueva.id), nueva];
+    sincronizado = true;
     return nueva;
   }
 
@@ -188,12 +217,14 @@ export const useCatalogoStore = defineStore('catalogo', () => {
     if (existeCombinacionVariante(datos.productoId, datos.talle, datos.color, id)) {
       return false;
     }
+    sincronizador.marcarMutacionLocal();
     const actualizada = await actualizarVarianteApi(id, datos);
     const idx = variantes.value.findIndex((x) => x.id === id);
     if (idx === -1) return false;
     const copia = [...variantes.value];
     copia[idx] = actualizada;
     variantes.value = copia;
+    sincronizado = true;
     return true;
   }
 
@@ -202,8 +233,10 @@ export const useCatalogoStore = defineStore('catalogo', () => {
     if (!variante) return false;
     const activasDelProducto = variantesDeProducto(variante.productoId);
     if (activasDelProducto.length <= 1 && variante.activa) return false;
+    sincronizador.marcarMutacionLocal();
     await eliminarVarianteApi(id);
     variantes.value = variantes.value.filter((v) => v.id !== id);
+    sincronizado = true;
     return true;
   }
 

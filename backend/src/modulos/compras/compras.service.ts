@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { siguienteNumeroComprobante } from '../../comunes/utilidades/numero-comprobante';
+import { validarLineasYTotalComprobante } from '../../comunes/utilidades/validar-totales-comprobante';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { CatalogoService } from '../catalogo/catalogo.service';
 import { StockService } from '../stock/stock.service';
 import { RegistrarCompraDto } from './dto/registrar-compra.dto';
@@ -56,8 +58,18 @@ export class ComprasService {
   }
 
   async registrar(datos: RegistrarCompraDto, operador: UsuarioSesion): Promise<CompraRegistradaApi> {
+    const { lineasNormalizadas, totalCalculado } = validarLineasYTotalComprobante(
+      datos.lineas.map((ln) => ({
+        cantidad: ln.cantidad,
+        precioUnitario: ln.costoUnitario,
+        subtotal: ln.subtotal,
+      })),
+      datos.total,
+      'costo unitario',
+    );
+
     const proveedor = await this.prisma.proveedor.findFirst({
-      where: { id: datos.proveedorId, fechaEliminacion: null },
+      where: { id: datos.proveedorId, ...filtroNoBorrado },
     });
     if (!proveedor) throw new NotFoundException('Proveedor no encontrado.');
 
@@ -77,7 +89,7 @@ export class ComprasService {
           proveedorId: datos.proveedorId,
           nombreProveedorMostrar: datos.nombreProveedorMostrar.trim(),
           condicionCompra: datos.condicionCompra,
-          total: new Prisma.Decimal(datos.total),
+          total: new Prisma.Decimal(totalCalculado),
           observaciones: datos.observaciones?.trim() ?? '',
           lineas: {
             create: datos.lineas.map((ln, indice) => ({
@@ -85,8 +97,8 @@ export class ComprasService {
               varianteId: ln.varianteId ?? null,
               nombre: ln.nombre.trim(),
               cantidad: ln.cantidad,
-              costoUnitario: new Prisma.Decimal(ln.costoUnitario),
-              subtotal: new Prisma.Decimal(ln.subtotal),
+              costoUnitario: new Prisma.Decimal(lineasNormalizadas[indice].precioUnitario),
+              subtotal: new Prisma.Decimal(lineasNormalizadas[indice].subtotal),
             })),
           },
         },

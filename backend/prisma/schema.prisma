@@ -68,15 +68,17 @@ model Usuario {
   id                       String     @id @db.Char(6)
   nombre                   String     @db.VarChar(64)
   apellido                 String     @db.VarChar(64)
-  nombreUsuario            String     @unique @map("nombre_usuario") @db.VarChar(64)
-  contrasenaHash           String     @map("contrasena_hash") @db.VarChar(255)
+  nombreUsuario            String     @map("nombre_usuario") @db.VarChar(64)
+  contrasenaHash           String     @map("contrasena_hash") @db.VarChar(255) /// Hash bcrypt; nunca almacenar texto plano
   contrasenaEstaBlanqueada Boolean    @default(false) @map("contrasena_esta_blanqueada")
+  debeCambiarContrasena    Boolean    @default(true) @map("debe_cambiar_contrasena")
   rol                      RolUsuario
   habilitado               Boolean    @default(true)
   /// Permisos operativos + menús visibles (JSON, mismo shape que frontend)
   permisosJson             Json       @map("permisos_json")
   fechaCreacion            DateTime   @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
   fechaActualizacion       DateTime   @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  borrado                  Boolean    @default(false)
   fechaEliminacion         DateTime?  @map("fecha_eliminacion") @db.Timestamptz(3)
 
   movimientosStock           MovimientoStock[]
@@ -85,20 +87,26 @@ model Usuario {
 
   @@index([habilitado])
   @@index([rol])
+  @@index([nombreUsuario])
+  @@index([borrado])
   @@map("usuario")
 }
 
 // —— Catálogo ——
 
 model Categoria {
-  id                 String   @id @db.Char(6)
-  nombre             String   @unique @db.VarChar(120)
-  descripcion        String   @default("") @db.VarChar(500)
-  fechaCreacion      DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
-  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  id                 String    @id @db.Char(6)
+  nombre             String    @db.VarChar(120)
+  descripcion        String    @default("") @db.VarChar(500)
+  fechaCreacion      DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  borrado            Boolean   @default(false)
+  fechaEliminacion   DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
 
   productos Producto[]
 
+  @@index([nombre])
+  @@index([borrado])
   @@map("categoria")
 }
 
@@ -111,6 +119,7 @@ model Producto {
   precioVenta        Decimal   @map("precio_venta") @db.Decimal(14, 2)
   fechaCreacion      DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
   fechaActualizacion DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  borrado            Boolean   @default(false)
   fechaEliminacion   DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
 
   categoria Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
@@ -118,6 +127,7 @@ model Producto {
 
   @@index([categoriaId])
   @@index([nombre])
+  @@index([borrado])
   @@map("producto")
 }
 
@@ -127,9 +137,11 @@ model Variante {
   talle              String   @db.VarChar(32)
   color              String   @db.VarChar(64)
   codigoBarras       String   @default("") @map("codigo_barras") @db.VarChar(64)
-  activa             Boolean  @default(true)
-  fechaCreacion      DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
-  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  activa             Boolean   @default(true)
+  fechaCreacion      DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  borrado            Boolean   @default(false)
+  fechaEliminacion   DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
 
   producto         Producto          @relation(fields: [productoId], references: [id], onDelete: Cascade)
   stock            StockVariante?
@@ -137,9 +149,10 @@ model Variante {
   lineasVenta      VentaLinea[]
   lineasCompra     CompraLinea[]
 
-  @@unique([productoId, talle, color])
+  @@index([productoId, talle, color])
   @@index([codigoBarras])
   @@index([activa])
+  @@index([borrado])
   @@map("variante")
 }
 
@@ -232,7 +245,7 @@ model MovimientoStock {
 model Cliente {
   id                          String    @id @db.Char(6)
   nombre                      String    @db.VarChar(200)
-  documento                   String    @unique @db.VarChar(32)
+  documento                   String    @db.VarChar(32)
   correoElectronico           String    @default("") @map("correo_electronico") @db.VarChar(255)
   telefonoPrincipal           String    @default("") @map("telefono_principal") @db.VarChar(32)
   telefonoAlternativo         String    @default("") @map("telefono_alternativo") @db.VarChar(32)
@@ -243,6 +256,7 @@ model Cliente {
   habilitado                  Boolean   @default(true)
   fechaCreacion               DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
   fechaActualizacion          DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  borrado                     Boolean   @default(false)
   fechaEliminacion            DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
 
   ventas                     Venta[]
@@ -250,6 +264,8 @@ model Cliente {
 
   @@index([habilitado])
   @@index([nombre])
+  @@index([documento])
+  @@index([borrado])
   @@map("cliente")
 }
 
@@ -276,7 +292,7 @@ model MovimientoCuentaCorriente {
 model Proveedor {
   id                        String    @id @db.Char(6)
   nombre                    String    @db.VarChar(200)
-  documento                 String    @unique @db.VarChar(32)
+  documento                 String    @db.VarChar(32)
   correoElectronico         String    @default("") @map("correo_electronico") @db.VarChar(255)
   telefonoPrincipal         String    @default("") @map("telefono_principal") @db.VarChar(32)
   telefonoAlternativo       String    @default("") @map("telefono_alternativo") @db.VarChar(32)
@@ -286,11 +302,14 @@ model Proveedor {
   habilitado                Boolean   @default(true)
   fechaCreacion             DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
   fechaActualizacion        DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  borrado                   Boolean   @default(false)
   fechaEliminacion          DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
 
   compras Compra[]
 
   @@index([habilitado])
+  @@index([documento])
+  @@index([borrado])
   @@map("proveedor")
 }
 

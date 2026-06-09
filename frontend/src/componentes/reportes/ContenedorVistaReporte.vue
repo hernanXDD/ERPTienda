@@ -9,6 +9,7 @@ import {
   nombreArchivoReportePdf,
 } from '../../modulos/reportes/impresionReporte';
 import BarraFiltrosReporte from './BarraFiltrosReporte.vue';
+import { notificarError } from '../../utilidades/notificacion';
 
 const props = withDefaults(
   defineProps<{
@@ -62,7 +63,7 @@ async function exportarPdf(): Promise<void> {
     const mensaje =
       error instanceof Error ? error.message : 'No se pudo abrir el PDF en una nueva pestaña.';
     errorExportacionPdf.value = mensaje;
-    window.alert(mensaje);
+    notificarError(mensaje);
   } finally {
     exportandoPdf.value = false;
   }

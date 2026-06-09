@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Settings2 } from 'lucide-vue-next';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('configuracion-app');
 </script>
 
 <template>
@@ -12,10 +15,7 @@ import { Settings2 } from 'lucide-vue-next';
             <div>
               <p class="pg-eyebrow">Sistema · Configuración</p>
               <h1 id="titulo-configuracion-app" class="pg-titulo">Configuración de app</h1>
-              <p class="pg-sub">
-                Parámetros globales del ERP, preferencias de la tienda y ajustes técnicos del
-                despliegue.
-              </p>
+              <p class="pg-sub">{{ descripcionPagina }}</p>
             </div>
           </div>
         </div>
@@ -23,8 +23,8 @@ import { Settings2 } from 'lucide-vue-next';
 
       <div class="pg-cuerpo cfg-app-cuerpo">
         <p class="cfg-app-aviso" role="status">
-          Sección reservada al administrador principal. Las opciones de configuración se irán
-          habilitando en próximas versiones.
+          Sección reservada al administrador principal del sistema. Las opciones avanzadas se
+          habilitan según el plan y la configuración de la instalación.
         </p>
       </div>
     </div>

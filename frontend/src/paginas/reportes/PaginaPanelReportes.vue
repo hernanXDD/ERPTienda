@@ -3,7 +3,9 @@ import { BarChart3, ChevronRight, FileText, Lock } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { obtenerGruposReportesPanel } from '../../modulos/reportes/catalogoReportes';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 
+const descripcionPagina = obtenerDescripcionPagina('reportes-panel');
 const gruposPanel = computed(() => obtenerGruposReportesPanel());
 </script>
 
@@ -17,9 +19,7 @@ const gruposPanel = computed(() => obtenerGruposReportesPanel());
             <div>
               <p class="pg-eyebrow">Análisis e impresión</p>
               <h1 id="tit-panel-reportes" class="pg-titulo">Reportes</h1>
-              <p class="pg-sub rep-cab-sub">
-                Elegí un reporte, aplicá filtros y exportá en PDF o Excel según corresponda.
-              </p>
+              <p class="pg-sub rep-cab-sub">{{ descripcionPagina }}</p>
             </div>
           </div>
         </div>

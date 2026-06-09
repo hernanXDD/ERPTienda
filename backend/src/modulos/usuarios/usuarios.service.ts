@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { RONDAS_BCRYPT } from '../../comunes/seguridad/bcrypt.config';
 import {
   menusVisiblesResueltos,
   permisosPorDefectoSegunRol,
@@ -18,6 +19,7 @@ import {
   type RolUsuarioApi,
 } from '../../comunes/tipos/rol-usuario-api';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
+import { datosMarcarBorrado, filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { normalizarNombreUsuario } from '../../comunes/utilidades/normalizar-nombre-usuario';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -36,8 +38,6 @@ export interface UsuarioApi {
   habilitado: boolean;
   permisos: PermisosOperativosUsuario;
 }
-
-const RONDAS_BCRYPT = 10;
 
 @Injectable()
 export class UsuariosService {
@@ -112,7 +112,7 @@ export class UsuariosService {
   private async contarElevadosHabilitados(exceptoId?: string): Promise<number> {
     const usuarios = await this.prisma.usuario.findMany({
       where: {
-        fechaEliminacion: null,
+        ...filtroNoBorrado,
         habilitado: true,
         rol: { in: [RolUsuario.ADMIN, RolUsuario.DUENO] },
       },
@@ -132,7 +132,7 @@ export class UsuariosService {
   private async nombreUsuarioOcupado(nombreUsuario: string, exceptoId?: string): Promise<boolean> {
     const clave = normalizarNombreUsuario(nombreUsuario);
     const usuarios = await this.prisma.usuario.findMany({
-      where: { fechaEliminacion: null },
+      where: filtroNoBorrado,
       select: { id: true, nombreUsuario: true },
     });
     return usuarios.some(
@@ -142,7 +142,7 @@ export class UsuariosService {
 
   async listar(): Promise<UsuarioApi[]> {
     const filas = await this.prisma.usuario.findMany({
-      where: { fechaEliminacion: null },
+      where: filtroNoBorrado,
       orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
     });
     return filas.map((u) => this.mapearUsuario(u));
@@ -150,7 +150,7 @@ export class UsuariosService {
 
   async obtenerPorId(id: string): Promise<UsuarioApi> {
     const usuario = await this.prisma.usuario.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado.');
     return this.mapearUsuario(usuario);
@@ -193,6 +193,7 @@ export class UsuariosService {
         nombreUsuario: datos.nombreUsuario.trim(),
         contrasenaHash: hash,
         contrasenaEstaBlanqueada: false,
+        debeCambiarContrasena: true,
         rol: rolDb,
         habilitado: datos.habilitado ?? true,
         permisosJson: permisosPorDefectoSegunRol(rolDb) as unknown as Prisma.InputJsonValue,
@@ -210,7 +211,7 @@ export class UsuariosService {
     operador: UsuarioSesion,
   ): Promise<UsuarioApi> {
     const anterior = await this.prisma.usuario.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!anterior) throw new NotFoundException('Usuario no encontrado.');
 
@@ -247,10 +248,12 @@ export class UsuariosService {
     const rolDb = rolHaciaBaseDeDatos(datos.rol);
     let contrasenaHash = anterior.contrasenaHash;
     let contrasenaEstaBlanqueada = anterior.contrasenaEstaBlanqueada;
+    let debeCambiarContrasena = anterior.debeCambiarContrasena;
 
     if (datos.contrasenaPlano != null && datos.contrasenaPlano.length > 0) {
       contrasenaHash = await bcrypt.hash(datos.contrasenaPlano, RONDAS_BCRYPT);
       contrasenaEstaBlanqueada = false;
+      debeCambiarContrasena = true;
     } else if (anterior.contrasenaEstaBlanqueada) {
       contrasenaEstaBlanqueada = true;
     }
@@ -268,6 +271,7 @@ export class UsuariosService {
         nombreUsuario: datos.nombreUsuario.trim(),
         contrasenaHash,
         contrasenaEstaBlanqueada,
+        debeCambiarContrasena,
         rol: rolDb,
         habilitado: datos.habilitado,
         permisosJson,
@@ -285,7 +289,7 @@ export class UsuariosService {
     operador: UsuarioSesion,
   ): Promise<UsuarioApi> {
     const usuario = await this.prisma.usuario.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado.');
     if (this.dueñoIntentaGestionarAdministrador(operador, usuario.rol)) {
@@ -310,7 +314,7 @@ export class UsuariosService {
     operador: UsuarioSesion,
   ): Promise<UsuarioApi> {
     const usuario = await this.prisma.usuario.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado.');
     if (this.dueñoIntentaGestionarAdministrador(operador, usuario.rol)) {
@@ -333,7 +337,7 @@ export class UsuariosService {
 
   async blanquearContrasenia(id: string, operador: UsuarioSesion): Promise<UsuarioApi> {
     const usuario = await this.prisma.usuario.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado.');
     if (this.dueñoIntentaGestionarAdministrador(operador, usuario.rol)) {
@@ -357,14 +361,14 @@ export class UsuariosService {
 
   async eliminar(id: string, operador: UsuarioSesion): Promise<void> {
     const total = await this.prisma.usuario.count({
-      where: { fechaEliminacion: null },
+      where: filtroNoBorrado,
     });
     if (total <= 1) {
       throw new ConflictException('No podés borrar el único usuario cargado.');
     }
 
     const usuario = await this.prisma.usuario.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado.');
     if (this.dueñoIntentaGestionarAdministrador(operador, usuario.rol)) {
@@ -391,7 +395,7 @@ export class UsuariosService {
 
     await this.prisma.usuario.update({
       where: { id },
-      data: { fechaEliminacion: new Date() },
+      data: datosMarcarBorrado(),
     });
 
     await this.validarElevadosHabilitados();
@@ -402,7 +406,7 @@ export class UsuariosService {
     idUsuarioObjetivo: string,
   ): Promise<true | string> {
     const operadorDb = await this.prisma.usuario.findFirst({
-      where: { id: operador.id, fechaEliminacion: null },
+      where: { id: operador.id, ...filtroNoBorrado },
     });
     if (!operadorDb) return 'Tu usuario no figura en el directorio de gestión.';
 

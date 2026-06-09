@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequiereMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
 import { MENUS_LECTURA_CLIENTES } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
@@ -40,21 +40,21 @@ export class ClientesController {
   }
 
   @Post()
-  @RequiereMenu('clientes')
+  @RequierePermiso('puedeGestionarClientes')
   async crear(@Body() datos: CrearClienteDto) {
     const cliente = await this.clientesService.crear(datos);
     return respuestaOk(cliente, 'Cliente creado correctamente.');
   }
 
   @Patch(':id')
-  @RequiereMenu('clientes')
+  @RequierePermiso('puedeGestionarClientes')
   async actualizar(@Param('id') id: string, @Body() datos: ActualizarClienteDto) {
     const cliente = await this.clientesService.actualizar(id, datos);
     return respuestaOk(cliente, 'Cliente actualizado correctamente.');
   }
 
   @Patch(':id/habilitado')
-  @RequiereMenu('clientes')
+  @RequierePermiso('puedeGestionarClientes')
   async establecerHabilitacion(
     @Param('id') id: string,
     @Body() datos: HabilitacionClienteDto,
@@ -65,7 +65,7 @@ export class ClientesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @RequiereMenu('clientes')
+  @RequierePermiso('puedeGestionarClientes')
   async eliminar(@Param('id') id: string) {
     await this.clientesService.eliminar(id);
     return respuestaOk(null, 'Cliente eliminado correctamente.');

@@ -11,9 +11,13 @@ import {
 } from '../../comunes/constantes/estados-facturacion';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { siguienteNumeroComprobante } from '../../comunes/utilidades/numero-comprobante';
+import {
+  validarLineasYTotalComprobante,
+} from '../../comunes/utilidades/validar-totales-comprobante';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { CuentaCorrienteService } from '../cuenta-corriente/cuenta-corriente.service';
 import { StockService } from '../stock/stock.service';
 import { CargarFacturacionesDto } from './dto/cargar-facturaciones.dto';
@@ -131,15 +135,25 @@ export class VentasService {
   }
 
   async registrar(datos: RegistrarVentaDto, operador: UsuarioSesion): Promise<VentaRegistradaApi> {
+    const { lineasNormalizadas, totalCalculado } = validarLineasYTotalComprobante(
+      datos.lineas.map((ln) => ({
+        cantidad: ln.cantidad,
+        precioUnitario: ln.precioUnitario,
+        subtotal: ln.subtotal,
+      })),
+      datos.total,
+    );
+
     let documentoClienteMostrar = datos.documentoClienteMostrar?.trim() ?? '';
     let condicionIvaCliente: CondicionIvaCliente = CondicionIvaCliente.CONSUMIDOR_FINAL;
+    let limiteCompraCuentaCorriente = 0;
 
     if (datos.formaPago === FormaPagoVenta.CUENTA_CORRIENTE) {
       if (!datos.clienteId) {
         throw new BadRequestException('La venta en cuenta corriente requiere un cliente.');
       }
       const cliente = await this.prisma.cliente.findFirst({
-        where: { id: datos.clienteId, fechaEliminacion: null },
+        where: { id: datos.clienteId, ...filtroNoBorrado },
       });
       if (!cliente) throw new NotFoundException('Cliente no encontrado.');
       if (!cliente.cuentaCorrienteHabilitada) {
@@ -150,9 +164,10 @@ export class VentasService {
       }
       documentoClienteMostrar = cliente.documento;
       condicionIvaCliente = cliente.condicionIva;
+      limiteCompraCuentaCorriente = decimalANumero(cliente.limiteCompraCuentaCorriente);
     } else if (datos.clienteId) {
       const cliente = await this.prisma.cliente.findFirst({
-        where: { id: datos.clienteId, fechaEliminacion: null },
+        where: { id: datos.clienteId, ...filtroNoBorrado },
       });
       if (cliente) {
         documentoClienteMostrar = cliente.documento;
@@ -179,6 +194,15 @@ export class VentasService {
         throw new ConflictException('Stock insuficiente para completar la venta.');
       }
 
+      if (datos.formaPago === FormaPagoVenta.CUENTA_CORRIENTE && datos.clienteId) {
+        await this.cuentaCorrienteService.validarCreditoDisponibleParaCargo(
+          datos.clienteId,
+          totalCalculado,
+          limiteCompraCuentaCorriente,
+          tx,
+        );
+      }
+
       const ultima = await tx.venta.findFirst({
         orderBy: { numero: 'desc' },
         select: { numero: true },
@@ -196,7 +220,7 @@ export class VentasService {
           documentoClienteMostrar,
           condicionIvaCliente,
           formaPago: datos.formaPago,
-          total: new Prisma.Decimal(datos.total),
+          total: new Prisma.Decimal(totalCalculado),
           observaciones: datos.observaciones?.trim() ?? '',
           estadoFacturacionId: ID_ESTADO_FACTURACION_PENDIENTE,
           lineas: {
@@ -205,8 +229,8 @@ export class VentasService {
               varianteId: ln.varianteId,
               nombre: ln.nombre.trim(),
               cantidad: ln.cantidad,
-              precioUnitario: new Prisma.Decimal(ln.precioUnitario),
-              subtotal: new Prisma.Decimal(ln.subtotal),
+              precioUnitario: new Prisma.Decimal(lineasNormalizadas[indice].precioUnitario),
+              subtotal: new Prisma.Decimal(lineasNormalizadas[indice].subtotal),
             })),
           },
         },
@@ -229,7 +253,7 @@ export class VentasService {
         await this.cuentaCorrienteService.registrarCargo(
           datos.clienteId,
           {
-            importe: datos.total,
+            importe: totalCalculado,
             descripcion: `Venta ${numero}`,
           },
           operador.id,

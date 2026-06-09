@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { CheckCircle2, ShoppingCart } from 'lucide-vue-next';
 import { usarCentroVentasContexto } from './centroVentasContexto';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('ventas-centro');
 
 const { pedirLimpiar, confirmarVenta, puedeConfirmarVenta, confirmandoVenta, cantidadArticulos, totalTicket } =
   usarCentroVentasContexto();
@@ -24,6 +27,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
             {{ cantidadArticulos }} {{ cantidadArticulos === 1 ? 'artículo' : 'artículos' }} ·
             {{ formatoPeso.format(totalTicket) }}
           </p>
+          <p v-else class="pg-sub">{{ descripcionPagina }}</p>
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@ import type { Cliente } from '../tipos/cliente';
 import type { IdFormaPago, VentaRegistrada } from '../tipos/venta';
 import { formatearDocumentoClienteAlEscribir } from '../modulos/clientes/formateadorDocumentoCliente';
 import { exportarComprobanteVentaPdf } from '../modulos/ventas/impresionResumenVenta';
+import { usePermisosOperador } from './usePermisosOperador';
+import { notificarError } from '../utilidades/notificacion';
 import { mensajeErrorHttp } from '../servicios/apiUtil';
 import { useCuentaCorrienteStore } from '../stores/cuentaCorriente';
 
@@ -36,6 +38,7 @@ export function useCentroVentas() {
   const ventasStore = useVentasStore();
   const stockStore = useStockStore();
   const cuentaCorrienteStore = useCuentaCorrienteStore();
+  const { tienePermiso } = usePermisosOperador();
   const { variantes } = storeToRefs(catalogo);
   const { clientes } = storeToRefs(clientesStore);
 
@@ -184,14 +187,50 @@ export function useCentroVentas() {
     return c.cuentaCorrienteHabilitada === true;
   });
 
-  const puedeConfirmarVenta = computed(
-    () =>
-      !confirmandoVenta.value &&
-      lineas.value.length > 0 &&
-      (formaPago.value !== 'CUENTA_CORRIENTE' || puedeCuentaCorriente.value),
+  const clienteSeleccionado = computed(() =>
+    clienteId.value ? clientesStore.clientePorId(clienteId.value) : null,
   );
 
-  watch(clienteId, () => {
+  const saldoDeudorClienteSeleccionado = computed(() => {
+    if (!clienteId.value) return 0;
+    return Math.max(0, cuentaCorrienteStore.saldoClienteCacheado(clienteId.value));
+  });
+
+  const creditoDisponibleCliente = computed(() => {
+    const c = clienteSeleccionado.value;
+    if (!c?.cuentaCorrienteHabilitada) return null;
+    const limite = c.limiteCompraCuentaCorriente;
+    if (limite <= 0) return null;
+    const saldo = cuentaCorrienteStore.saldoClienteCacheado(c.id);
+    return limite - saldo;
+  });
+
+  const tieneLimiteCuentaCorriente = computed(
+    () => creditoDisponibleCliente.value !== null,
+  );
+
+  const excedeCreditoCuentaCorriente = computed(() => {
+    if (formaPago.value !== 'CUENTA_CORRIENTE') return false;
+    if (!tieneLimiteCuentaCorriente.value) return false;
+    return totalTicket.value > (creditoDisponibleCliente.value ?? 0) + 0.001;
+  });
+
+  const puedeConfirmarVenta = computed(
+    () =>
+      tienePermiso('puedeRegistrarVentas') &&
+      !confirmandoVenta.value &&
+      lineas.value.length > 0 &&
+      (formaPago.value !== 'CUENTA_CORRIENTE' || puedeCuentaCorriente.value) &&
+      !excedeCreditoCuentaCorriente.value,
+  );
+
+  watch(clienteId, (id) => {
+    if (id) {
+      const c = clientesStore.clientePorId(id);
+      if (c?.cuentaCorrienteHabilitada) {
+        void cuentaCorrienteStore.cargarSaldos([id]);
+      }
+    }
     if (formaPago.value === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente.value) {
       formaPago.value = 'EFECTIVO';
     }
@@ -420,6 +459,14 @@ export function useCentroVentas() {
         formaPago.value = 'EFECTIVO';
         return;
       }
+      if (excedeCreditoCuentaCorriente.value) {
+        const disponible = creditoDisponibleCliente.value ?? 0;
+        mostrarToast(
+          `El total supera el crédito disponible (${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(disponible)}).`,
+          5200,
+        );
+        return;
+      }
     }
 
     const lineasRegistro = lineas.value.map((l) => ({
@@ -444,7 +491,7 @@ export function useCentroVentas() {
         observaciones: observaciones.value,
       });
 
-      await stockStore.cargar();
+      await stockStore.cargar({ forzar: true });
       if (registrada.formaPago === 'CUENTA_CORRIENTE' && registrada.clienteId) {
         await cuentaCorrienteStore.cargarMovimientosCliente(registrada.clienteId);
       }
@@ -473,7 +520,7 @@ export function useCentroVentas() {
     } catch (error: unknown) {
       const mensaje =
         error instanceof Error ? error.message : 'No se pudo exportar el comprobante de compra.';
-      window.alert(mensaje);
+      notificarError(mensaje);
     }
   }
 
@@ -509,6 +556,10 @@ export function useCentroVentas() {
     cantidadArticulos,
     nombreClienteMostrar,
     puedeCuentaCorriente,
+    creditoDisponibleCliente,
+    saldoDeudorClienteSeleccionado,
+    tieneLimiteCuentaCorriente,
+    excedeCreditoCuentaCorriente,
     puedeConfirmarVenta,
     confirmandoVenta,
     etiquetaClienteSelectorVenta,

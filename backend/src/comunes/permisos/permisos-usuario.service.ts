@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { RolUsuario } from '@prisma/client';
+import { filtroNoBorrado } from '../utilidades/borrado-logico';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   menusVisiblesResueltos,
@@ -16,7 +17,7 @@ export class PermisosUsuarioService {
 
   async permisosDeUsuario(idUsuario: string): Promise<PermisosOperativosUsuario> {
     const usuario = await this.prisma.usuario.findFirst({
-      where: { id: idUsuario, fechaEliminacion: null, habilitado: true },
+      where: { id: idUsuario, ...filtroNoBorrado, habilitado: true },
       select: { permisosJson: true, rol: true },
     });
     if (!usuario) {
@@ -54,7 +55,7 @@ export class PermisosUsuarioService {
 
   async operadorEsElevado(idUsuario: string): Promise<boolean> {
     const usuario = await this.prisma.usuario.findFirst({
-      where: { id: idUsuario, fechaEliminacion: null, habilitado: true },
+      where: { id: idUsuario, ...filtroNoBorrado, habilitado: true },
       select: { rol: true },
     });
     if (!usuario) throw new NotFoundException('Usuario no encontrado.');

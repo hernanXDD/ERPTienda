@@ -24,6 +24,12 @@ import type { Cliente } from '../../tipos/cliente';
 import { CONDICION_IVA_POR_DEFECTO } from '../../tipos/condicionIva';
 import { CONDICIONES_IVA } from '../../datos/condicionesIva';
 import { IdCard, Landmark, MapPin, Phone, Users } from 'lucide-vue-next';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { usePermisosOperador } from '../../composables/usePermisosOperador';
+
+const descripcionPagina = obtenerDescripcionPagina('clientes-alta');
+const { tienePermiso } = usePermisosOperador();
+const puedeGestionarClientes = computed(() => tienePermiso('puedeGestionarClientes'));
 
 type ModoDialogoCliente = 'alta' | 'detalle';
 
@@ -389,10 +395,7 @@ function alCerrarDialogo() {
           <div>
             <p class="pg-eyebrow">Ventas · Clientes</p>
             <h1 id="titulo-alta-clientes" class="pg-titulo">Clientes</h1>
-            <p class="pg-sub">
-              Fichas, contacto y cuenta corriente. Buscá por nombre, documento o correo y gestioná
-              ventas habilitadas por cliente.
-            </p>
+            <p class="pg-sub">{{ descripcionPagina }}</p>
           </div>
         </div>
       </div>
@@ -412,7 +415,12 @@ function alCerrarDialogo() {
           />
         </div>
         <div class="pg-barra-col pg-barra-col--accion">
-          <button type="button" class="pg-btn-primario" @click="abrirAltaCliente">
+          <button
+            v-if="puedeGestionarClientes"
+            type="button"
+            class="pg-btn-primario"
+            @click="abrirAltaCliente"
+          >
             Nuevo cliente
           </button>
         </div>
@@ -813,7 +821,7 @@ function alCerrarDialogo() {
                 {{ modoDialogoCliente === 'alta' ? 'Crear cliente' : 'Guardar cambios' }}
               </button>
               <button
-                v-else
+                v-else-if="puedeGestionarClientes"
                 type="button"
                 class="lc-btn-pri"
                 @click="activarEdicionCliente"

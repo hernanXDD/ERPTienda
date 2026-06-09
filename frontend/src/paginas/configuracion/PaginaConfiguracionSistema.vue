@@ -11,6 +11,14 @@ import { normalizarLimiteCuentaCorriente } from '../../modulos/clientes/formatea
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema';
 import type { ConfiguracionSistemaEditable } from '../../tipos/configuracionSistema';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { usePermisosOperador } from '../../composables/usePermisosOperador';
+
+const descripcionPagina = obtenerDescripcionPagina('configuracion-sistema');
+const { tienePermiso } = usePermisosOperador();
+const puedeEditarConfiguracionSistema = computed(() =>
+  tienePermiso('puedeEditarConfiguracionSistema'),
+);
 
 const configuracionSistemaStore = useConfiguracionSistemaStore();
 
@@ -80,7 +88,7 @@ function iniciarEdicion(): void {
 }
 
 function manejarAccionPie(): void {
-  if (guardando.value) return;
+  if (guardando.value || !puedeEditarConfiguracionSistema.value) return;
   if (!modoEdicion.value) {
     iniciarEdicion();
     return;
@@ -126,6 +134,7 @@ async function guardarConfiguracion(): Promise<void> {
             <div>
               <p class="pg-eyebrow">Configuración · Sistema</p>
               <h1 id="titulo-config-sistema" class="pg-titulo">Parámetros del sistema</h1>
+              <p class="pg-sub">{{ descripcionPagina }}</p>
               <p class="cfg-sys-vista-previa" aria-live="polite">
                 <span class="cfg-sys-chip">CC $ {{ vistaPreviaResumen.max.toLocaleString('es-AR') }}</span>
                 <span class="cfg-sys-chip">+{{ vistaPreviaResumen.pct }} % venta</span>
@@ -305,7 +314,12 @@ async function guardarConfiguracion(): Promise<void> {
           </div>
 
           <footer class="cfg-ficha-pie">
-            <button type="submit" class="pg-btn-primario" :disabled="guardando">
+            <button
+              v-if="puedeEditarConfiguracionSistema"
+              type="submit"
+              class="pg-btn-primario"
+              :disabled="guardando"
+            >
               {{
                 guardando
                   ? 'Guardando…'

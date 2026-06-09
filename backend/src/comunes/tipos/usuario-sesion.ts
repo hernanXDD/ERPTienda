@@ -7,4 +7,5 @@ export interface UsuarioSesion {
   nombreUsuario: string;
   rol: RolUsuarioApi;
   permisos: PermisosOperativosUsuario;
+  debeCambiarContrasena: boolean;
 }

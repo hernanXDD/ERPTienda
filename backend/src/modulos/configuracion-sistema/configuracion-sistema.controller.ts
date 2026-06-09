@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
-import { RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
@@ -19,7 +19,7 @@ export class ConfiguracionSistemaController {
   }
 
   @Patch()
-  @RequiereMenu('configuracion')
+  @RequierePermiso('puedeEditarConfiguracionSistema')
   async actualizar(@Body() datos: ActualizarConfiguracionSistemaDto) {
     const configuracion = await this.configuracionSistemaService.actualizar(datos);
     return respuestaOk(configuracion, 'Configuración del sistema actualizada correctamente.');

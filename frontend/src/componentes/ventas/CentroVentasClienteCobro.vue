@@ -15,6 +15,10 @@ const {
   nombreClienteMostrar,
   formaPago,
   puedeCuentaCorriente,
+  creditoDisponibleCliente,
+  saldoDeudorClienteSeleccionado,
+  tieneLimiteCuentaCorriente,
+  excedeCreditoCuentaCorriente,
   abrirDesplegableCliente,
   cerrarDesplegableCliente,
   alEscribirBusquedaCliente,
@@ -22,6 +26,12 @@ const {
   seleccionarClienteRegistrado,
   alEscribirDocumentoConsumidorFinal,
 } = usarCentroVentasContexto();
+
+const formatoPeso = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 0,
+});
 
 let idCierreDesplegable: ReturnType<typeof setTimeout> | null = null;
 
@@ -188,6 +198,25 @@ function alPegarDocumento(event: ClipboardEvent) {
         <p v-if="!puedeCuentaCorriente" class="cv-ayuda">
           Cuenta corriente disponible solo con un cliente registrado que tenga crédito habilitado.
         </p>
+
+        <div
+          v-else-if="formaPago === 'CUENTA_CORRIENTE' && tieneLimiteCuentaCorriente"
+          class="cv-credito"
+          :class="{ 'cv-credito--alerta': excedeCreditoCuentaCorriente }"
+          role="status"
+        >
+          <div class="cv-credito-item">
+            <span class="cv-credito-etiq">Saldo deudor</span>
+            <span class="cv-credito-val">{{ formatoPeso.format(saldoDeudorClienteSeleccionado) }}</span>
+          </div>
+          <div class="cv-credito-item">
+            <span class="cv-credito-etiq">Crédito disponible</span>
+            <span class="cv-credito-val">{{ formatoPeso.format(creditoDisponibleCliente ?? 0) }}</span>
+          </div>
+          <p v-if="excedeCreditoCuentaCorriente" class="cv-credito-alerta">
+            El total del ticket supera el crédito disponible del cliente.
+          </p>
+        </div>
       </div>
     </div>
   </section>
@@ -351,6 +380,50 @@ function alPegarDocumento(event: ClipboardEvent) {
   font-size: 0.72rem;
   line-height: 1.35;
   color: var(--color-texto-apagado);
+}
+
+.cv-credito {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem 0.65rem;
+  padding: 0.62rem 0.72rem;
+  border-radius: var(--radio-control);
+  border: 1px solid rgba(124, 140, 240, 0.28);
+  background: rgba(124, 140, 240, 0.08);
+}
+
+.cv-credito--alerta {
+  border-color: rgba(251, 113, 133, 0.42);
+  background: rgba(251, 113, 133, 0.1);
+}
+
+.cv-credito-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cv-credito-etiq {
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-texto-apagado);
+}
+
+.cv-credito-val {
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-credito-alerta {
+  grid-column: 1 / -1;
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-peligro);
 }
 
 @media (min-width: 768px) {

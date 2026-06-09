@@ -7,9 +7,15 @@ export interface UsuarioSesion {
   nombreUsuario: string;
   rol: RolUsuario;
   permisos: PermisosOperativosUsuario;
+  debeCambiarContrasena: boolean;
 }
 
 export interface CredencialesInicioSesion {
   nombreUsuario: string;
   contrasena: string;
+}
+
+export interface CambioContrasenaInicial {
+  contrasenaNueva: string;
+  contrasenaNuevaRepetida: string;
 }

@@ -5,11 +5,18 @@ import { storeToRefs } from 'pinia';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useClientesStore } from '../../stores/clientes';
 import { useCuentaCorrienteStore, type MovimientoConSaldo } from '../../stores/cuentaCorriente';
-import { abrirImpresionCuentaCorriente } from '../../modulos/clientes/impresionCuentaCorriente';
-import { abrirImpresionReciboPagoCuentaCorriente } from '../../modulos/clientes/impresionReciboPagoCuentaCorriente';
+import { exportarPdfCuentaCorrienteCliente } from '../../modulos/clientes/exportarPdfCuentaCorrienteCliente';
+import { exportarReciboPagoCuentaCorrientePdf } from '../../modulos/clientes/impresionReciboPagoCuentaCorriente';
+import { notificarError } from '../../utilidades/notificacion';
+import { usePermisosOperador } from '../../composables/usePermisosOperador';
 import { opcionesFormaPagoRegistroCuentaCorriente } from '../../modulos/clientes/formasPagoRegistroCuentaCorriente';
 import type { Cliente } from '../../tipos/cliente';
 import { formatearFechaYHora, obtenerDiaComparableDesdeValor } from '../../utilidades/formatoFechaHora';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('clientes-cuentas-corrientes');
+const { tienePermiso } = usePermisosOperador();
+const puedeGestionarCuentaCorriente = computed(() => tienePermiso('puedeGestionarCuentaCorriente'));
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -20,12 +27,14 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 const clientesStore = useClientesStore();
 const cuentaCorrienteStore = useCuentaCorrienteStore();
 const { clientes } = storeToRefs(clientesStore);
+const { movimientos } = storeToRefs(cuentaCorrienteStore);
 
 const refDialogoMovimientos = ref<HTMLDialogElement | null>(null);
 const refCuadroRegistrarPago = ref<HTMLDialogElement | null>(null);
 const clienteModal = ref<Cliente | null>(null);
 const fechaFiltroDesde = ref('');
 const fechaFiltroHasta = ref('');
+const exportandoPdfCuenta = ref(false);
 
 const busquedaNombre = ref('');
 /** '' = todos; con-deuda = saldo deudor > 0; sin-deuda = saldo <= 0 */
@@ -94,6 +103,12 @@ const movimientosFiltradosModal = computed(() => {
   const id = clienteModal.value?.id;
   if (!id) return [];
   return cuentaCorrienteStore.movimientosConSaldoCliente(id).filter(estaMovimientoEnRangoFecha);
+});
+
+const saldoDeudorModal = computed(() => {
+  const id = clienteModal.value?.id;
+  if (!id) return 0;
+  return Math.max(0, cuentaCorrienteStore.saldoClienteCacheado(id));
 });
 
 const cantidadCuentasCorriente = computed(() => cuentasHabilitadas.value.length);
@@ -201,12 +216,18 @@ function confirmarRegistroPago(): void {
       formaTrim,
       referenciaPagoTexto.value.trim() || null,
     )
-    .then((movimientoCreado) => {
+    .then(async (movimientoCreado) => {
       cerrarCuadroRegistrarPago();
-      abrirImpresionReciboPagoCuentaCorriente({
-        cliente: { nombre: c.nombre, documento: c.documento },
-        movimiento: movimientoCreado,
-      });
+      try {
+        await exportarReciboPagoCuentaCorrientePdf({
+          cliente: { nombre: c.nombre, documento: c.documento },
+          movimiento: movimientoCreado,
+        });
+      } catch (error: unknown) {
+        notificarError(
+          error instanceof Error ? error.message : 'No se pudo exportar el recibo de cobro.',
+        );
+      }
     })
     .catch((error: unknown) => {
       errorFormularioPago.value = mensajeErrorHttp(error, 'No se pudo registrar el pago.');
@@ -223,27 +244,41 @@ onMounted(() => {
   })();
 });
 
-function imprimirReciboPagoDesdeHistorial(movimiento: MovimientoConSaldo): void {
+async function imprimirReciboPagoDesdeHistorial(movimiento: MovimientoConSaldo): Promise<void> {
   const c = clienteModal.value;
   if (!c || movimiento.tipoMovimiento !== 'pagoRegistrado') return;
-  abrirImpresionReciboPagoCuentaCorriente({
-    cliente: { nombre: c.nombre, documento: c.documento },
-    movimiento,
-  });
+  try {
+    await exportarReciboPagoCuentaCorrientePdf({
+      cliente: { nombre: c.nombre, documento: c.documento },
+      movimiento,
+    });
+  } catch (error: unknown) {
+    notificarError(
+      error instanceof Error ? error.message : 'No se pudo exportar el recibo de cobro.',
+    );
+  }
 }
 
-/** Impresión con historial completo (sin filtros del modal); el formato evolucionará a reporte formal. */
-function imprimirCuentaCliente(): void {
+async function imprimirCuentaCliente(): Promise<void> {
   const c = clienteModal.value;
-  if (!c) return;
-  abrirImpresionCuentaCorriente({
-    nombreCliente: c.nombre,
-    documentoCliente: c.documento,
-    limiteCompraCuentaCorriente: c.limiteCompraCuentaCorriente,
-    saldoActual: cuentaCorrienteStore.saldoClienteCacheado(c.id),
-    disponibleParaCompras: creditoDisponible(c),
-    movimientosConSaldo: cuentaCorrienteStore.movimientosConSaldoCliente(c.id),
-  });
+  if (!c || exportandoPdfCuenta.value) return;
+
+  exportandoPdfCuenta.value = true;
+  try {
+    await exportarPdfCuentaCorrienteCliente({
+      cliente: c,
+      clientes: clientes.value,
+      movimientos: movimientos.value,
+      fechaDesde: fechaFiltroDesde.value || undefined,
+      fechaHasta: fechaFiltroHasta.value || undefined,
+    });
+  } catch (error: unknown) {
+    notificarError(
+      error instanceof Error ? error.message : 'No se pudo exportar el reporte de cuenta corriente.',
+    );
+  } finally {
+    exportandoPdfCuenta.value = false;
+  }
 }
 </script>
 
@@ -254,10 +289,7 @@ function imprimirCuentaCliente(): void {
         <div class="pg-cab-txt">
           <p class="pg-eyebrow">Clientes · Cuentas corrientes</p>
           <h1 id="titulo-cc" class="pg-titulo">Cuentas corrientes</h1>
-          <p class="pg-sub">
-            Límite y saldo según movimientos registrados. Abrí <strong>Movimientos de cuenta</strong> por cliente para
-            detalle, filtro por período y registro de pagos.
-          </p>
+          <p class="pg-sub">{{ descripcionPagina }}</p>
         </div>
         <div class="pg-kpis" role="group" aria-label="Resumen de la cartera en cuenta corriente">
           <div class="pg-kpi">
@@ -427,14 +459,22 @@ function imprimirCuentaCliente(): void {
             </label>
           </div>
           <div class="cc-modal-toolbar">
-            <button type="button" class="cc-btn accent cc-btn--lg" @click="abrirFormularioPago">Registrar pago</button>
+            <button
+              v-if="puedeGestionarCuentaCorriente"
+              type="button"
+              class="cc-btn accent cc-btn--lg"
+              @click="abrirFormularioPago"
+            >
+              Registrar pago
+            </button>
             <button
               type="button"
               class="cc-btn imprimir cc-btn--lg"
-              aria-label="Abrir vista imprimible con el historial completo de movimientos"
+              :disabled="exportandoPdfCuenta"
+              aria-label="Exportar reporte PDF de la cuenta corriente del cliente"
               @click="imprimirCuentaCliente"
             >
-              Imprimir cuenta
+              {{ exportandoPdfCuenta ? 'Generando PDF…' : 'Imprimir reporte' }}
             </button>
           </div>
         </div>
@@ -535,11 +575,26 @@ function imprimirCuentaCliente(): void {
           <button type="button" class="cc-modal-x" aria-label="Cerrar" @click="cerrarCuadroRegistrarPago"></button>
         </header>
 
-        <div class="cc-reg-pago-kpis-mini" aria-label="Referencias de cuenta">
-          <div class="cc-kpi-mini cc-kpi-mini--saldo-pre">
-            <span class="cc-kpi-mini-etiq">Saldo antes de aplicar este pago</span>
-            <span class="cc-kpi-mini-val cc-mono">{{
-              formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(clienteModal.id))
+        <div v-if="clienteModal" class="cc-reg-pago-resumen" aria-label="Resumen de la cuenta">
+          <div class="cc-reg-pago-resumen-item">
+            <span class="cc-reg-pago-resumen-etiq">Saldo deudor</span>
+            <span
+              class="cc-reg-pago-resumen-val cc-mono"
+              :class="{ 'cc-reg-pago-resumen-val--deuda': saldoDeudorModal > 0 }"
+            >
+              {{ formatoPeso.format(saldoDeudorModal) }}
+            </span>
+          </div>
+          <div class="cc-reg-pago-resumen-item">
+            <span class="cc-reg-pago-resumen-etiq">Límite CC</span>
+            <span class="cc-reg-pago-resumen-val cc-mono">{{
+              formatoPeso.format(clienteModal.limiteCompraCuentaCorriente)
+            }}</span>
+          </div>
+          <div class="cc-reg-pago-resumen-item cc-reg-pago-resumen-item--acento">
+            <span class="cc-reg-pago-resumen-etiq">Disponible para compras</span>
+            <span class="cc-reg-pago-resumen-val cc-mono">{{
+              formatoPeso.format(creditoDisponible(clienteModal))
             }}</span>
           </div>
         </div>
@@ -550,22 +605,36 @@ function imprimirCuentaCliente(): void {
           <div role="group" aria-labelledby="cc-reg-pago-leyenda-dat" class="cc-reg-datos-recuadro">
             <h3 id="cc-reg-pago-leyenda-dat" class="cc-reg-seccion-tit">Datos del pago</h3>
             <div class="cc-form-grid">
-              <label class="cc-inp-wrap">
+              <label class="cc-inp-wrap cc-inp-span2">
                 <span class="cc-inp-lab">Fecha del pago (contable)</span>
                 <input v-model="fechaPago" type="date" class="cc-inp" required autocomplete="off" />
               </label>
-              <label class="cc-inp-wrap">
-                <span class="cc-inp-lab">Importe</span>
-                <input
-                  ref="refImportePago"
-                  v-model="importePagoTexto"
-                  type="text"
-                  class="cc-inp"
-                  inputmode="decimal"
-                  placeholder="Ej. 45000 o 45.000"
-                  autocomplete="off"
-                />
-              </label>
+
+              <div class="cc-reg-fila-importe cc-inp-span2">
+                <label class="cc-inp-wrap">
+                  <span class="cc-inp-lab">Importe a registrar</span>
+                  <input
+                    ref="refImportePago"
+                    v-model="importePagoTexto"
+                    type="text"
+                    class="cc-inp cc-inp--importe"
+                    inputmode="decimal"
+                    placeholder="Ej. 45000 o 45.000"
+                    autocomplete="off"
+                  />
+                </label>
+                <div class="cc-reg-saldo-deudor" role="status" aria-live="polite">
+                  <span class="cc-reg-saldo-deudor-etiq">Saldo deudor total</span>
+                  <span
+                    class="cc-reg-saldo-deudor-val cc-mono"
+                    :class="{ 'cc-reg-saldo-deudor-val--deuda': saldoDeudorModal > 0 }"
+                  >
+                    {{ formatoPeso.format(saldoDeudorModal) }}
+                  </span>
+                  <p class="cc-reg-saldo-deudor-ayuda">Deuda pendiente antes de aplicar este pago.</p>
+                </div>
+              </div>
+
               <label class="cc-inp-wrap">
                 <span class="cc-inp-lab">Forma de pago</span>
                 <select v-model="formaPagoEtiqueta" class="cc-inp" required autocomplete="off">
@@ -585,7 +654,7 @@ function imprimirCuentaCliente(): void {
                   type="text"
                   class="cc-inp"
                   maxlength="120"
-                  placeholder="Ej. Nº de cheque, cupón POS, código de transferencia…"
+                  placeholder="Ej. Nº de cheque, cupón POS, transferencia…"
                   autocomplete="off"
                 />
               </label>
@@ -1018,6 +1087,14 @@ function imprimirCuentaCliente(): void {
   .cc-form-grid {
     grid-template-columns: 1fr;
   }
+
+  .cc-reg-fila-importe {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-reg-pago-resumen {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cc-reg-pago-panel .cc-inp-wrap {
@@ -1201,10 +1278,10 @@ function imprimirCuentaCliente(): void {
   background: transparent !important;
 }
 
-/* Segundo modal: registrar pago (ancho modal ≠ viewport → evitar 2 cols que rompan con type=date) */
+/* Segundo modal: registrar pago */
 .cc-modal-registro-pago.cc-modal {
   box-sizing: border-box;
-  width: min(36rem, calc(100vw - 1.25rem));
+  width: min(40rem, calc(100vw - 1.25rem));
   height: auto;
   max-height: min(92dvh, 52rem);
   overflow: hidden;
@@ -1252,41 +1329,104 @@ function imprimirCuentaCliente(): void {
   padding-right: 2.85rem;
 }
 
-.cc-reg-pago-kpis-mini {
-  padding: 0.65rem clamp(1rem, 3vw, 1.5rem) 0.75rem;
+.cc-reg-pago-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding: 0.75rem clamp(1rem, 3vw, 1.5rem);
   border-bottom: 1px solid var(--color-borde);
   background: var(--color-fondo-elevado);
 }
 
-.cc-kpi-mini {
-  border-radius: 12px;
+.cc-reg-pago-resumen-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 0;
+  padding: 0.62rem 0.72rem;
+  border-radius: 10px;
   border: 1px solid var(--color-borde);
-  padding: 0.6rem 0.82rem;
-  background: linear-gradient(
-    162deg,
-    rgba(124, 140, 240, 0.1),
-    rgba(124, 140, 240, 0.03)
-  );
+  background: rgba(12, 18, 34, 0.35);
 }
 
-.cc-kpi-mini--saldo-pre {
-  border-color: rgba(124, 140, 240, 0.32);
+.cc-reg-pago-resumen-item--acento {
+  border-color: rgba(74, 222, 128, 0.28);
+  background: linear-gradient(162deg, rgba(74, 222, 128, 0.1), rgba(12, 18, 34, 0.35));
 }
 
-.cc-kpi-mini-etiq {
-  display: block;
-  font-size: 0.66rem;
+.cc-reg-pago-resumen-etiq {
+  font-size: 0.64rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-texto-apagado);
-  margin-bottom: 0.35rem;
 }
 
-.cc-kpi-mini-val {
-  font-size: 1.06rem;
+.cc-reg-pago-resumen-val {
+  font-size: 0.98rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-texto);
+}
+
+.cc-reg-pago-resumen-val--deuda {
+  color: var(--color-peligro);
+}
+
+.cc-reg-fila-importe {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 0.65rem 1rem;
+  align-items: stretch;
+}
+
+.cc-reg-saldo-deudor {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.22rem;
+  min-width: 0;
+  padding: 0.72rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 113, 133, 0.28);
+  background: linear-gradient(
+    165deg,
+    rgba(251, 113, 133, 0.12),
+    rgba(12, 18, 34, 0.42)
+  );
+}
+
+.cc-reg-saldo-deudor-etiq {
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-texto-apagado);
+}
+
+.cc-reg-saldo-deudor-val {
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-texto-suave);
+}
+
+.cc-reg-saldo-deudor-val--deuda {
+  color: var(--color-peligro);
+}
+
+.cc-reg-saldo-deudor-ayuda {
+  margin: 0.12rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-texto-apagado);
+}
+
+.cc-inp--importe {
+  font-size: 1.02rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1379,6 +1519,14 @@ function imprimirCuentaCliente(): void {
 }
 
 @media (width < 480px) {
+  .cc-reg-pago-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-reg-fila-importe {
+    grid-template-columns: 1fr;
+  }
+
   .cc-reg-pago-acciones {
     flex-direction: column-reverse;
   }

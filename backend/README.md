@@ -46,7 +46,7 @@ Antes de `start:prod` en un entorno nuevo, ejecutar `npm run db:migrate`.
 
 | Usuario | Contraseña | Rol |
 |---------|------------|-----|
-| admin | Ophhre43u | ADMIN |
+| admin | 12345678 | ADMIN |
 
 Cambiar la contraseña del administrador antes de cualquier prueba en red compartida.
 

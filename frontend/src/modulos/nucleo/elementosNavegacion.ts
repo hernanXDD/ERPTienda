@@ -13,10 +13,12 @@ import {
 } from 'lucide-vue-next';
 import type { ClaveMenuPrincipal } from '../../tipos/usuarioGestion';
 import { catalogoReportes } from '../reportes/catalogoReportes';
+import { DESCRIPCIONES_PAGINA } from './descripcionesPaginas';
 
 export interface SubenlaceMenu {
   nombreRuta: string;
   etiqueta: string;
+  descripcion: string;
 }
 
 export interface ElementoMenuPrincipal {
@@ -27,6 +29,7 @@ export interface ElementoMenuPrincipal {
   /** Ruta por defecto (barra inferior, clic en padre si hay submenú) */
   nombreRuta: string;
   etiqueta: string;
+  descripcion?: string;
   icono: Component;
   /** Si existe, el lateral muestra subenlaces bajo este ítem */
   subelementos?: SubenlaceMenu[];
@@ -44,65 +47,84 @@ export function elementoMenuCoincideRuta(
   return elemento.subelementos?.some((s) => s.nombreRuta === nombre) ?? false;
 }
 
+function subenlace(nombreRuta: string, etiqueta: string): SubenlaceMenu {
+  return {
+    nombreRuta,
+    etiqueta,
+    descripcion: DESCRIPCIONES_PAGINA[nombreRuta] ?? '',
+  };
+}
+
 /**
  * Orden principal: inicio · clientes · ventas · compras · productos · stock · reportes · usuarios · configuración · configuración de la app.
  */
 export const elementosMenuPrincipal: ElementoMenuPrincipal[] = [
-  { nombreRuta: 'inicio', etiqueta: 'Inicio', icono: LayoutDashboard },
+  {
+    nombreRuta: 'inicio',
+    etiqueta: 'Inicio',
+    descripcion: DESCRIPCIONES_PAGINA.inicio,
+    icono: LayoutDashboard,
+  },
   {
     claveMenuPrincipal: 'clientes',
     nombreRuta: 'clientes-alta',
     etiqueta: 'Clientes',
+    descripcion: DESCRIPCIONES_PAGINA['clientes-alta'],
     icono: Users,
     subelementos: [
-      { nombreRuta: 'clientes-alta', etiqueta: 'Alta clientes' },
-      { nombreRuta: 'clientes-cuentas-corrientes', etiqueta: 'Cuentas corrientes' },
+      subenlace('clientes-alta', 'Alta clientes'),
+      subenlace('clientes-cuentas-corrientes', 'Cuentas corrientes'),
     ],
   },
   {
     claveMenuPrincipal: 'ventas',
     nombreRuta: 'ventas-centro',
     etiqueta: 'Ventas',
+    descripcion: DESCRIPCIONES_PAGINA['ventas-centro'],
     icono: ShoppingCart,
     subelementos: [
-      { nombreRuta: 'ventas-centro', etiqueta: 'Centro de ventas' },
-      { nombreRuta: 'ventas-historial', etiqueta: 'Historial de ventas' },
+      subenlace('ventas-centro', 'Centro de ventas'),
+      subenlace('ventas-historial', 'Historial de ventas'),
     ],
   },
   {
     claveMenuPrincipal: 'compras',
     nombreRuta: 'compras-proveedores',
     etiqueta: 'Compras',
+    descripcion: DESCRIPCIONES_PAGINA['compras-proveedores'],
     icono: ShoppingBasket,
     subelementos: [
-      { nombreRuta: 'compras-proveedores', etiqueta: 'Proveedores' },
-      { nombreRuta: 'compras-registro', etiqueta: 'Registro de compras' },
+      subenlace('compras-proveedores', 'Proveedores'),
+      subenlace('compras-registro', 'Registro de compras'),
     ],
   },
   {
     claveMenuPrincipal: 'productos',
     nombreRuta: 'productos-catalogo',
     etiqueta: 'Productos',
+    descripcion: DESCRIPCIONES_PAGINA['productos-catalogo'],
     icono: Package,
     subelementos: [
-      { nombreRuta: 'productos-catalogo', etiqueta: 'Catálogo' },
-      { nombreRuta: 'productos-categorias', etiqueta: 'Categorías' },
+      subenlace('productos-catalogo', 'Catálogo'),
+      subenlace('productos-categorias', 'Categorías'),
     ],
   },
   {
     claveMenuPrincipal: 'stock',
     nombreRuta: 'stock-actual',
     etiqueta: 'Stock',
+    descripcion: DESCRIPCIONES_PAGINA['stock-actual'],
     icono: Warehouse,
     subelementos: [
-      { nombreRuta: 'stock-actual', etiqueta: 'Stock actual' },
-      { nombreRuta: 'stock-auditorias', etiqueta: 'Auditorías de stock' },
+      subenlace('stock-actual', 'Stock actual'),
+      subenlace('stock-auditorias', 'Auditorías de stock'),
     ],
   },
   {
     claveMenuPrincipal: 'reportes',
     nombreRuta: 'reportes-panel',
     etiqueta: 'Reportes',
+    descripcion: DESCRIPCIONES_PAGINA['reportes-panel'],
     icono: BarChart3,
     rutasHijas: catalogoReportes.filter((r) => r.disponible).map((r) => r.nombreRuta),
   },
@@ -110,26 +132,29 @@ export const elementosMenuPrincipal: ElementoMenuPrincipal[] = [
     claveMenuPrincipal: 'usuarios',
     nombreRuta: 'usuarios-alta',
     etiqueta: 'Usuarios',
+    descripcion: DESCRIPCIONES_PAGINA['usuarios-alta'],
     icono: UserCog,
     subelementos: [
-      { nombreRuta: 'usuarios-alta', etiqueta: 'Alta usuarios' },
-      { nombreRuta: 'usuarios-permisos', etiqueta: 'Permisos usuario' },
+      subenlace('usuarios-alta', 'Alta usuarios'),
+      subenlace('usuarios-permisos', 'Permisos usuario'),
     ],
   },
   {
     claveMenuPrincipal: 'configuracion',
     nombreRuta: 'configuracion-negocio',
     etiqueta: 'Configuración',
+    descripcion: DESCRIPCIONES_PAGINA['configuracion-negocio'],
     icono: Settings,
     subelementos: [
-      { nombreRuta: 'configuracion-negocio', etiqueta: 'Negocio' },
-      { nombreRuta: 'configuracion-sistema', etiqueta: 'Sistema' },
+      subenlace('configuracion-negocio', 'Negocio'),
+      subenlace('configuracion-sistema', 'Sistema'),
     ],
   },
   {
     accesoExclusivoConfiguracionApp: true,
     nombreRuta: 'configuracion-app',
     etiqueta: 'Configuración de la app',
+    descripcion: DESCRIPCIONES_PAGINA['configuracion-app'],
     icono: Settings2,
   },
 ];

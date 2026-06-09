@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
-import { RequiereAlgunoMenu, RequiereMenu } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
 import { MENUS_LECTURA_VENTAS } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
@@ -23,7 +23,7 @@ export class VentasController {
   }
 
   @Post('cargar-facturaciones')
-  @RequiereMenu('ventas')
+  @RequierePermiso('puedeCargarFacturaciones')
   async cargarFacturaciones(@Body() datos: CargarFacturacionesDto) {
     const ventas = await this.ventasService.cargarFacturaciones(datos);
     return respuestaOk(ventas, 'Facturaciones cargadas correctamente.');
@@ -37,7 +37,7 @@ export class VentasController {
   }
 
   @Post()
-  @RequiereMenu('ventas')
+  @RequierePermiso('puedeRegistrarVentas')
   async registrar(@Body() datos: RegistrarVentaDto, @UsuarioSesionActual() operador: UsuarioSesion) {
     const venta = await this.ventasService.registrar(datos, operador);
     return respuestaOk(venta, 'Venta registrada correctamente.');

@@ -17,6 +17,14 @@ import {
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useNegocioStore } from '../../stores/negocio';
 import type { DatosNegocioEditable } from '../../tipos/negocio';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { usePermisosOperador } from '../../composables/usePermisosOperador';
+
+const descripcionPagina = obtenerDescripcionPagina('configuracion-negocio');
+const { tienePermiso } = usePermisosOperador();
+const puedeEditarConfiguracionNegocio = computed(() =>
+  tienePermiso('puedeEditarConfiguracionNegocio'),
+);
 
 const negocioStore = useNegocioStore();
 
@@ -133,7 +141,7 @@ function iniciarEdicion(): void {
 }
 
 function manejarAccionPie(): void {
-  if (guardando.value) return;
+  if (guardando.value || !puedeEditarConfiguracionNegocio.value) return;
   if (!modoEdicion.value) {
     iniciarEdicion();
     return;
@@ -194,6 +202,7 @@ async function guardarNegocio(): Promise<void> {
             <div>
               <p class="pg-eyebrow">Configuración · Negocio</p>
               <h1 id="titulo-config-negocio" class="pg-titulo">Datos de la tienda</h1>
+              <p class="pg-sub">{{ descripcionPagina }}</p>
               <p
                 v-if="vistaPreviaNombre || vistaPreviaCuit"
                 class="cfg-neg-vista-previa"
@@ -507,7 +516,12 @@ async function guardarNegocio(): Promise<void> {
           </div>
 
           <footer class="cfg-ficha-pie">
-            <button type="submit" class="pg-btn-primario" :disabled="guardando">
+            <button
+              v-if="puedeEditarConfiguracionNegocio"
+              type="submit"
+              class="pg-btn-primario"
+              :disabled="guardando"
+            >
               {{
                 guardando
                   ? 'Guardando…'

@@ -5,9 +5,9 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  MinLength,
 } from 'class-validator';
 import type { RolUsuarioApi } from '../../../comunes/tipos/rol-usuario-api';
+import { EsContrasenaSegura } from '../../../comunes/validadores/es-contrasena-segura.decorator';
 
 export class CrearUsuarioDto {
   @IsString()
@@ -27,7 +27,7 @@ export class CrearUsuarioDto {
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(1)
+  @EsContrasenaSegura()
   contrasenaPlano!: string;
 
   @IsIn(['ADMIN', 'DUEÑO', 'EMPLEADO'])

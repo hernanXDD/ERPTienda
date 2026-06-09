@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
+import { datosMarcarBorrado, filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { normalizarDocumento } from '../../comunes/utilidades/normalizar-documento';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -59,7 +60,7 @@ export class ProveedoresService {
 
   async listar(): Promise<ProveedorApi[]> {
     const filas = await this.prisma.proveedor.findMany({
-      where: { fechaEliminacion: null },
+      where: filtroNoBorrado,
       orderBy: { nombre: 'asc' },
     });
     return filas.map((p) => this.mapear(p));
@@ -67,7 +68,7 @@ export class ProveedoresService {
 
   async obtenerPorId(id: string): Promise<ProveedorApi> {
     const proveedor = await this.prisma.proveedor.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!proveedor) throw new NotFoundException('Proveedor no encontrado.');
     return this.mapear(proveedor);
@@ -128,7 +129,7 @@ export class ProveedoresService {
     await this.obtenerPorId(id);
     await this.prisma.proveedor.update({
       where: { id },
-      data: { fechaEliminacion: new Date() },
+      data: datosMarcarBorrado(),
     });
   }
 
@@ -136,7 +137,7 @@ export class ProveedoresService {
     const clave = normalizarDocumento(documento);
     if (!clave) throw new ConflictException('El documento es obligatorio.');
     const proveedores = await this.prisma.proveedor.findMany({
-      where: { fechaEliminacion: null },
+      where: filtroNoBorrado,
       select: { id: true, documento: true },
     });
     const duplicado = proveedores.some(

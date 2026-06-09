@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { normalizarDocumento } from '../../comunes/utilidades/normalizar-documento';
+import { datosMarcarBorrado, filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActualizarClienteDto } from './dto/actualizar-cliente.dto';
@@ -62,7 +63,7 @@ export class ClientesService {
 
   async listar(): Promise<ClienteApi[]> {
     const filas = await this.prisma.cliente.findMany({
-      where: { fechaEliminacion: null },
+      where: filtroNoBorrado,
       orderBy: { nombre: 'asc' },
     });
     return filas.map((c) => this.mapear(c));
@@ -70,7 +71,7 @@ export class ClientesService {
 
   async obtenerPorId(id: string): Promise<ClienteApi> {
     const cliente = await this.prisma.cliente.findFirst({
-      where: { id, fechaEliminacion: null },
+      where: { id, ...filtroNoBorrado },
     });
     if (!cliente) throw new NotFoundException('Cliente no encontrado.');
     return this.mapear(cliente);
@@ -137,7 +138,7 @@ export class ClientesService {
     await this.obtenerPorId(id);
     await this.prisma.cliente.update({
       where: { id },
-      data: { fechaEliminacion: new Date() },
+      data: datosMarcarBorrado(),
     });
   }
 
@@ -145,7 +146,7 @@ export class ClientesService {
     const clave = normalizarDocumento(documento);
     if (!clave) throw new ConflictException('El documento es obligatorio.');
     const clientes = await this.prisma.cliente.findMany({
-      where: { fechaEliminacion: null },
+      where: filtroNoBorrado,
       select: { id: true, documento: true },
     });
     const duplicado = clientes.some(

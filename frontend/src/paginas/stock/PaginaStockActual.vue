@@ -29,6 +29,9 @@ import { useSesionStore } from '../../stores/sesion';
 import { useStockStore } from '../../stores/stock';
 import { etiquetaTalleColor } from '../../modulos/catalogo/catalogoPresentacion';
 import type { Producto, Variante } from '../../tipos/catalogo';
+import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+
+const descripcionPagina = obtenerDescripcionPagina('stock-actual');
 
 interface FilaStock {
   variante: Variante;
@@ -423,15 +426,7 @@ function guardarModalEntrada(): void {
         <Warehouse :size="22" aria-hidden="true" class="pg-cab-ico" stroke-width="1.85" />
         <div class="stk-cab-textos">
           <h1 id="tit-stock-actual" class="pg-titulo">Stock actual</h1>
-          <p class="pg-sub">
-            Existencias disponibles para vender hoy. El detalle de cada movimiento y variación queda en
-            <RouterLink class="stk-enlace-interno" :to="{ name: 'stock-auditorias' }">
-              Auditorías de stock
-            </RouterLink>
-            . Las ventas del POS descuentan stock en tiempo casi inmediato. El
-            <strong class="stk-sub-r">conteo físico</strong> genera una planilla Excel para cargar existencias
-            reales y actualizar el stock masivamente.
-          </p>
+          <p class="pg-sub">{{ descripcionPagina }}</p>
         </div>
       </div>
       <p v-if="!puedeGestionar" class="stk-banner-lectura">
