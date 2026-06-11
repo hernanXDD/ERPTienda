@@ -24,9 +24,13 @@ ENV PUERTO=3000
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
-RUN npm ci --omit=dev && npx prisma generate
+# Semilla manual en consola: npm run db:seed (requiere src/ + ts-node; NODE_ENV=production los omite por defecto)
+RUN npm ci --omit=dev \
+  && NODE_ENV=development npm install ts-node typescript prisma --no-save \
+  && npx prisma generate
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src ./src
 
 EXPOSE 3000
 
