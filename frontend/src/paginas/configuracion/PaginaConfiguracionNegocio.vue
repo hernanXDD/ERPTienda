@@ -617,8 +617,9 @@ async function guardarNegocio(): Promise<void> {
                 </div>
                 <div class="cfg-ficha-bloque-cuerpo cfg-neg-logo-cuerpo">
                   <p class="cfg-neg-logo-ayuda">
-                    Un solo archivo en la carpeta <span class="cfg-mono">logo/</span> del servidor.
-                    Formatos: PNG, JPG, WEBP o SVG. Máximo 2 MB. Al subir otro, reemplaza el anterior.
+                    Imagen de marca para la barra superior, reportes y comprobantes.
+                    Formatos admitidos: PNG, JPG, WEBP o SVG. Tamaño máximo: 2 MB.
+                    Al importar un archivo nuevo, reemplaza al actual.
                   </p>
 
                   <div class="cfg-neg-logo-panel">
@@ -665,7 +666,7 @@ async function guardarNegocio(): Promise<void> {
                         v-if="puedeEditarConfiguracionNegocio && !modoEdicion"
                         class="cfg-neg-logo-lectura"
                       >
-                        Use «Editar configuración» para importar o quitar el logo.
+                        Para importar o quitar el logo, use «Editar configuración».
                       </p>
 
                       <div
