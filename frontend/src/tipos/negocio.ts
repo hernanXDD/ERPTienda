@@ -14,6 +14,12 @@ export interface Negocio {
   mostrarTwitter: boolean;
   tiktok: string;
   mostrarTiktok: boolean;
+  tieneLogo: boolean;
+  logoVersion: number | null;
+  nombreArchivoLogo: string | null;
 }
 
-export type DatosNegocioEditable = Omit<Negocio, 'id'>;
+export type DatosNegocioEditable = Omit<
+  Negocio,
+  'id' | 'tieneLogo' | 'logoVersion' | 'nombreArchivoLogo'
+>;

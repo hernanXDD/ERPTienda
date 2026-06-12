@@ -1,0 +1,32 @@
+/**
+ * Permite desplazamiento vertical de la pantalla cuando el contenido supera el viewport
+ * (p. ej. 1280×720). El área principal (.contenido) hace scroll; el chrome queda fijo.
+ */
+
+@media (max-height: 800px) {
+  :root {
+    --pg-reserva-vertical-vista: clamp(9.5rem, 22dvh, 12.5rem);
+  }
+
+  .pg-tabla-scroll:not(.pg-tabla-scroll--libre) {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .pg-grilla-viewport {
+    height: auto;
+    max-height: none;
+    min-height: 8.5rem;
+    overflow: visible;
+  }
+
+  /* Centro de ventas: dejar crecer la página en lugar de recortar */
+  .pg-wrap--centro-ventas,
+  .pg-marco--centro-ventas,
+  .centro-ventas.cv,
+  .cv-cuerpo {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+}

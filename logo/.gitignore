@@ -1,0 +1,4 @@
+# Solo un logo en esta carpeta; no versionar archivos subidos.
+*
+!.gitignore
+!.gitkeep

@@ -4,7 +4,7 @@ import {
   exportarHtmlRaizComoPdf,
   prepararClonDocumentoA4Pdf,
 } from '../reportes/impresionReporte';
-import { renderizarPlantillaConEstilos } from '../reportes/motorEtaReportes';
+import { prepararRenderizadoReporte, renderizarPlantillaConEstilos } from '../reportes/motorEtaReportes';
 import {
   claseExportacionPdfResumenVenta,
   estilosResumenVentaCss,
@@ -38,6 +38,7 @@ export async function exportarReciboPagoCuentaCorrientePdf(
   datos: DatosImpresionReciboPago,
 ): Promise<void> {
   const plantilla = plantillasCuentaCorriente['recibo-pago-cc'];
+  await prepararRenderizadoReporte();
   const calculados = calcularDatosReciboPagoCcImpresion(datos.cliente, datos.movimiento);
   const fragmento = renderizarPlantillaConEstilos(plantilla, calculados, estilosResumenVentaCss);
 

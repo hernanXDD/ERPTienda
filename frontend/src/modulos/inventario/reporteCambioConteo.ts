@@ -1,6 +1,6 @@
 import { formatearNumeroReporte } from '../reportes/formatoMonedaReporte';
 import { obtenerEmisorNegocioReporte } from '../reportes/emisorNegocioReporte';
-import { renderizarPlantillaReporte } from '../reportes/motorEtaReportes';
+import { prepararRenderizadoReporte, renderizarPlantillaReporte } from '../reportes/motorEtaReportes';
 import { exportarReporteComoPdf } from '../reportes/impresionReporte';
 import plantillaCambioConteo from '../reportes/plantillas/cambio-conteo.eta?raw';
 import { formatearFechaYHora } from '../../utilidades/formatoFechaHora';
@@ -87,6 +87,7 @@ export async function exportarReporteCambioConteoPdf(
   metadatos: MetadatosReporteCambioConteo,
 ): Promise<void> {
   const datos = calcularReporteCambioConteo(cambios, metadatos);
+  await prepararRenderizadoReporte();
   const html = renderizarPlantillaReporte(plantillaCambioConteo, datos);
   await exportarReporteComoPdf(html, nombreArchivoReporteCambioConteo());
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Layers, Package, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
+import { Barcode, Layers, Package, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
 import { computed, onMounted, reactive, ref, useTemplateRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
@@ -9,6 +9,10 @@ import {
   obtenerUltimoCostoCompraProducto,
 } from '../../modulos/catalogo/costosProducto';
 import { etiquetaTalleColor } from '../../modulos/catalogo/catalogoPresentacion';
+import {
+  codigoBarrasDesdeIdVariante,
+  generarCodigoBarrasNuevoVariante,
+} from '../../modulos/catalogo/codigoBarras';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useCatalogoStore } from '../../stores/catalogo';
 import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema';
@@ -41,6 +45,8 @@ const { compras } = storeToRefs(registroCompras);
 const { parametros: parametrosSistema } = storeToRefs(configuracionSistemaStore);
 
 const refDialogo = useTemplateRef('refDialogo');
+const refDialogoReemplazarCb = useTemplateRef('refDialogoReemplazarCb');
+const filaPendienteGenerarCb = ref<BorradorVariante | null>(null);
 
 interface BorradorVariante {
   claveLocal: string;
@@ -229,6 +235,79 @@ function agregarFilaVariante() {
   variantesBorrador.value = [...variantesBorrador.value, filaVarianteVacia()];
 }
 
+function codigosBarrasOcupados(excluirClaveLocal?: string, excluirIdVariante?: string): Set<string> {
+  const ocupados = new Set<string>();
+  for (const variante of variantes.value) {
+    if (excluirIdVariante && variante.id === excluirIdVariante) continue;
+    const codigo = variante.codigoBarras.trim();
+    if (codigo) ocupados.add(codigo);
+  }
+  for (const fila of variantesBorrador.value) {
+    if (excluirClaveLocal && fila.claveLocal === excluirClaveLocal) continue;
+    const codigo = fila.codigoBarras.trim();
+    if (codigo) ocupados.add(codigo);
+  }
+  return ocupados;
+}
+
+function generarCodigoBarrasParaFila(fila: BorradorVariante): void {
+  try {
+    const ocupados = codigosBarrasOcupados(fila.claveLocal, fila.id);
+    let codigo: string;
+    if (fila.id) {
+      codigo = codigoBarrasDesdeIdVariante(fila.id);
+      if (ocupados.has(codigo)) {
+        codigo = generarCodigoBarrasNuevoVariante(ocupados);
+      }
+    } else {
+      codigo = generarCodigoBarrasNuevoVariante(ocupados);
+    }
+    fila.codigoBarras = codigo;
+  } catch {
+    mostrarToast('No se pudo generar un código de barras único.', 'error');
+  }
+}
+
+function solicitarGenerarCodigoBarrasParaFila(fila: BorradorVariante): void {
+  if (!puedeGestionarCatalogo.value) return;
+  if (fila.codigoBarras.trim()) {
+    filaPendienteGenerarCb.value = fila;
+    refDialogoReemplazarCb.value?.showModal();
+    return;
+  }
+  generarCodigoBarrasParaFila(fila);
+}
+
+function confirmarReemplazoCodigoBarras(): void {
+  if (filaPendienteGenerarCb.value) {
+    generarCodigoBarrasParaFila(filaPendienteGenerarCb.value);
+  }
+  cerrarDialogoReemplazarCb();
+}
+
+function cerrarDialogoReemplazarCb(): void {
+  refDialogoReemplazarCb.value?.close();
+  filaPendienteGenerarCb.value = null;
+}
+
+function generarCodigosBarrasFaltantes(): void {
+  let generados = 0;
+  for (const fila of variantesBorrador.value) {
+    if (!fila.codigoBarras.trim()) {
+      generarCodigoBarrasParaFila(fila);
+      generados += 1;
+    }
+  }
+  if (generados === 0) {
+    mostrarToast('Todas las variantes ya tienen código de barras.', 'ok');
+    return;
+  }
+  mostrarToast(
+    generados === 1 ? 'Se generó 1 código de barras.' : `Se generaron ${generados} códigos de barras.`,
+    'ok',
+  );
+}
+
 function quitarFilaVariante(claveLocal: string) {
   if (variantesBorrador.value.length <= 1) {
     mostrarToast('El producto debe tener al menos una variante (talle y color).', 'error');
@@ -252,6 +331,7 @@ function cantidadVariantesProducto(productoId: string): number {
 function validarVariantesBorrador(): BorradorVariante[] | null {
   const validas: BorradorVariante[] = [];
   const claves = new Set<string>();
+  const codigosBarras = new Set<string>();
   for (const fila of variantesBorrador.value) {
     const talle = fila.talle.trim();
     const color = fila.color.trim();
@@ -265,7 +345,24 @@ function validarVariantesBorrador(): BorradorVariante[] | null {
       return null;
     }
     claves.add(clave);
-    validas.push({ ...fila, talle, color, codigoBarras: fila.codigoBarras.trim() });
+
+    const codigoBarras = fila.codigoBarras.trim();
+    if (codigoBarras) {
+      if (codigosBarras.has(codigoBarras)) {
+        mostrarToast('Hay dos variantes con el mismo código de barras en este producto.', 'error');
+        return null;
+      }
+      const duplicadoCatalogo = variantes.value.find(
+        (v) => v.codigoBarras.trim() === codigoBarras && v.id !== fila.id,
+      );
+      if (duplicadoCatalogo) {
+        mostrarToast('Ese código de barras ya está asignado a otra variante.', 'error');
+        return null;
+      }
+      codigosBarras.add(codigoBarras);
+    }
+
+    validas.push({ ...fila, talle, color, codigoBarras });
   }
   if (validas.length === 0) {
     mostrarToast('Agregá al menos una variante.', 'error');
@@ -689,12 +786,23 @@ onMounted(() => {
           </section>
 
           <section class="cat-prod-seccion cat-prod-seccion--variantes" aria-labelledby="cat-prod-sec-var">
-            <div class="cat-prod-seccion-enc">
-              <h3 id="cat-prod-sec-var" class="cat-prod-seccion-tit">Variantes (talle · color)</h3>
-              <p class="cat-prod-seccion-ayuda">
-                Cada fila es una combinación con stock propio. Un producto con un solo talle y color
-                tiene una variante.
-              </p>
+            <div class="cat-prod-seccion-enc cat-prod-seccion-enc--variantes">
+              <div>
+                <h3 id="cat-prod-sec-var" class="cat-prod-seccion-tit">Variantes (talle · color)</h3>
+                <p class="cat-prod-seccion-ayuda">
+                  Cada fila es una combinación con stock propio. Un producto con un solo talle y color
+                  tiene una variante.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="pg-btn cat-prod-btn-gen-cb"
+                :disabled="!puedeGestionarCatalogo"
+                @click="generarCodigosBarrasFaltantes"
+              >
+                <Barcode :size="15" aria-hidden="true" />
+                Generar códigos faltantes
+              </button>
             </div>
 
             <div class="cat-prod-var-tabla" role="group" aria-label="Variantes del producto">
@@ -731,7 +839,7 @@ onMounted(() => {
                     placeholder="Ej. Negro"
                   />
                 </label>
-                <label class="cat-prod-var-lab">
+                <div class="cat-prod-var-lab cat-prod-var-lab--cb">
                   <span class="pg-sr">Código de barras fila {{ indice + 1 }}</span>
                   <input
                     v-model="fila.codigoBarras"
@@ -739,17 +847,30 @@ onMounted(() => {
                     class="pg-filtro-inp pg-mono"
                     maxlength="48"
                     inputmode="numeric"
-                    placeholder="Opcional"
+                    placeholder="EAN-13 opcional"
+                    :disabled="!puedeGestionarCatalogo"
                   />
-                </label>
-                <button
-                  type="button"
-                  class="cat-prod-var-quitar"
-                  :aria-label="`Quitar variante ${etiquetaTalleColor(fila.talle, fila.color)}`"
-                  @click="quitarFilaVariante(fila.claveLocal)"
-                >
-                  <Trash2 :size="16" aria-hidden="true" />
-                </button>
+                </div>
+                <div class="cat-prod-var-acciones">
+                  <button
+                    type="button"
+                    class="cat-prod-var-accion cat-prod-var-accion--gen"
+                    title="Generar código EAN-13 interno"
+                    :aria-label="`Generar código de barras fila ${indice + 1}`"
+                    :disabled="!puedeGestionarCatalogo"
+                    @click="solicitarGenerarCodigoBarrasParaFila(fila)"
+                  >
+                    <Barcode :size="16" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    class="cat-prod-var-accion cat-prod-var-accion--quitar"
+                    :aria-label="`Quitar variante ${etiquetaTalleColor(fila.talle, fila.color)}`"
+                    @click="quitarFilaVariante(fila.claveLocal)"
+                  >
+                    <Trash2 :size="16" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -771,6 +892,28 @@ onMounted(() => {
             <button type="submit" class="pg-btn-primario">Guardar producto</button>
           </footer>
         </form>
+      </div>
+    </dialog>
+
+    <dialog
+      ref="refDialogoReemplazarCb"
+      class="cat-prod-modal cat-prod-modal--confirm"
+      aria-labelledby="cat-prod-confirm-cb-titulo"
+      @close="filaPendienteGenerarCb = null"
+    >
+      <div class="cat-prod-confirm-panel">
+        <h2 id="cat-prod-confirm-cb-titulo" class="cat-prod-confirm-titulo">
+          Va a reemplazar el código de barras
+        </h2>
+        <p class="cat-prod-confirm-texto">¿Desea seguir?</p>
+        <footer class="cat-prod-confirm-pie">
+          <button type="button" class="pg-btn pg-btn--ghost" @click="cerrarDialogoReemplazarCb">
+            Cancelar
+          </button>
+          <button type="button" class="pg-btn-primario" @click="confirmarReemplazoCodigoBarras">
+            Sí, reemplazar
+          </button>
+        </footer>
       </div>
     </dialog>
   </section>
@@ -1008,6 +1151,22 @@ onMounted(() => {
   margin-bottom: 0.65rem;
 }
 
+.cat-prod-seccion-enc--variantes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.cat-prod-btn-gen-cb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+
 .cat-prod-seccion-ayuda {
   margin: 0.25rem 0 0;
   font-size: 0.8rem;
@@ -1134,7 +1293,7 @@ onMounted(() => {
 @media (min-width: 640px) {
   .cat-prod-var-cab {
     display: grid;
-    grid-template-columns: 0.85fr 0.85fr 1.3fr 2.25rem;
+    grid-template-columns: 0.85fr 0.85fr 1.3fr 5rem;
     gap: 0.45rem;
     padding: 0 0.15rem 0.25rem;
     font-size: 0.68rem;
@@ -1161,20 +1320,69 @@ onMounted(() => {
 
 @media (min-width: 640px) {
   .cat-prod-var-fila {
-    grid-template-columns: 0.85fr 0.85fr 1.3fr 2.25rem;
+    grid-template-columns: 0.85fr 0.85fr 1.3fr 5rem;
     padding-bottom: 0;
     border-bottom: none;
   }
 }
 
-.cat-prod-var-lab:nth-child(3) {
+.cat-prod-var-lab--cb {
   grid-column: 1 / -1;
 }
 
 @media (min-width: 640px) {
-  .cat-prod-var-lab:nth-child(3) {
+  .cat-prod-var-lab--cb {
     grid-column: auto;
   }
+}
+
+.cat-prod-var-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  align-self: end;
+}
+
+@media (max-width: 639px) {
+  .cat-prod-var-acciones {
+    grid-column: 2;
+  }
+}
+
+.cat-prod-var-accion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.38rem;
+  border-radius: 10px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cat-prod-var-accion:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cat-prod-var-accion--gen {
+  border-color: var(--color-acento-borde);
+  color: var(--color-acento);
+}
+
+.cat-prod-var-accion--gen:hover:not(:disabled) {
+  background: var(--color-acento-suave);
+}
+
+.cat-prod-var-accion--quitar {
+  border-color: rgba(251, 113, 133, 0.4);
+  color: var(--color-peligro);
+}
+
+.cat-prod-var-accion--quitar:hover:not(:disabled) {
+  background: rgba(251, 113, 133, 0.1);
 }
 
 .cat-prod-var-lab {
@@ -1184,28 +1392,33 @@ onMounted(() => {
   min-width: 0;
 }
 
-.cat-prod-var-quitar {
-  justify-self: end;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.38rem;
-  border-radius: 10px;
-  border: 1px solid rgba(251, 113, 133, 0.4);
-  background: transparent;
-  color: var(--color-peligro);
-  cursor: pointer;
+.cat-prod-modal--confirm {
+  max-width: 22rem;
 }
 
-@media (max-width: 639px) {
-  .cat-prod-var-quitar {
-    grid-column: 2;
-  }
+.cat-prod-confirm-panel {
+  padding: 1.25rem clamp(1rem, 3vw, 1.35rem);
 }
 
-.cat-prod-var-quitar:hover {
-  background: rgba(251, 113, 133, 0.1);
+.cat-prod-confirm-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.cat-prod-confirm-texto {
+  margin: 0.65rem 0 0;
+  font-size: 0.92rem;
+  color: var(--color-texto-apagado);
+}
+
+.cat-prod-confirm-pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.15rem;
 }
 
 .cat-prod-btn-add-var {

@@ -116,6 +116,10 @@ function alSalirMouse() {
           </RouterLink>
         </template>
       </nav>
+
+      <footer class="lateral-marca-agua" aria-hidden="true">
+        <span class="lateral-marca-agua-texto">ERPTienda</span>
+      </footer>
     </aside>
   </div>
 </template>
@@ -290,5 +294,36 @@ function alSalirMouse() {
 
 .icono {
   flex-shrink: 0;
+}
+
+.lateral-marca-agua {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding: 0.55rem 0.4rem 0.7rem;
+  border-top: 1px solid rgba(42, 58, 84, 0.4);
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.lateral-marca-agua-texto {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-texto-apagado);
+  opacity: 0.38;
+}
+
+.lateral--colapsada .lateral-marca-agua {
+  padding: 0.5rem 0.2rem 0.65rem;
+}
+
+.lateral--colapsada .lateral-marca-agua-texto {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  line-height: 1;
 }
 </style>

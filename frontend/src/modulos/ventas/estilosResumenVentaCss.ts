@@ -42,8 +42,8 @@ export const estilosResumenVentaCss = `
 
 .rv-cab-emisor {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.85rem;
   flex: 1;
   min-width: 12rem;
 }
@@ -61,6 +61,18 @@ export const estilosResumenVentaCss = `
   font-weight: 800;
   letter-spacing: 0.05em;
   color: #f8fafc;
+}
+
+.rv-cab-logo-img {
+  display: block;
+  flex-shrink: 0;
+  width: auto;
+  height: auto;
+  max-width: 4.5rem;
+  max-height: 3.75rem;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
 }
 
 .rv-cab-datos { min-width: 0; flex: 1; }

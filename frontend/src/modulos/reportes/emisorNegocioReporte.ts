@@ -10,6 +10,8 @@ export interface RedSocialPieReporte {
 export interface EmisorNegocioReporte {
   negocioNombre: string;
   negocioIniciales: string;
+  tieneLogoImagen: boolean;
+  negocioLogoDataUrl: string;
   negocioCuit: string;
   negocioDireccion: string;
   negocioLocalidad: string;
@@ -110,6 +112,15 @@ function obtenerRedesSocialesPieReporte(
   return redes;
 }
 
+function datosLogoEmisorReporte(): Pick<EmisorNegocioReporte, 'tieneLogoImagen' | 'negocioLogoDataUrl'> {
+  const dataUrl = useNegocioStore().logoDataUrl ?? '';
+  const tieneLogoImagen = dataUrl.startsWith('data:');
+  return {
+    tieneLogoImagen,
+    negocioLogoDataUrl: tieneLogoImagen ? dataUrl : '',
+  };
+}
+
 /** Datos del emisor para encabezados de reportes (desde Configuración → Negocio). */
 export function obtenerEmisorNegocioReporte(): EmisorNegocioReporte {
   const negocio = useNegocioStore().negocio;
@@ -135,6 +146,7 @@ export function obtenerEmisorNegocioReporte(): EmisorNegocioReporte {
   return {
     negocioNombre: nombre,
     negocioIniciales: inicialesDesdeNombre(nombre),
+    ...datosLogoEmisorReporte(),
     negocioCuit: cuit,
     negocioDireccion: direccion,
     negocioLocalidad: localidad,
@@ -152,6 +164,16 @@ export function obtenerEmisorNegocioReporte(): EmisorNegocioReporte {
   };
 }
 
+export function generarHtmlLogoEmisorReporte(
+  emisor: EmisorNegocioReporte,
+  opciones: { claseContenedor: string; claseImagen: string },
+): string {
+  if (emisor.tieneLogoImagen && emisor.negocioLogoDataUrl.startsWith('data:')) {
+    return `<img class="${opciones.claseImagen}" src="${emisor.negocioLogoDataUrl}" alt="" />`;
+  }
+  return `<div class="${opciones.claseContenedor}" aria-hidden="true">${escaparTextoHtmlReporte(emisor.negocioIniciales)}</div>`;
+}
+
 export function escaparTextoHtmlReporte(texto: string): string {
   return texto
     .replace(/&/g, '&amp;')
@@ -166,7 +188,10 @@ export function generarHtmlEmisorReporteInline(
   opciones?: { tituloDocumento?: string; generadoEl?: string },
 ): string {
   const nombre = escaparTextoHtmlReporte(emisor.negocioNombre);
-  const iniciales = escaparTextoHtmlReporte(emisor.negocioIniciales);
+  const logoHtml = generarHtmlLogoEmisorReporte(emisor, {
+    claseContenedor: 'rep-emisor-inline-logo',
+    claseImagen: 'rep-emisor-inline-logo-img',
+  });
   const titulo = escaparTextoHtmlReporte(opciones?.tituloDocumento ?? 'Documento');
   const fecha = opciones?.generadoEl ? escaparTextoHtmlReporte(opciones.generadoEl) : '';
 
@@ -179,7 +204,7 @@ export function generarHtmlEmisorReporteInline(
     : '';
 
   return `<div class="rep-emisor-inline">
-  <div class="rep-emisor-inline-logo" aria-hidden="true">${iniciales}</div>
+  ${logoHtml}
   <div class="rep-emisor-inline-cuerpo">
     <p class="rep-emisor-inline-etiq">Reporte</p>
     <p class="rep-emisor-inline-reporte">${titulo}</p>
@@ -248,6 +273,17 @@ export const estilosEmisorReporteInlineCss = `
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.04em;
+}
+.rep-emisor-inline-logo-img {
+  display: block;
+  flex-shrink: 0;
+  width: auto;
+  height: auto;
+  max-width: 3.25rem;
+  max-height: 2.75rem;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
 }
 .rep-emisor-inline-cuerpo { min-width: 0; flex: 1; }
 .rep-emisor-inline-etiq {

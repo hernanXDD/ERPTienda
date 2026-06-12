@@ -1,4 +1,5 @@
 import { Eta } from 'eta/core';
+import { useNegocioStore } from '../../stores/negocio';
 import { obtenerEmisorNegocioReporte } from './emisorNegocioReporte';
 import { estilosBaseReporteCss } from './estilosReporteCss';
 import { armarDatosPiePaginaReporte } from './piePaginaReporte';
@@ -12,6 +13,11 @@ const eta = new Eta({
 
 const MARCADOR_EMISOR = '<!-- EMISOR_REPORTE -->';
 const MARCADOR_PIE = '<!-- PIE_REPORTE -->';
+
+/** Asegura que el logo del negocio esté en caché (base64) antes de renderizar reportes o PDF. */
+export async function prepararRenderizadoReporte(): Promise<void> {
+  await useNegocioStore().asegurarLogoDataUrl();
+}
 
 function datosReporteCompletos(datos: object, estilosCss: string): Record<string, unknown> {
   const emisor = obtenerEmisorNegocioReporte();

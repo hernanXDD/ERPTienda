@@ -51,7 +51,7 @@ venv/
 *.docx
 *.pdf
 Manual-de-usuario*.docx
-DESPLIEGUE-VPS-PASO-A-PASO.pdf
+DESPLIEGUE-VPS.pdf
 
 # Notas / borradores locales de planificación
 input inicial.txt

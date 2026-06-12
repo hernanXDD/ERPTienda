@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Genera DESPLIEGUE-VPS-PASO-A-PASO.pdf con LibreOffice (guía local, no se sube a Git)."""
+"""Genera DESPLIEGUE-VPS.pdf con LibreOffice (guía local, no se sube a Git)."""
 
 import shutil
 import subprocess
@@ -7,7 +7,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 HTML = Path(__file__).resolve().parent / "guia-despliegue-contenido.html"
-SALIDA = RAIZ / "DESPLIEGUE-VPS-PASO-A-PASO.pdf"
+SALIDA = RAIZ / "DESPLIEGUE-VPS.pdf"
 
 
 def generar() -> None:

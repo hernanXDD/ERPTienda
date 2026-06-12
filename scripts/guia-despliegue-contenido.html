@@ -2,247 +2,271 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>ERP Tienda — Guía de despliegue</title>
+  <title>ERP Tienda — Despliegue en el VPS</title>
   <style>
     @page { margin: 2cm; }
     body { font-family: "Liberation Sans", Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #222; }
-    h1 { color: #144272; font-size: 22pt; text-align: center; margin-top: 2cm; page-break-before: always; }
-    h1.portada { page-break-before: avoid; margin-top: 4cm; }
-    h2 { color: #144272; font-size: 15pt; margin-top: 1.2em; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
-    h3 { color: #1a5276; font-size: 12pt; margin-top: 1em; }
-    p { margin: 0.5em 0; }
-    ul, ol { margin: 0.4em 0 0.8em 1.2em; }
-    li { margin: 0.25em 0; }
-    pre, code { font-family: "Liberation Mono", Consolas, monospace; font-size: 9pt; background: #f4f4f4; }
-    pre { padding: 10px; border: 1px solid #ddd; white-space: pre-wrap; word-break: break-all; }
-    table { border-collapse: collapse; width: 100%; margin: 0.8em 0; font-size: 10pt; }
-    th, td { border: 1px solid #bbb; padding: 6px 8px; text-align: left; }
+    h1 { color: #144272; font-size: 19pt; margin-top: 1.2em; page-break-before: always; border-bottom: 2px solid #144272; padding-bottom: 5px; }
+    h1.portada { page-break-before: avoid; border: none; text-align: center; font-size: 24pt; margin-top: 2.5cm; }
+    h2 { color: #1a5276; font-size: 13pt; margin-top: 0.95em; }
+    h3 { color: #2874a6; font-size: 10.5pt; margin-top: 0.75em; }
+    p { margin: 0.4em 0; }
+    ul, ol { margin: 0.35em 0 0.7em 1.2em; }
+    li { margin: 0.2em 0; }
+    pre, code { font-family: "Liberation Mono", Consolas, monospace; font-size: 8.5pt; background: #f4f4f4; }
+    code { padding: 1px 3px; }
+    pre { padding: 8px 10px; border: 1px solid #ddd; white-space: pre-wrap; word-break: break-all; }
+    table { border-collapse: collapse; width: 100%; margin: 0.6em 0; font-size: 9.5pt; }
+    th, td { border: 1px solid #bbb; padding: 5px 7px; text-align: left; vertical-align: top; }
     th { background: #e8f0f8; }
     .centro { text-align: center; }
-    .nota { background: #fff8e1; border-left: 4px solid #f9a825; padding: 8px 12px; margin: 0.8em 0; font-size: 10pt; }
-    .check { list-style: none; margin-left: 0; padding-left: 0; }
-    .check li::before { content: "☐ "; }
+    .nota { background: #fff8e1; border-left: 4px solid #f9a825; padding: 7px 10px; margin: 0.7em 0; font-size: 9.5pt; }
+    .peligro { background: #ffebee; border-left: 4px solid #c62828; padding: 7px 10px; margin: 0.7em 0; font-size: 9.5pt; }
+    .destacado { background: #e8f4fc; border: 1px solid #90caf9; padding: 10px 12px; margin: 0.8em 0; }
   </style>
 </head>
 <body>
 
 <h1 class="portada">ERP Tienda</h1>
-<p class="centro" style="font-size: 16pt; font-weight: bold;">Guía de despliegue en producción</p>
-<p class="centro">Proveedor: <strong>DonWeb / DattaWeb</strong></p>
-<p class="centro">Tu PC: <strong>Fedora Linux</strong> (sin SSH configurado aún)</p>
-<p class="centro">Primera prueba en entorno real</p>
-<br/>
-<p class="centro">Este documento cubre desde cero: conexión SSH desde Fedora, configuración del VPS,<br/>despliegue de API + PostgreSQL, y frontend en Vercel.</p>
+<p class="centro" style="font-size: 16pt; font-weight: bold;">Despliegue en el VPS</p>
+<p class="centro">Ubuntu 24.04 · Easypanel · DonWeb</p>
+<p class="centro" style="margin-top: 0.8em;">Configuración del servidor + aplicación — guía única</p>
 
-<h1>Datos de tu VPS</h1>
+<h1>1. Datos del servidor</h1>
 <table>
   <tr><th>Dato</th><th>Valor</th></tr>
+  <tr><td>SO</td><td><strong>Ubuntu 24.04</strong></td></tr>
+  <tr><td>Panel</td><td><strong>Easypanel</strong></td></tr>
   <tr><td>IP</td><td><code>200.58.99.253</code></td></tr>
   <tr><td>Host</td><td><code>vps-6055529-x.dattaweb.com</code></td></tr>
-  <tr><td>URL API</td><td><code>https://vps-6055529-x.dattaweb.com/api</code></td></tr>
-  <tr><td>Recursos</td><td>2 vCPU, 2 GB RAM, 20 GB SSD</td></tr>
-  <tr><td>Repositorio</td><td><code>https://github.com/hernanXDD/ERPTienda</code></td></tr>
+  <tr><td>API</td><td><code>https://vps-6055529-x.dattaweb.com/api</code></td></tr>
+  <tr><td>Frontend Vercel</td><td><code>https://merakii-eight.vercel.app</code></td></tr>
+  <tr><td>Repo</td><td><code>github.com/hernanXDD/ERPTienda</code></td></tr>
+  <tr><td>Usuario SSH (tras setup)</td><td><code>erp</code> (no root)</td></tr>
 </table>
-<p><strong>Arquitectura:</strong> Frontend en Vercel. En el VPS: PostgreSQL (Docker) + API NestJS (Node + PM2 + nginx HTTPS).</p>
 
-<h1>PARTE 1 — Preparar tu Fedora (hoy)</h1>
+<h1>2. Orden completo de trabajo</h1>
+<div class="destacado">
+  <ol>
+    <li><strong>Fedora:</strong> crear clave SSH (sección 3)</li>
+    <li><strong>VPS:</strong> ingresar como <strong>root</strong> (sección 4)</li>
+    <li><strong>VPS:</strong> configuración inicial — actualizar, usuario erp, firewall (sección 5)</li>
+    <li><strong>Fedora:</strong> copiar clave a usuario erp y probar (sección 6)</li>
+    <li><strong>VPS:</strong> deshabilitar root por SSH (sección 7)</li>
+    <li><strong>VPS:</strong> Easypanel — verificar o instalar (sección 8)</li>
+    <li>Easypanel: proyecto, Postgres, App API, dominio HTTPS (secciones 9–12)</li>
+    <li>Semilla + prueba login (secciones 13–14)</li>
+  </ol>
+</div>
+<pre>Contraseña root DonWeb:  _________________________________
+Contraseña usuario erp:   _________________________________
+URL panel Easypanel:      _________________________________
+POSTGRES_PASSWORD:        _________________________________
+JWT_SECRETO:              _________________________________</pre>
 
-<h2>1.1 Verificar SSH</h2>
-<p>Abrí la terminal en Fedora:</p>
-<pre>ssh -V</pre>
-<p>Si no está instalado:</p>
-<pre>sudo dnf install -y openssh-clients</pre>
-
-<h2>1.2 Qué necesitás del panel DonWeb</h2>
-<ul>
-  <li>Usuario <strong>root</strong> y contraseña (al activar el VPS).</li>
-  <li>VPS en estado <strong>Activo / Running</strong>.</li>
-  <li>IP <code>200.58.99.253</code> accesible.</li>
-</ul>
-<p>Panel: cuenta DonWeb → Cloud Servers / VPS → seleccionar el servidor. Ahí ves IP, reinicio y consola de emergencia si hace falta.</p>
-
-<h2>1.3 Primer ingreso con contraseña (mañana)</h2>
-<pre>ssh root@200.58.99.253</pre>
-<p>Si pregunta <em>Are you sure you want to continue connecting?</em> escribí <code>yes</code> y Enter.</p>
-<p>Ingresá la contraseña de root (no se ve al tipear). Alternativa:</p>
-<pre>ssh root@vps-6055529-x.dattaweb.com</pre>
-
-<h2>1.4 (Opcional hoy) Crear clave SSH en Fedora</h2>
-<p>Recomendado para no depender solo de contraseña. La copiás al servidor mañana, tras crear el usuario <code>erp</code>.</p>
+<h1>3. Preparar SSH en Fedora (tu PC)</h1>
+<h2>3.1 Cliente SSH</h2>
+<pre>ssh -V
+sudo dnf install -y openssh-clients</pre>
+<h2>3.2 Crear clave (primera vez)</h2>
 <pre>ssh-keygen -t ed25519 -C "hernan-fedora-erp"
-# Enter en ruta por defecto (~/.ssh/id_ed25519)
-# Passphrase opcional
+cat ~/.ssh/id_ed25519.pub</pre>
+<table>
+  <tr><th>Archivo</th><th>Uso</th></tr>
+  <tr><td><code>~/.ssh/id_ed25519</code></td><td>Privada — no compartir</td></tr>
+  <tr><td><code>~/.ssh/id_ed25519.pub</code></td><td>Pública — va al VPS</td></tr>
+</table>
+<h2>3.3 Atajo ~/.ssh/config (opcional)</h2>
+<pre>Host erp-vps
+    HostName 200.58.99.253
+    User erp
+    IdentityFile ~/.ssh/id_ed25519</pre>
+<pre>chmod 600 ~/.ssh/config</pre>
 
-# Mañana, tras crear usuario erp en el VPS:
-ssh-copy-id erp@200.58.99.253</pre>
+<h1>4. Primer ingreso como root</h1>
+<p>La contraseña de <strong>root</strong> está en el panel DonWeb (al activar el VPS).</p>
+<p>Desde <strong>Fedora</strong>:</p>
+<pre>ssh root@200.58.99.253
+# o
+ssh root@vps-6055529-x.dattaweb.com</pre>
+<ul>
+  <li>Si pregunta fingerprint: <code>yes</code></li>
+  <li>La contraseña no se ve al tipear</li>
+</ul>
+<div class="peligro"><strong>No cierres esta sesión root</strong> hasta confirmar que podés entrar con <code>erp</code> y clave SSH (sección 6).</div>
 
-<h1>PARTE 2 — Configuración inicial del VPS (como root)</h1>
-<p class="nota">DonWeb suele entregar <strong>Ubuntu</strong>. Ejecutá en orden la primera vez.</p>
+<h1>5. Configuración inicial del servidor</h1>
+<p>Ejecutar en el VPS como <strong>root</strong>.</p>
 
-<h2>2.1 Actualizar el sistema</h2>
+<h2>5.1 Actualizar sistema</h2>
 <pre>apt update && apt upgrade -y</pre>
 
-<h2>2.2 Crear usuario de trabajo</h2>
+<h2>5.2 Crear usuario erp con sudo</h2>
 <pre>adduser erp
 usermod -aG sudo erp</pre>
-<p>Probá desde otra terminal en Fedora (sin cerrar root):</p>
-<pre>ssh erp@200.58.99.253</pre>
+<p>Elegí contraseña para <code>erp</code> (distinta a root). Verificar:</p>
+<pre>su - erp
+sudo whoami
+exit</pre>
+<p>Debe imprimir <code>root</code>.</p>
 
-<h2>2.3 Firewall (solo 22, 80, 443)</h2>
-<pre>sudo apt install -y ufw
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow OpenSSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw enable
-sudo ufw status</pre>
-<p>No abras 5432 (PostgreSQL) ni 3000 (API) al exterior.</p>
+<h2>5.3 Paquetes básicos</h2>
+<pre>apt install -y curl git ufw fail2ban</pre>
 
-<h2>2.4 Instalar Docker</h2>
-<pre>sudo apt install -y ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+<h2>5.4 Zona horaria Argentina</h2>
+<pre>timedatectl set-timezone America/Argentina/Buenos_Aires
+timedatectl</pre>
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+<h2>5.5 Firewall UFW</h2>
+<pre>ufw default deny incoming
+ufw default allow outgoing
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+ufw status</pre>
+<div class="nota">No abrir 5432 (Postgres) ni 3000 al exterior. Easypanel usa la red interna Docker.</div>
 
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-sudo usermod -aG docker erp</pre>
-<p>Cerrá sesión y volvé a entrar como <code>erp</code> para usar Docker sin sudo.</p>
+<h2>5.6 Fail2ban (protección SSH)</h2>
+<pre>systemctl enable fail2ban
+systemctl start fail2ban</pre>
 
-<h2>2.5 Instalar Node.js 20</h2>
-<pre>curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-node -v
-npm -v</pre>
+<h1>6. Copiar clave SSH al usuario erp</h1>
+<p>Desde <strong>Fedora</strong> (mantener sesión root abierta por las dudas):</p>
+<pre>ssh-copy-id erp@200.58.99.253</pre>
+<p>Alternativa manual:</p>
+<pre>cat ~/.ssh/id_ed25519.pub | ssh erp@200.58.99.253 \
+  "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"</pre>
+<p>Probar en <strong>terminal nueva</strong>:</p>
+<pre>ssh erp@200.58.99.253
+# o: ssh erp-vps</pre>
+<p>Debe entrar con clave sin pedir contraseña de erp.</p>
 
-<h2>2.6 PM2, nginx, Certbot y Git</h2>
-<pre>sudo npm install -g pm2
-sudo apt install -y nginx certbot python3-certbot-nginx git</pre>
+<h1>7. Deshabilitar root por SSH</h1>
+<div class="peligro">Solo después de confirmar que <code>ssh erp@...</code> funciona con clave.</div>
+<pre>sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+sudo nano /etc/ssh/sshd_config</pre>
+<p>Dejar así (descomentar o agregar):</p>
+<pre>PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes</pre>
+<pre>sudo systemctl restart ssh</pre>
+<p>Probar desde Fedora:</p>
+<pre>ssh root@200.58.99.253    # debe FALLAR (correcto)
+ssh erp@200.58.99.253     # debe ENTRAR con clave (correcto)</pre>
+<p>Si erp no entra, restaurar con la sesión que sigue abierta:</p>
+<pre>sudo cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config
+sudo systemctl restart ssh</pre>
+<div class="nota">De ahora en más: <code>ssh erp@200.58.99.253</code>. Root solo por consola de emergencia en DonWeb.</div>
 
-<h1>PARTE 3 — Clonar el proyecto</h1>
-<pre>cd /opt
-sudo mkdir -p /opt/ERPTienda
-sudo chown erp:erp /opt/ERPTienda
-git clone https://github.com/hernanXDD/ERPTienda.git
-cd ERPTienda</pre>
-<p>Si el repo es privado, GitHub pide usuario y <strong>Personal Access Token</strong> (no la contraseña de GitHub).</p>
+<h1>8. Easypanel — verificar o instalar</h1>
+<p>Si DonWeb ya instaló Easypanel, abrí su URL en el navegador.</p>
+<p>Si no está instalado (como erp con sudo):</p>
+<pre>sudo apt install -y docker.io docker-compose-plugin
+sudo usermod -aG docker erp
+# cerrar sesión SSH y volver a entrar como erp
 
-<h1>PARTE 4 — PostgreSQL en Docker</h1>
-<h2>4.1 Variables</h2>
-<pre>cp .env.production.example .env.production
-nano .env.production</pre>
-<ul>
-  <li><code>POSTGRES_USER=erp</code></li>
-  <li><code>POSTGRES_PASSWORD=contraseña-fuerte</code></li>
-  <li><code>POSTGRES_DB=ERPTienda</code></li>
-</ul>
-<p>Guardar en nano: Ctrl+O, Enter, Ctrl+X.</p>
+curl -fsSL https://get.easypanel.io | sudo bash</pre>
 
-<h2>4.2 Levantar la base</h2>
-<pre>docker compose -f docker-compose.prod.yml --env-file .env.production up -d
-docker compose -f docker-compose.prod.yml ps</pre>
-<p>PostgreSQL queda en <code>127.0.0.1:5432</code> (solo el VPS).</p>
+<h1>9. Easypanel — proyecto erp-tienda</h1>
+<ol>
+  <li>Panel Easypanel → <strong>New</strong></li>
+  <li>Nombre: <code>erp-tienda</code> → <strong>Create</strong></li>
+</ol>
 
-<h1>PARTE 5 — API (Node + PM2)</h1>
-<h2>5.1 backend/.env</h2>
-<pre>cp backend/.env.production.example backend/.env
-nano backend/.env</pre>
+<h1>10. Easypanel — PostgreSQL</h1>
+<ol>
+  <li><strong>+ Service</strong> → <strong>PostgreSQL</strong></li>
+  <li>Nombre: <code>erp-postgres</code></li>
+  <li>Base: <code>ERPTienda</code></li>
+  <li><strong>Create</strong> → <strong>Running</strong></li>
+</ol>
+<pre>postgresql://USUARIO:PASSWORD@erp-postgres:5432/ERPTienda?schema=public</pre>
+<div class="nota">Host interno <code>erp-postgres</code> — no usar 127.0.0.1 en DATABASE_URL.</div>
+
+<h1>11. Easypanel — App API</h1>
+<table>
+  <tr><th>Campo</th><th>Valor</th></tr>
+  <tr><td>GitHub</td><td><code>hernanXDD/ERPTienda</code> rama <code>main</code></td></tr>
+  <tr><td>Carpeta</td><td><code>backend</code></td></tr>
+  <tr><td>Build</td><td>Dockerfile</td></tr>
+  <tr><td>Puerto</td><td><code>3000</code></td></tr>
+</table>
+<h3>Variables de entorno</h3>
 <table>
   <tr><th>Variable</th><th>Valor</th></tr>
   <tr><td>NODE_ENV</td><td>production</td></tr>
-  <tr><td>HOST</td><td>127.0.0.1</td></tr>
+  <tr><td>HOST</td><td>0.0.0.0</td></tr>
   <tr><td>PUERTO</td><td>3000</td></tr>
-  <tr><td>DATABASE_URL</td><td>postgresql://USUARIO:PASSWORD@127.0.0.1:5432/ERPTienda?schema=public</td></tr>
-  <tr><td>JWT_SECRETO</td><td><code>openssl rand -base64 48</code></td></tr>
-  <tr><td>CORS_ORIGENES</td><td>URL exacta de Vercel (tras deploy)</td></tr>
+  <tr><td>DATABASE_URL</td><td>cadena interna Postgres</td></tr>
+  <tr><td>JWT_SECRETO</td><td>openssl rand -base64 48</td></tr>
+  <tr><td>JWT_EXPIRES_IN</td><td>8h</td></tr>
+  <tr><td>CORS_ORIGENES</td><td>https://merakii-eight.vercel.app</td></tr>
   <tr><td>TRUST_PROXY</td><td>true</td></tr>
 </table>
+<p>Guardar → <strong>Deploy</strong></p>
 
-<h2>5.2 Instalar y arrancar</h2>
-<pre>chmod +x deploy/instalar-api.sh deploy/actualizar-api.sh
-./deploy/instalar-api.sh</pre>
-
-<h2>5.3 Semilla (solo primera vez)</h2>
-<pre>cd backend && npm run db:seed</pre>
-<p>Login inicial: <strong>admin</strong> / <strong>12345678</strong> — cambiar contraseña después.</p>
-
-<h2>5.4 Comprobar</h2>
-<pre>curl -s http://127.0.0.1:3000/api/salud
-pm2 status</pre>
-
-<h2>5.5 PM2 al reiniciar el VPS</h2>
-<pre>pm2 startup
-# Ejecutar el comando que imprime (con sudo)
-pm2 save</pre>
-
-<h1>PARTE 6 — nginx + HTTPS</h1>
-<h2>6.1 nginx</h2>
-<pre>sudo cp deploy/nginx/erp-tienda-api.conf.example /etc/nginx/sites-available/erp-tienda-api
-sudo ln -s /etc/nginx/sites-available/erp-tienda-api /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx</pre>
-
-<h2>6.2 Certificado SSL</h2>
-<pre>sudo certbot --nginx -d vps-6055529-x.dattaweb.com</pre>
-
-<h2>6.3 Probar desde Fedora</h2>
+<h1>12. Dominio y HTTPS</h1>
+<ol>
+  <li>Servicio erp-api → <strong>Domains</strong></li>
+  <li><code>vps-6055529-x.dattaweb.com</code></li>
+  <li>Activar <strong>HTTPS</strong></li>
+  <li>Puerto proxy: 3000</li>
+</ol>
 <pre>curl -s https://vps-6055529-x.dattaweb.com/api/salud</pre>
 
-<h1>PARTE 7 — Frontend en Vercel</h1>
-<ol>
-  <li>Entrá a <strong>vercel.com</strong> con GitHub.</li>
-  <li>Import Project → repo <code>hernanXDD/ERPTienda</code>.</li>
-  <li><strong>Root Directory:</strong> <code>frontend</code></li>
-  <li><strong>Build:</strong> <code>npm run build</code> — <strong>Output:</strong> <code>dist</code></li>
-  <li>Variable Production: <code>VITE_API_BASE_URL=https://vps-6055529-x.dattaweb.com/api</code></li>
-  <li>Deploy.</li>
-  <li>Copiá la URL de Vercel (ej. <code>https://erp-tienda-xxx.vercel.app</code>).</li>
-  <li>En el VPS: <code>nano backend/.env</code> → <code>CORS_ORIGENES</code> = esa URL exacta.</li>
-  <li><code>pm2 reload erp-tienda-api</code></li>
-</ol>
-
-<h1>PARTE 8 — Checklist final</h1>
-<ul class="check">
-  <li><code>curl https://vps-6055529-x.dattaweb.com/api/salud</code> → OK</li>
-  <li>Abrir Vercel → pantalla de login</li>
-  <li>Login admin sin error CORS</li>
-  <li>Navegar productos / clientes</li>
-  <li>Cambiar contraseña del administrador</li>
-  <li><code>pm2 status</code> → online</li>
-  <li>Postgres healthy en Docker</li>
-</ul>
-
-<h1>PARTE 9 — Actualizaciones</h1>
-<pre>cd /opt/ERPTienda
-./deploy/actualizar-api.sh</pre>
-
-<h1>PARTE 10 — Errores frecuentes</h1>
+<h1>13. Semilla (solo 1ª vez)</h1>
+<p>Consola Easypanel del servicio erp-api:</p>
+<pre>npm run db:seed</pre>
+<p>O por SSH:</p>
+<pre>docker ps
+docker exec -it NOMBRE_CONTENEDOR npm run db:seed</pre>
 <table>
-  <tr><th>Síntoma</th><th>Solución</th></tr>
-  <tr><td>Connection refused SSH</td><td>VPS apagado o firewall DonWeb — panel.</td></tr>
-  <tr><td>Permission denied</td><td>Primera vez: <code>ssh root@</code> con contraseña.</td></tr>
-  <tr><td>Error CORS</td><td><code>CORS_ORIGENES</code> = URL Vercel exacta.</td></tr>
-  <tr><td>502 Bad Gateway</td><td><code>pm2 logs erp-tienda-api</code></td></tr>
-  <tr><td>No conecta DB</td><td><code>docker ps</code> y <code>DATABASE_URL</code>.</td></tr>
-  <tr><td>Login 401</td><td>Ejecutar <code>npm run db:seed</code>.</td></tr>
+  <tr><th>Usuario</th><th>Contraseña</th></tr>
+  <tr><td>admin</td><td>12345678 (cambiar en 1er login)</td></tr>
 </table>
 
-<h1>PARTE 11 — Comandos útiles</h1>
-<pre># Fedora — conectar
-ssh erp@200.58.99.253
+<h1>14. Verificar</h1>
+<pre>curl -s https://vps-6055529-x.dattaweb.com/api/salud</pre>
+<ol>
+  <li>Abrir <code>https://merakii-eight.vercel.app</code></li>
+  <li>F12 → XHR → login admin / 12345678</li>
+  <li>POST al VPS → código 200</li>
+</ol>
 
-# VPS — logs
-pm2 logs erp-tienda-api
+<h1>15. Actualizaciones</h1>
+<pre>git push origin main</pre>
+<p>Easypanel: auto-deploy o botón Deploy. Migraciones al arrancar el contenedor.</p>
 
-# VPS — reiniciar API
-pm2 restart erp-tienda-api
+<h1>16. Errores frecuentes</h1>
+<table>
+  <tr><th>Síntoma</th><th>Solución</th></tr>
+  <tr><td>Quedé fuera del VPS</td><td>Consola de emergencia DonWeb; restaurar sshd_config.bak</td></tr>
+  <tr><td>root no entra tras hardening</td><td>Correcto — usar erp@</td></tr>
+  <tr><td>Candado tachado / CORS</td><td>HTTPS en Easypanel + CORS_ORIGENES exacto</td></tr>
+  <tr><td>Error DB</td><td>DATABASE_URL con host erp-postgres</td></tr>
+  <tr><td>Login 401</td><td>npm run db:seed</td></tr>
+  <tr><td>502</td><td>Logs en Easypanel</td></tr>
+</table>
 
-# VPS — recursos
+<h1>17. Seguridad — resumen</h1>
+<ul>
+  <li>Root SSH deshabilitado; solo usuario erp con clave.</li>
+  <li>UFW: 22, 80, 443.</li>
+  <li>Fail2ban activo.</li>
+  <li>Postgres no expuesto a internet.</li>
+  <li>JWT y contraseñas fuertes.</li>
+  <li>Cambiar admin en primer login.</li>
+  <li>Backup antes de datos reales.</li>
+</ul>
+
+<h1>18. Comandos útiles</h1>
+<pre>ssh erp@200.58.99.253
+docker ps
+docker stats --no-stream
 free -h
-docker stats --no-stream</pre>
+sudo ufw status
+sudo fail2ban-client status sshd</pre>
 
 </body>
 </html>

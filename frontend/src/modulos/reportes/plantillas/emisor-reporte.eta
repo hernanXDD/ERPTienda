@@ -1,12 +1,17 @@
 <div class="rep-emisor">
-  <div class="rep-emisor-logo" aria-hidden="true"><%= it.negocioIniciales %></div>
+  <div class="rep-emisor-marca<% if (it.tieneLogoImagen) { %> rep-emisor-marca--logo<% } else { %> rep-emisor-marca--iniciales<% } %>">
+    <% if (it.tieneLogoImagen) { %>
+    <img class="rep-emisor-logo-img" src="<%~ it.negocioLogoDataUrl %>" alt="" />
+    <% } else { %>
+    <div class="rep-emisor-logo" aria-hidden="true"><%= it.negocioIniciales %></div>
+    <% } %>
+  </div>
   <div class="rep-emisor-cuerpo">
     <p class="rep-emisor-etiq">Reporte</p>
     <h1 class="rep-emisor-reporte"><%= it.tituloReporte %></h1>
     <div class="rep-emisor-resumen">
-      <span class="rep-emisor-nom"><%= it.negocioNombre %></span>
-      <% if (it.tieneCuit) { %><span class="rep-emisor-sep" aria-hidden="true">·</span><span class="rep-emisor-cuit">CUIT <%= it.negocioCuit %></span><% } %>
-      <span class="rep-emisor-sep" aria-hidden="true">·</span>
+      <% if (it.tieneCuit) { %><span class="rep-emisor-cuit">CUIT <%= it.negocioCuit %></span><% } %>
+      <% if (it.tieneCuit) { %><span class="rep-emisor-sep" aria-hidden="true">·</span><% } %>
       <time class="rep-emisor-fecha" datetime=""><%= it.generadoEl %></time>
     </div>
   </div>

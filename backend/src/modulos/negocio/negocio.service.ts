@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ID_NEGOCIO } from '../../comunes/constantes/id-negocio';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActualizarNegocioDto } from './dto/actualizar-negocio.dto';
+import { LogoNegocioService } from './logo-negocio.service';
 
 export interface NegocioApi {
   id: string;
@@ -19,6 +20,9 @@ export interface NegocioApi {
   mostrarTwitter: boolean;
   tiktok: string;
   mostrarTiktok: boolean;
+  tieneLogo: boolean;
+  logoVersion: number | null;
+  nombreArchivoLogo: string | null;
 }
 
 function normalizarRedSocial(valor: string | undefined): string {
@@ -27,7 +31,10 @@ function normalizarRedSocial(valor: string | undefined): string {
 
 @Injectable()
 export class NegocioService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logoNegocioService: LogoNegocioService,
+  ) {}
 
   private mapear(registro: {
     id: string;
@@ -45,7 +52,7 @@ export class NegocioService {
     mostrarTwitter: boolean;
     tiktok: string;
     mostrarTiktok: boolean;
-  }): NegocioApi {
+  }): Omit<NegocioApi, 'tieneLogo' | 'logoVersion' | 'nombreArchivoLogo'> {
     return {
       id: registro.id,
       nombre: registro.nombre,
@@ -72,7 +79,7 @@ export class NegocioService {
     if (!registro) {
       throw new NotFoundException('No se encontró la configuración del negocio.');
     }
-    return this.mapear(registro);
+    return this.combinarConLogo(this.mapear(registro));
   }
 
   async actualizar(datos: ActualizarNegocioDto): Promise<NegocioApi> {
@@ -95,6 +102,18 @@ export class NegocioService {
         mostrarTiktok: datos.mostrarTiktok ?? false,
       },
     });
-    return this.mapear(actualizado);
+    return this.combinarConLogo(this.mapear(actualizado));
+  }
+
+  private combinarConLogo(
+    datos: Omit<NegocioApi, 'tieneLogo' | 'logoVersion' | 'nombreArchivoLogo'>,
+  ): NegocioApi {
+    const logo = this.logoNegocioService.obtenerMetadatos();
+    return {
+      ...datos,
+      tieneLogo: logo.tieneLogo,
+      logoVersion: logo.version,
+      nombreArchivoLogo: logo.nombreArchivo,
+    };
   }
 }

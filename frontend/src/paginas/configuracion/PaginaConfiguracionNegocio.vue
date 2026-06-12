@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { IdCard, MapPin, Phone, Share2, Store } from 'lucide-vue-next';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { IdCard, Image, MapPin, Phone, Share2, Store, Trash2, Upload } from 'lucide-vue-next';
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
 import { formatearDocumentoClienteAlEscribir } from '../../modulos/clientes/formateadorDocumentoCliente';
 import {
   formatearCorreoClienteAlEscribir,
@@ -15,6 +15,7 @@ import {
   normalizarRedSocialAlPerderFoco,
 } from '../../modulos/negocio/normalizarRedSocial';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
+import { obtenerLogoNegocioApi } from '../../servicios/negocio.servicio';
 import { useNegocioStore } from '../../stores/negocio';
 import type { DatosNegocioEditable } from '../../tipos/negocio';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
@@ -45,11 +46,27 @@ const borrador = ref<DatosNegocioEditable>({
   mostrarTiktok: false,
 });
 
+const refInputLogo = useTemplateRef('refInputLogo');
+
 const cargandoInicial = ref(true);
 const guardando = ref(false);
+const subiendoLogo = ref(false);
+const eliminandoLogo = ref(false);
 const modoEdicion = ref(false);
 const mensajeExito = ref('');
 const mensajeError = ref('');
+const urlVistaPreviaLogo = ref('');
+let urlLogoObjeto: string | null = null;
+
+const TIPOS_LOGO_PERMITIDOS = [
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/svg+xml',
+] as const;
+
+const tieneLogo = computed(() => negocioStore.negocio?.tieneLogo === true);
+const nombreArchivoLogo = computed(() => negocioStore.negocio?.nombreArchivoLogo?.trim() ?? '');
 
 const vistaPreviaNombre = computed(() => borrador.value.nombre.trim());
 const vistaPreviaCuit = computed(() => borrador.value.cuit.trim());
@@ -75,18 +92,102 @@ function aplicarNegocioAlBorrador(): void {
   };
 }
 
+function liberarVistaPreviaLogo(): void {
+  if (urlLogoObjeto) {
+    URL.revokeObjectURL(urlLogoObjeto);
+    urlLogoObjeto = null;
+  }
+  urlVistaPreviaLogo.value = '';
+}
+
+async function cargarVistaPreviaLogo(): Promise<void> {
+  liberarVistaPreviaLogo();
+  if (!negocioStore.negocio?.tieneLogo) return;
+  try {
+    const blob = await obtenerLogoNegocioApi();
+    urlLogoObjeto = URL.createObjectURL(blob);
+    urlVistaPreviaLogo.value = urlLogoObjeto;
+  } catch {
+    /* vista previa opcional */
+  }
+}
+
 onMounted(async () => {
   mensajeExito.value = '';
   mensajeError.value = '';
   try {
     await negocioStore.cargar();
     aplicarNegocioAlBorrador();
+    await cargarVistaPreviaLogo();
   } catch (error) {
     mensajeError.value = mensajeErrorHttp(error, 'No se pudieron cargar los datos del negocio.');
   } finally {
     cargandoInicial.value = false;
   }
 });
+
+onUnmounted(() => {
+  liberarVistaPreviaLogo();
+});
+
+function abrirSelectorLogo(): void {
+  if (!puedeEditarConfiguracionNegocio.value || !modoEdicion.value || guardando.value || subiendoLogo.value) {
+    return;
+  }
+  refInputLogo.value?.click();
+}
+
+async function alSeleccionarLogo(event: Event): Promise<void> {
+  const entrada = event.target as HTMLInputElement;
+  const archivo = entrada.files?.[0];
+  entrada.value = '';
+  if (!archivo || !puedeEditarConfiguracionNegocio.value || !modoEdicion.value) return;
+
+  if (!TIPOS_LOGO_PERMITIDOS.includes(archivo.type as (typeof TIPOS_LOGO_PERMITIDOS)[number])) {
+    mensajeError.value = 'Formato no permitido. Use PNG, JPG, WEBP o SVG.';
+    return;
+  }
+  if (archivo.size > 2 * 1024 * 1024) {
+    mensajeError.value = 'El logo no puede superar 2 MB.';
+    return;
+  }
+
+  if (tieneLogo.value) {
+    const continuar = globalThis.confirm('Va a reemplazar el logo del negocio.\n¿Desea seguir?');
+    if (!continuar) return;
+  }
+
+  subiendoLogo.value = true;
+  mensajeExito.value = '';
+  mensajeError.value = '';
+  try {
+    await negocioStore.subirLogo(archivo);
+    await cargarVistaPreviaLogo();
+    mensajeExito.value = 'Logo del negocio actualizado correctamente.';
+  } catch (error) {
+    mensajeError.value = mensajeErrorHttp(error, 'No se pudo subir el logo.');
+  } finally {
+    subiendoLogo.value = false;
+  }
+}
+
+async function quitarLogoNegocio(): Promise<void> {
+  if (!puedeEditarConfiguracionNegocio.value || !modoEdicion.value || !tieneLogo.value) return;
+  if (!globalThis.confirm('¿Eliminar el logo del negocio?')) return;
+
+  eliminandoLogo.value = true;
+  mensajeExito.value = '';
+  mensajeError.value = '';
+  try {
+    await negocioStore.eliminarLogo();
+    liberarVistaPreviaLogo();
+    mensajeExito.value = 'Logo eliminado correctamente.';
+  } catch (error) {
+    mensajeError.value = mensajeErrorHttp(error, 'No se pudo eliminar el logo.');
+  } finally {
+    eliminandoLogo.value = false;
+  }
+}
 
 function alEscribirCuit(texto: string): void {
   borrador.value.cuit = formatearDocumentoClienteAlEscribir(texto);
@@ -504,6 +605,105 @@ async function guardarNegocio(): Promise<void> {
                 </div>
               </section>
 
+              <section
+                class="cfg-ficha-bloque cfg-ficha-bloque--logo"
+                aria-labelledby="cfg-neg-sec-logo"
+              >
+                <div class="cfg-ficha-bloque-enc">
+                  <span class="cfg-ficha-bloque-ico" aria-hidden="true">
+                    <Image :size="18" stroke-width="2" />
+                  </span>
+                  <h2 id="cfg-neg-sec-logo" class="cfg-ficha-bloque-tit">Logo de la tienda</h2>
+                </div>
+                <div class="cfg-ficha-bloque-cuerpo cfg-neg-logo-cuerpo">
+                  <p class="cfg-neg-logo-ayuda">
+                    Un solo archivo en la carpeta <span class="cfg-mono">logo/</span> del servidor.
+                    Formatos: PNG, JPG, WEBP o SVG. Máximo 2 MB. Al subir otro, reemplaza el anterior.
+                  </p>
+
+                  <div class="cfg-neg-logo-panel">
+                    <div
+                      class="cfg-neg-logo-previa"
+                      :class="{
+                        'cfg-neg-logo-previa--vacia': !urlVistaPreviaLogo,
+                        'cfg-neg-logo-previa--con-logo superficie-logo-transparente': !!urlVistaPreviaLogo,
+                      }"
+                    >
+                      <img
+                        v-if="urlVistaPreviaLogo"
+                        :src="urlVistaPreviaLogo"
+                        alt="Logo actual del negocio"
+                        class="cfg-neg-logo-img img-logo-transparente"
+                      />
+                      <span v-else class="cfg-neg-logo-placeholder">Sin logo cargado</span>
+                    </div>
+
+                    <div class="cfg-neg-logo-datos">
+                      <p v-if="nombreArchivoLogo" class="cfg-neg-logo-archivo cfg-mono">
+                        {{ nombreArchivoLogo }}
+                      </p>
+                      <p v-else class="cfg-neg-logo-archivo cfg-neg-logo-archivo--vacio">
+                        Ningún archivo importado
+                      </p>
+
+                      <input
+                        ref="refInputLogo"
+                        type="file"
+                        class="pg-sr"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        :disabled="
+                          !puedeEditarConfiguracionNegocio ||
+                          !modoEdicion ||
+                          guardando ||
+                          subiendoLogo ||
+                          eliminandoLogo
+                        "
+                        @change="alSeleccionarLogo"
+                      />
+
+                      <p
+                        v-if="puedeEditarConfiguracionNegocio && !modoEdicion"
+                        class="cfg-neg-logo-lectura"
+                      >
+                        Use «Editar configuración» para importar o quitar el logo.
+                      </p>
+
+                      <div
+                        v-else-if="puedeEditarConfiguracionNegocio && modoEdicion"
+                        class="cfg-neg-logo-acciones"
+                      >
+                        <button
+                          type="button"
+                          class="pg-btn-primario cfg-neg-logo-btn-importar"
+                          :disabled="guardando || subiendoLogo || eliminandoLogo"
+                          :aria-busy="subiendoLogo"
+                          @click="abrirSelectorLogo"
+                        >
+                          <Upload :size="15" aria-hidden="true" />
+                          {{
+                            subiendoLogo
+                              ? 'Importando…'
+                              : tieneLogo
+                                ? 'Reemplazar logo'
+                                : 'Importar logo'
+                          }}
+                        </button>
+                        <button
+                          v-if="tieneLogo"
+                          type="button"
+                          class="pg-btn cfg-neg-logo-quitar"
+                          :disabled="guardando || subiendoLogo || eliminandoLogo"
+                          @click="quitarLogoNegocio"
+                        >
+                          <Trash2 :size="15" aria-hidden="true" />
+                          Quitar logo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
               <div v-if="mensajeError || mensajeExito" class="cfg-ficha-feedback">
                 <p v-if="mensajeError" class="cfg-ficha-alerta cfg-ficha-alerta--error" role="alert">
                   {{ mensajeError }}
@@ -541,8 +741,7 @@ async function guardarNegocio(): Promise<void> {
 .cfg-neg-marco {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  min-height: auto;
 }
 
 .cfg-neg-vista-previa {
@@ -585,6 +784,109 @@ async function guardarNegocio(): Promise<void> {
     rgba(154, 124, 240, 0.55),
     rgba(124, 140, 240, 0.2)
   );
+}
+
+.cfg-neg-logo-btn-importar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.84rem;
+}
+
+.cfg-neg-logo-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cfg-neg-logo-ayuda {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--color-texto-apagado);
+}
+
+.cfg-neg-logo-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.cfg-neg-logo-previa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 11.5rem);
+  min-height: 7rem;
+  padding: 0.85rem;
+  border-radius: 12px;
+}
+
+.cfg-neg-logo-previa--vacia {
+  border: 1px dashed var(--color-borde);
+  background: rgba(7, 11, 20, 0.35);
+}
+
+.cfg-neg-logo-previa--con-logo {
+  border: 1px solid var(--color-borde);
+}
+
+.cfg-neg-logo-img {
+  max-width: 100%;
+  max-height: 6rem;
+}
+
+.cfg-neg-logo-placeholder {
+  font-size: 0.78rem;
+  color: var(--color-texto-apagado);
+  text-align: center;
+}
+
+.cfg-neg-logo-datos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: min(100%, 14rem);
+}
+
+.cfg-neg-logo-archivo {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-texto-suave);
+}
+
+.cfg-neg-logo-archivo--vacio {
+  color: var(--color-texto-apagado);
+}
+
+.cfg-neg-logo-lectura {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--color-texto-apagado);
+}
+
+.cfg-neg-logo-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.cfg-neg-logo-acciones .pg-btn,
+.cfg-neg-logo-acciones .pg-btn-primario {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cfg-neg-logo-quitar {
+  border-color: rgba(251, 113, 133, 0.4);
+  color: var(--color-peligro);
 }
 </style>
 

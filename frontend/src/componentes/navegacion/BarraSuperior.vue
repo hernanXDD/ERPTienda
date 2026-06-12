@@ -4,6 +4,7 @@ import { ChevronDown, LogOut, User } from 'lucide-vue-next';
 import { onClickOutside, onKeyStroke } from '@vueuse/core';
 import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
+import { useLogoNegocio } from '../../composables/useLogoNegocio';
 import { inicialesNombreNegocio } from '../../modulos/negocio/inicialesNombreNegocio';
 import { useNegocioStore } from '../../stores/negocio';
 import { useSesionStore } from '../../stores/sesion';
@@ -19,9 +20,11 @@ const menuAbierto = ref(false);
 const envoltorioMenu = ref<HTMLElement | null>(null);
 
 const inicialesNegocio = computed(() => inicialesNombreNegocio(nombreNegocio.value));
+const { urlLogo, cargarLogo } = useLogoNegocio();
 
-onMounted(() => {
-  void negocioStore.asegurarCargado();
+onMounted(async () => {
+  await negocioStore.asegurarCargado();
+  await cargarLogo();
 });
 
 watch(
@@ -54,11 +57,14 @@ async function manejarCerrarSesion() {
 <template>
   <header class="barra" role="banner" dir="ltr">
     <RouterLink :to="{ name: 'inicio' }" class="marca" :title="`Ir al inicio · ${nombreNegocio}`">
-      <span class="marca-escudo" aria-hidden="true">{{ inicialesNegocio }}</span>
-      <span class="marca-textos">
-        <span class="marca-nombre">{{ nombreNegocio }}</span>
-        <span class="marca-sub">Panel de gestión</span>
-      </span>
+      <img
+        v-if="urlLogo"
+        :src="urlLogo"
+        :alt="`Logo de ${nombreNegocio}`"
+        class="marca-logo img-logo-transparente"
+      />
+      <span v-else class="marca-escudo" aria-hidden="true">{{ inicialesNegocio }}</span>
+      <span class="sr-only">{{ nombreNegocio }}</span>
     </RouterLink>
 
     <div v-if="usuario" ref="envoltorioMenu" class="envoltorio-menu">
@@ -146,10 +152,8 @@ async function manejarCerrarSesion() {
 .marca {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  flex: 1;
-  min-width: 0;
-  padding: 0.2rem 0.35rem 0.2rem 0;
+  flex-shrink: 0;
+  padding: 0.15rem 0.25rem 0.15rem 0;
   border-radius: var(--radio-control);
   text-decoration: none;
   color: inherit;
@@ -160,15 +164,22 @@ async function manejarCerrarSesion() {
   opacity: 0.92;
 }
 
+.marca-logo {
+  flex-shrink: 0;
+  height: 2.85rem;
+  width: auto;
+  max-width: min(11rem, 42vw);
+}
+
 .marca-escudo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 2.15rem;
-  height: 2.15rem;
+  width: 2.85rem;
+  height: 2.85rem;
   border-radius: 10px;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--color-texto-sobre-acento);
@@ -177,34 +188,6 @@ async function manejarCerrarSesion() {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
     0 4px 14px rgba(91, 110, 230, 0.28);
-}
-
-.marca-textos {
-  display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
-  min-width: 0;
-}
-
-.marca-nombre {
-  font-weight: 600;
-  font-size: 0.98rem;
-  letter-spacing: 0.01em;
-  color: var(--color-texto);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.marca-sub {
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-texto-apagado);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .envoltorio-menu {
@@ -351,17 +334,18 @@ async function manejarCerrarSesion() {
   opacity: 0.9;
 }
 
-@media (max-width: 520px) {
-  .marca-sub {
-    display: none;
-  }
-
-  .marca-nombre {
-    font-size: 0.92rem;
-  }
-}
-
 @media (max-width: 420px) {
+  .marca-logo {
+    height: 2.45rem;
+    max-width: min(9rem, 48vw);
+  }
+
+  .marca-escudo {
+    width: 2.45rem;
+    height: 2.45rem;
+    font-size: 0.8rem;
+  }
+
   .bloque-usuario-corto {
     display: none;
   }

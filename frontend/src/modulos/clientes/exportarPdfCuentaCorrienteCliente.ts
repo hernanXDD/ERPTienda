@@ -9,7 +9,7 @@ import {
   type FiltroFechasReporte,
 } from '../reportes/filtroFechasReporte';
 import { exportarReporteComoPdf, nombreArchivoReportePdf } from '../reportes/impresionReporte';
-import { renderizarPlantillaReporte } from '../reportes/motorEtaReportes';
+import { prepararRenderizadoReporte, renderizarPlantillaReporte } from '../reportes/motorEtaReportes';
 import { plantillasReportes } from '../reportes/plantillasReportes';
 
 export interface ParametrosExportarPdfCuentaCorrienteCliente {
@@ -71,6 +71,7 @@ export async function exportarPdfCuentaCorrienteCliente(
   datos.tituloReporte = `Cuenta corriente · ${cliente.nombre}`;
   datos.filtroEntidadLegible = '';
 
+  await prepararRenderizadoReporte();
   const html = renderizarPlantillaReporte(plantillasReportes['cuentas-corrientes'], datos);
   const nombreArchivo = nombreArchivoReportePdf(`Cuenta-corriente-${cliente.nombre}`, filtroFechas);
   await exportarReporteComoPdf(html, nombreArchivo);

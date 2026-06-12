@@ -2,7 +2,7 @@ import {
   exportarHtmlRaizComoPdf,
   prepararClonDocumentoA4Pdf,
 } from '../reportes/impresionReporte';
-import { renderizarPlantillaConEstilos } from '../reportes/motorEtaReportes';
+import { prepararRenderizadoReporte, renderizarPlantillaConEstilos } from '../reportes/motorEtaReportes';
 import { calcularDatosResumenVentaImpresion } from './calcularDatosResumenVentaImpresion';
 import {
   claseExportacionPdfResumenVenta,
@@ -27,15 +27,16 @@ function nombreArchivoComprobanteVenta(numero: string): string {
   return sanitizarNombreArchivo(`comprobante-${numero}`);
 }
 
-function renderizarFragmentoResumenVenta(venta: VentaRegistrada): {
+async function renderizarFragmentoResumenVenta(venta: VentaRegistrada): Promise<{
   fragmento: string;
   numero: string;
-} {
+}> {
   const plantilla = plantillasVentas['resumen-venta'];
   if (!plantilla.trim()) {
     throw new Error('No se encontró la plantilla del comprobante de compra.');
   }
 
+  await prepararRenderizadoReporte();
   const datos = calcularDatosResumenVentaImpresion(venta);
   const fragmento = renderizarPlantillaConEstilos(plantilla, datos, estilosResumenVentaCss);
   if (!fragmento.trim()) {
@@ -47,7 +48,7 @@ function renderizarFragmentoResumenVenta(venta: VentaRegistrada): {
 
 /** Exporta el comprobante de compra como PDF (mismo flujo que los reportes). */
 export async function exportarComprobanteVentaPdf(venta: VentaRegistrada): Promise<void> {
-  const { fragmento, numero } = renderizarFragmentoResumenVenta(venta);
+  const { fragmento, numero } = await renderizarFragmentoResumenVenta(venta);
 
   await exportarHtmlRaizComoPdf(fragmento, '.rv-doc', nombreArchivoComprobanteVenta(numero), {
     prepararClon: prepararClonDocumentoA4Pdf,

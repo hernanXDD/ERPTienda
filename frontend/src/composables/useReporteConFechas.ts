@@ -1,7 +1,10 @@
 import { onMounted, ref, watch } from 'vue';
 import type { FiltroFechasReporte } from '../modulos/reportes/filtroFechasReporte';
 import { esRangoFechasValido } from '../modulos/reportes/filtroFechasReporte';
-import { renderizarPlantillaReporte } from '../modulos/reportes/motorEtaReportes';
+import {
+  prepararRenderizadoReporte,
+  renderizarPlantillaReporte,
+} from '../modulos/reportes/motorEtaReportes';
 
 export function useReporteConFiltros<T extends FiltroFechasReporte>(
   plantilla: string,
@@ -12,7 +15,7 @@ export function useReporteConFiltros<T extends FiltroFechasReporte>(
   const htmlReporte = ref('');
   const errorFiltro = ref('');
 
-  function actualizarReporte(): void {
+  async function actualizarReporte(): Promise<void> {
     if (!esRangoFechasValido(filtro.value)) {
       errorFiltro.value = 'La fecha «desde» no puede ser posterior a «hasta».';
       htmlReporte.value = '';
@@ -20,6 +23,7 @@ export function useReporteConFiltros<T extends FiltroFechasReporte>(
     }
     errorFiltro.value = '';
     try {
+      await prepararRenderizadoReporte();
       const datos = calcularDatos(filtro.value);
       htmlReporte.value = renderizarPlantillaReporte(plantilla, datos);
     } catch (error: unknown) {
@@ -31,8 +35,8 @@ export function useReporteConFiltros<T extends FiltroFechasReporte>(
     }
   }
 
-  watch(filtro, actualizarReporte, { deep: true });
-  onMounted(actualizarReporte);
+  watch(filtro, () => void actualizarReporte(), { deep: true });
+  onMounted(() => void actualizarReporte());
 
   return {
     filtro,

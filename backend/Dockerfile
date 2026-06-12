@@ -32,6 +32,9 @@ RUN npm ci --omit=dev \
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src ./src
 
+RUN mkdir -p /app/logo
+ENV CARPETA_LOGO=/app/logo
+
 EXPOSE 3000
 
 # Migraciones al arrancar; la semilla se ejecuta una sola vez aparte (ver guía de despliegue).

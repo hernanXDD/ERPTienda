@@ -6,7 +6,10 @@ import ContenedorVistaReporte from '../../componentes/reportes/ContenedorVistaRe
 import { calcularReporteMovimientosStock } from '../../modulos/reportes/calcular/calcularReporteMovimientosStock';
 import { filtrosReporteVistaPorDefecto } from '../../modulos/reportes/filtroEntidadReporte';
 import { esRangoFechasValido } from '../../modulos/reportes/filtroFechasReporte';
-import { renderizarPlantillaReporte } from '../../modulos/reportes/motorEtaReportes';
+import {
+  prepararRenderizadoReporte,
+  renderizarPlantillaReporte,
+} from '../../modulos/reportes/motorEtaReportes';
 import { plantillasReportes } from '../../modulos/reportes/plantillasReportes';
 import { useStockStore } from '../../stores/stock';
 
@@ -30,6 +33,7 @@ async function actualizarReporte(): Promise<void> {
       fechaDesde: filtro.value.fechaDesde,
       fechaHasta: filtro.value.fechaHasta,
     });
+    await prepararRenderizadoReporte();
     const datos = calcularReporteMovimientosStock(auditorias.value, filtro.value);
     htmlReporte.value = renderizarPlantillaReporte(plantillasReportes['movimientos-stock'], datos);
   } catch (error: unknown) {

@@ -23,6 +23,7 @@
   </div>
   <% } %>
   <div class="rep-pie-pagina-barra">
+    <span class="rep-pie-marca-sistema">ERPTienda</span>
     <span class="rep-pie-pagina-nota"><%= it.notaPieReporte %></span>
     <span class="rep-pie-pagina-pag"></span>
   </div>

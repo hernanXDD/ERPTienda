@@ -15,11 +15,12 @@ import { RouterView } from 'vue-router';
   display: flex;
   flex-direction: column;
   gap: 0;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
 }
 
 .vista-hija {
-  min-height: 0;
-  flex: 1;
+  min-height: auto;
+  flex: 1 0 auto;
 }
 </style>

@@ -137,9 +137,11 @@ router.afterEach((to) => {
 }
 
 .contenido {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .contenido.con-barra-movil {
@@ -158,40 +160,14 @@ router.afterEach((to) => {
   padding-inline: clamp(0.35rem, 1.5vw, 0.75rem);
 }
 
-.contenido:has(.centro-ventas) {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.contenido:has(.cfg-ficha-vista) {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
 .relleno:has(.centro-ventas) {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
   max-width: none;
   padding: 0.12rem 0.45rem 0.15rem;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .relleno:has(.cfg-ficha-vista) {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
   max-width: none;
   padding: 0.35rem clamp(0.35rem, 1.2vw, 0.65rem) 0.4rem;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 @media (min-width: 768px) {

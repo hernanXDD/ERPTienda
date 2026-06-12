@@ -26,76 +26,99 @@ export const estilosBaseReporteCss = `
 .rep-enc-pro {
   display: flex;
   align-items: stretch;
-  margin-bottom: 1.15rem;
+  margin-bottom: 1.25rem;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  overflow: visible;
+  border-radius: 14px;
+  overflow: hidden;
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .rep-emisor {
   display: flex;
-  align-items: flex-start;
-  gap: 0.9rem;
+  align-items: center;
+  gap: 1.1rem;
   flex: 1;
   min-width: 0;
-  padding: 1rem 1.15rem;
-  background: transparent;
+  padding: 0.35rem 0;
 }
 
-.rep-emisor-logo {
+.rep-emisor-marca {
   flex-shrink: 0;
-  width: 2.85rem;
-  height: 2.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+}
+
+.rep-emisor-marca--logo {
+  padding: 0.75rem 0 0.75rem 1.15rem;
+}
+
+.rep-emisor-marca--iniciales {
+  padding: 0.75rem 0 0.75rem 1.15rem;
+}
+
+.rep-emisor-logo {
+  width: 4.5rem;
+  height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
   background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
   color: #f8fafc;
-  font-size: 0.92rem;
+  font-size: 1.2rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.04em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.rep-emisor-logo-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 6.5rem;
+  max-height: 5.5rem;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
 }
 
 .rep-emisor-cuerpo {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem 1.25rem 1rem 0;
 }
 
 .rep-emisor-etiq {
-  margin: 0 0 0.12rem;
-  font-size: 0.62rem;
+  margin: 0 0 0.2rem;
+  font-size: 0.64rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.12em;
   color: #64748b;
 }
 
 .rep-emisor-reporte {
-  margin: 0 0 0.35rem;
-  font-size: 1.15rem;
-  font-weight: 700;
+  margin: 0 0 0.45rem;
+  font-size: 1.38rem;
+  font-weight: 800;
   color: #1e3a5f;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .rep-emisor-resumen {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.28rem 0.45rem;
-  font-size: 0.78rem;
+  gap: 0.3rem 0.5rem;
+  font-size: 0.8rem;
   color: #475569;
   line-height: 1.45;
-}
-
-.rep-emisor-nom {
-  font-weight: 700;
-  color: #334155;
 }
 
 .rep-emisor-cuit {
@@ -340,19 +363,30 @@ export const estilosBaseReporteCss = `
 }
 
 .rep-pie-pagina-barra {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   gap: 4mm;
   font-size: 6pt;
   color: #94a3b8;
   line-height: 1.2;
 }
 
+.rep-pie-marca-sistema {
+  font-size: 6.5pt;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
 .rep-pie-pagina-nota {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: center;
+  justify-self: center;
+  min-width: 0;
 }
 
 .rep-pie-pagina-pag::after {
@@ -474,5 +508,30 @@ export const estilosBaseReporteCss = `
 .rep-doc.rep-doc--exportacion-pdf .rep-tabla :is(th, td).der:first-child {
   width: 4%;
   text-align: center;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-emisor-logo {
+  width: 3.75rem;
+  height: 3.75rem;
+  font-size: 1rem;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-emisor-logo-img {
+  max-width: 5rem;
+  max-height: 4.25rem;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-emisor-marca--logo,
+.rep-doc.rep-doc--exportacion-pdf .rep-emisor-marca--iniciales {
+  padding: 0.55rem 0 0.55rem 0.75rem;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-emisor-cuerpo {
+  padding: 0.7rem 0.85rem;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-emisor-reporte {
+  font-size: 1.1rem;
+  margin-bottom: 0.3rem;
 }
 `;

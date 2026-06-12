@@ -57,3 +57,29 @@ button {
   font: inherit;
   cursor: pointer;
 }
+
+/** Cuadrícula sutil para previsualizar logos con fondo transparente (tema oscuro). */
+.superficie-logo-transparente {
+  --superficie-logo-base: #0e1522;
+  --superficie-logo-cuadricula: rgba(255, 255, 255, 0.055);
+  background-color: var(--superficie-logo-base);
+  background-image:
+    linear-gradient(45deg, var(--superficie-logo-cuadricula) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--superficie-logo-cuadricula) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--superficie-logo-cuadricula) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--superficie-logo-cuadricula) 75%);
+  background-size: 12px 12px;
+  background-position:
+    0 0,
+    0 6px,
+    6px -6px,
+    -6px 0;
+}
+
+/** Imagen de logo sin recuadro: respeta transparencia del archivo. */
+.img-logo-transparente {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}

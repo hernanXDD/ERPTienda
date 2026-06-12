@@ -1,8 +1,8 @@
 /* Cuerpo de formularios · Configuración (Negocio / Sistema). Encabezados pg-cab fuera de alcance. */
 
 .cfg-ficha-vista {
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -13,15 +13,15 @@
 }
 
 .cfg-ficha-marco {
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
   display: flex;
   flex-direction: column;
 }
 
 .cfg-ficha-panel {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, rgba(12, 18, 32, 0.3) 0%, rgba(7, 11, 20, 0.12) 100%);
@@ -57,31 +57,30 @@
 .cfg-ficha-form {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
 }
 
 .cfg-ficha-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow-y: visible;
   padding: 0.72rem clamp(1rem, 3vw, 1.55rem) 0.6rem;
 }
 
 .cfg-ficha-contenido {
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
   width: 100%;
   max-width: 46rem;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0.72rem;
-  justify-content: space-evenly;
+  justify-content: flex-start;
 }
 
 .cfg-ficha-bloque {
@@ -178,6 +177,7 @@
     grid-column: auto;
   }
 
+  .cfg-ficha-contenido--negocio .cfg-ficha-bloque--logo,
   .cfg-ficha-contenido--negocio .cfg-ficha-feedback {
     grid-column: 1 / -1;
   }

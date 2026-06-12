@@ -2,7 +2,11 @@
 <article class="rv-doc">
   <header class="rv-cab">
     <div class="rv-cab-emisor">
+      <% if (it.tieneLogoImagen) { %>
+      <img class="rv-cab-logo-img" src="<%~ it.negocioLogoDataUrl %>" alt="" />
+      <% } else { %>
       <span class="rv-cab-logo" aria-hidden="true"><%= it.negocioIniciales %></span>
+      <% } %>
       <div class="rv-cab-datos">
         <p class="rv-cab-marca"><%= it.negocioNombre %></p>
         <% if (it.tieneCuit) { %><p class="rv-cab-cuit">CUIT <%= it.negocioCuit %></p><% } %>

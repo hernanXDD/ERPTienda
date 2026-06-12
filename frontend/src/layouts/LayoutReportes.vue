@@ -17,17 +17,16 @@ const ruta = useRoute();
   display: flex;
   flex-direction: column;
   gap: 0;
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
   width: 100%;
-  height: 100%;
 }
 
 .vista-hija {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: auto;
   width: 100%;
 }
 </style>

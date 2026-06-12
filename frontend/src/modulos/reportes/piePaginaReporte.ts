@@ -1,5 +1,7 @@
 import type { RedSocialPieReporte } from './emisorNegocioReporte';
 
+export const MARCA_SISTEMA_REPORTE = 'ERPTienda';
+
 export interface DatosPiePaginaReporte {
   tituloReporte: string;
   notaPieReporte: string;
@@ -145,7 +147,11 @@ export function dibujarPieEnTodasLasPaginasPdf(
 
     pdf.setFontSize(6.2);
     pdf.setTextColor(148, 163, 184);
-    pdf.text(pie.notaPieReporte, margen, alto - 4);
+    pdf.text(MARCA_SISTEMA_REPORTE, margen, alto - 4);
+    pdf.text(pie.notaPieReporte, ancho / 2, alto - 4, {
+      align: 'center',
+      maxWidth: ancho - margen * 2 - 36,
+    });
     pdf.text(`Pág. ${pagina} / ${total}`, ancho - margen, alto - 4, { align: 'right' });
   }
 }
