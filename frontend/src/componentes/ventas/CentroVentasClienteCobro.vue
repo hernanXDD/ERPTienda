@@ -426,7 +426,7 @@ function alPegarDocumento(event: ClipboardEvent) {
   color: var(--color-peligro);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 801px) {
   .cv-contexto-grid {
     grid-template-columns: 1.25fr 0.85fr;
     gap: 0.75rem;

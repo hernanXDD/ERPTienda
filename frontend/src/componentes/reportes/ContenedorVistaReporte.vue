@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useMediaQuery, useResizeObserver } from '@vueuse/core';
+import { useResizeObserver } from '@vueuse/core';
 import { ArrowLeft, ExternalLink, Loader2 } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router';
 import type { FiltrosReporteVista, OpcionEntidadReporte } from '../../modulos/reportes/filtroEntidadReporte';
+import { useEsMovil } from '../../composables/useEsMovil';
 import {
   exportarVistaReporteComoPdf,
   nombreArchivoReportePdf,
@@ -49,7 +50,7 @@ const refEscalaMovil = ref<HTMLElement | null>(null);
 const exportandoPdf = ref(false);
 const errorExportacionPdf = ref('');
 
-const esMovil = useMediaQuery('(max-width: 767px)');
+const esMovil = useEsMovil();
 const escalaMovil = ref(1);
 const anchoReportePx = ref(0);
 const altoReportePx = ref(0);
@@ -383,7 +384,7 @@ async function exportarPdf(): Promise<void> {
   font-size: 0.92rem;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 800px) {
   .pg-marco--reporte-vista {
     min-height: min(62vh, 640px);
   }

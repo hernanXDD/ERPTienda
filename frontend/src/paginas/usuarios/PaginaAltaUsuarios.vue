@@ -1631,7 +1631,7 @@ void onToggleHabilitadoSesion;
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 800px) {
   .ua-ed-cab {
     flex-direction: column;
     align-items: stretch;

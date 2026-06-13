@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-vue-next';
-import { useMediaQuery, onKeyStroke } from '@vueuse/core';
+import { onKeyStroke } from '@vueuse/core';
 import { onUnmounted, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useMenuLateralMovil } from '../../composables/useMenuLateralMovil';
 import { useGestoDeslizarMenuLateralMovil } from '../../composables/useGestoDeslizarMenuLateralMovil';
+import { useEsMovil } from '../../composables/useEsMovil';
 import { elementoMenuCoincideRuta } from '../../modulos/nucleo/elementosNavegacion';
 import { useElementosMenuFiltrados } from '../../composables/useElementosMenuFiltrados';
 
-const esMovil = useMediaQuery('(max-width: 767px)');
+const esMovil = useEsMovil();
 const rutaActiva = useRoute();
 const { elementosMenuFiltrados } = useElementosMenuFiltrados();
 const { menuLateralMovilAbierto, alternarMenuLateralMovil, cerrarMenuLateralMovil, abrirMenuLateralMovil } =

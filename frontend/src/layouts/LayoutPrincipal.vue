@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, watch } from 'vue';
-import { useMediaQuery } from '@vueuse/core';
 import { useRoute, useRouter } from 'vue-router';
 import ToastGlobal from '../componentes/nucleo/ToastGlobal.vue';
 import ModalBienvenidaCambioContrasena from '../componentes/autenticacion/ModalBienvenidaCambioContrasena.vue';
@@ -9,11 +8,12 @@ import BarraLateral from '../componentes/navegacion/BarraLateral.vue';
 import BarraSubmenuMovil from '../componentes/navegacion/BarraSubmenuMovil.vue';
 import BarraSuperior from '../componentes/navegacion/BarraSuperior.vue';
 import { useBarraContextoMovil } from '../composables/useBarraContextoMovil';
+import { useEsMovil } from '../composables/useEsMovil';
 import { refrescarDatosPorRuta } from '../modulos/nucleo/refrescarDatosPorRuta';
 import { cargarDatosMaestros, errorCargaDatosMaestros, reintentarCargaDatosMaestros } from '../stores/inicializacionDatos';
 import { useSesionStore } from '../stores/sesion';
 
-const esMovil = useMediaQuery('(max-width: 767px)');
+const esMovil = useEsMovil();
 const { mostrarBarraContextoMovil } = useBarraContextoMovil();
 const sesion = useSesionStore();
 const route = useRoute();
@@ -173,7 +173,7 @@ router.afterEach((to) => {
   padding: 0.35rem clamp(0.35rem, 1.2vw, 0.65rem) 0.4rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 801px) {
   .relleno {
     padding: 1.25rem 1.5rem 1.5rem;
   }
@@ -224,7 +224,7 @@ router.afterEach((to) => {
   background: rgba(255, 255, 255, 0.14);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 800px) {
   .shell {
     height: 100dvh;
     min-height: 100dvh;

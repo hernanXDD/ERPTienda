@@ -91,7 +91,7 @@ const { elementosMenuFiltrados } = useElementosMenuFiltrados();
   letter-spacing: 0.01em;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 800px) {
   .pestana {
     min-width: 4.35rem;
     max-width: 5.25rem;

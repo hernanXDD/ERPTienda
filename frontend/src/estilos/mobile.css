@@ -1,9 +1,9 @@
 /**
- * Estilos exclusivos para teléfono (≤767px).
+ * Estilos exclusivos para vista móvil (≤800px).
  * No altera escritorio: todo vive dentro de este media query.
  */
 
-@media (max-width: 767px) {
+@media (max-width: 800px) {
   :root {
     --pg-reserva-vertical-vista: clamp(10.5rem, 26dvh, 15rem);
   }

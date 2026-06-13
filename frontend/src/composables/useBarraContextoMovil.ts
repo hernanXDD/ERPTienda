@@ -1,10 +1,10 @@
-import { useMediaQuery } from '@vueuse/core';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { catalogoReportes } from '../modulos/reportes/catalogoReportes';
 import { obtenerDescripcionPagina } from '../modulos/nucleo/descripcionesPaginas';
 import type { ElementoMenuPrincipal } from '../modulos/nucleo/elementosNavegacion';
 import { useElementosMenuFiltrados } from './useElementosMenuFiltrados';
+import { useEsMovil } from './useEsMovil';
 
 function rutaMuestraBarraContextoMovil(
   nombreRuta: string | symbol | undefined,
@@ -47,7 +47,7 @@ function obtenerDescripcionContextoMovil(
 }
 
 export function useBarraContextoMovil() {
-  const esMovil = useMediaQuery('(max-width: 767px)');
+  const esMovil = useEsMovil();
   const rutaActiva = useRoute();
   const { elementoMenuActivo } = useElementosMenuFiltrados();
 

@@ -1523,7 +1523,7 @@ function limpiarFiltros() {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 800px) {
   .lv-barra-filtros {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.55rem;

@@ -159,7 +159,7 @@ const opcionesEstadoFacturacionResueltas = computed(() => props.opcionesEstadoFa
   color: #f87171;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 800px) {
   .rep-filtro {
     flex-direction: column;
     align-items: stretch;
