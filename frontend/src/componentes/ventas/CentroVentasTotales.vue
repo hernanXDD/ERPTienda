@@ -118,7 +118,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   color: var(--color-acento-hover);
 }
 
-@media (min-width: 801px) {
+@media (min-width: 901px) {
   .cv-pie-grid {
     grid-template-columns: 1fr min(16rem, 35%);
     align-items: stretch;

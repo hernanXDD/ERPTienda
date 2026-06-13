@@ -173,7 +173,7 @@ router.afterEach((to) => {
   padding: 0.35rem clamp(0.35rem, 1.2vw, 0.65rem) 0.4rem;
 }
 
-@media (min-width: 801px) {
+@media (min-width: 901px) {
   .relleno {
     padding: 1.25rem 1.5rem 1.5rem;
   }
@@ -224,7 +224,7 @@ router.afterEach((to) => {
   background: rgba(255, 255, 255, 0.14);
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .shell {
     height: 100dvh;
     min-height: 100dvh;

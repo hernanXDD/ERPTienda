@@ -1615,7 +1615,7 @@ async function imprimirCuentaCliente(): Promise<void> {
   outline-offset: 2px;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .cc-cartera-scroll::after {
     display: none;
   }

@@ -126,7 +126,7 @@ const { mensajeToast } = centroVentas;
   transform: translateX(-50%) translateY(0.5rem);
 }
 
-@media (min-width: 801px) {
+@media (min-width: 901px) {
   .cv-toast {
     bottom: 1.25rem;
   }

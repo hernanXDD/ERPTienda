@@ -972,7 +972,7 @@ onMounted(() => {
   justify-content: center;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .pg-marco--catalogo .pg-barra {
     margin-inline: 0.45rem;
   }
@@ -1144,7 +1144,7 @@ onMounted(() => {
   display: none;
 }
 
-@media (min-width: 801px) {
+@media (min-width: 901px) {
   .cat-prod-btn-accion svg {
     display: none;
   }

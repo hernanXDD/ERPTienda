@@ -1428,7 +1428,7 @@ function alCerrarDialogo() {
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .lc-ed-cab {
     flex-direction: column;
     align-items: stretch;

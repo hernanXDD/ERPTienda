@@ -384,7 +384,7 @@ async function exportarPdf(): Promise<void> {
   font-size: 0.92rem;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .pg-marco--reporte-vista {
     min-height: min(62vh, 640px);
   }

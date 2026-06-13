@@ -334,7 +334,7 @@ async function manejarCerrarSesion() {
   opacity: 0.9;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .barra {
     min-height: 3.15rem;
     padding: 0 calc(0.65rem + env(safe-area-inset-right, 0px)) 0
