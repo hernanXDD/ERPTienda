@@ -236,7 +236,7 @@ function limpiarFiltros() {
       </div>
     </header>
 
-    <div class="pg-barra">
+    <div class="pg-barra lv-barra-filtros">
       <div class="pg-barra-col pg-barra-col--busq">
         <label class="pg-filtro-bl" for="busq-cli">
           <span class="pg-filtro-etiq">Buscar por cliente</span>
@@ -1495,6 +1495,44 @@ function limpiarFiltros() {
 
 .pg-barra-col--facturacion {
   min-width: 12.5rem;
+}
+
+@media (max-width: 1400px) {
+  .lv-barra-filtros {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem 0.85rem;
+    align-items: end;
+  }
+
+  .lv-barra-filtros .pg-barra-col--busq {
+    grid-column: 1 / -1;
+  }
+
+  .lv-barra-filtros .pg-barra-col--reinicio {
+    margin-left: 0;
+  }
+
+  .lv-barra-filtros:not(:has(.pg-barra-col--facturacion)) .pg-barra-col--reinicio {
+    grid-column: 1 / -1;
+  }
+
+  .lv-barra-filtros .pg-barra-col--facturacion {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .lv-barra-filtros {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.55rem;
+  }
+
+  .lv-barra-filtros .pg-barra-col--busq,
+  .lv-barra-filtros .pg-barra-col--facturacion {
+    grid-column: 1;
+  }
 }
 
 .lv-btn-cargar-fact {

@@ -61,6 +61,13 @@ const tituloModalUsuario = computed(() => {
   return edicionUsuarioActiva.value ? 'Editar usuario' : 'Detalle del usuario';
 });
 
+const nombreCompletoUsuarioBorrador = computed(() => {
+  const apellido = borradorApellido.value.trim();
+  const nombre = borradorNombre.value.trim();
+  if (apellido && nombre) return `${apellido}, ${nombre}`;
+  return apellido || nombre;
+});
+
 const textoBotonPieSecundario = computed(() => {
   if (modoFormulario.value === 'alta') return 'Cancelar';
   return edicionUsuarioActiva.value ? 'Cancelar' : 'Cerrar';
@@ -599,19 +606,24 @@ void onToggleHabilitadoSesion;
           <header class="ua-ed-cab">
             <div class="ua-ed-cab-marca">
               <p class="ua-ed-eyebrow">Usuarios · gestión de cuentas</p>
-              <h2 id="ua-dlg-tit" class="ua-ed-tit">
-                {{ tituloModalUsuario }}
-              </h2>
+              <div class="ua-ed-cab-titular">
+                <h2 id="ua-dlg-tit" class="ua-ed-tit">
+                  {{ tituloModalUsuario }}
+                </h2>
+                <button type="button" class="ua-modal-x" aria-label="Cerrar" @click="cerrarDialogo">
+                  ×
+                </button>
+              </div>
               <p v-if="modoFormulario === 'alta'" id="ua-dlg-sub" class="ua-ed-sub">
                 Registre los datos personales, credenciales y rol del nuevo usuario.
               </p>
               <p
-                v-else-if="borradorApellido.trim() || borradorNombre.trim()"
+                v-else-if="nombreCompletoUsuarioBorrador"
                 id="ua-dlg-sub"
                 class="ua-ed-contexto"
               >
                 <span class="ua-ed-contexto-nombre">
-                  {{ borradorApellido.trim() }}, {{ borradorNombre.trim() }}
+                  {{ nombreCompletoUsuarioBorrador }}
                 </span>
                 <span v-if="borradorNombreUsuario.trim()" class="ua-ed-chip-login ua-ed-inp-mono">
                   {{ borradorNombreUsuario.trim() }}
@@ -652,9 +664,6 @@ void onToggleHabilitadoSesion;
                   <span class="ua-sw-ui" aria-hidden="true" />
                 </label>
               </div>
-              <button type="button" class="ua-modal-x" aria-label="Cerrar" @click="cerrarDialogo">
-                ×
-              </button>
             </div>
           </header>
 
@@ -1472,6 +1481,13 @@ void onToggleHabilitadoSesion;
   flex: 1;
 }
 
+.ua-ed-cab-titular {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .ua-ed-cab-acciones {
   display: flex;
   align-items: center;
@@ -1525,6 +1541,8 @@ void onToggleHabilitadoSesion;
 
 .ua-ed-tit {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.035em;
@@ -1610,6 +1628,43 @@ void onToggleHabilitadoSesion;
   .ua-ed-cuerpo {
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 767px) {
+  .ua-ed-cab {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem 0.55rem;
+  }
+
+  .ua-ed-cab-acciones {
+    justify-content: flex-start;
+  }
+
+  .ua-ed-eyebrow {
+    margin-bottom: 0.28rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+
+  .ua-ed-tit {
+    font-size: 1.08rem;
+    line-height: 1.25;
+  }
+
+  .ua-ed-contexto {
+    margin-top: 0.4rem;
+    gap: 0.4rem 0.55rem;
+  }
+
+  .ua-ed-contexto-nombre {
+    font-size: 0.86rem;
+  }
+
+  .ua-ed-chip-login {
+    font-size: 0.75rem;
   }
 }
 

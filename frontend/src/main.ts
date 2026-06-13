@@ -7,6 +7,7 @@ import { useSesionStore } from './stores/sesion';
 import './estilos/tema.css';
 import './estilos/paginaGestion.css';
 import './estilos/desplazamientoPantalla.css';
+import './estilos/mobile.css';
 
 const app = createApp(App);
 const pinia = createPinia();

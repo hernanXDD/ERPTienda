@@ -301,7 +301,7 @@ function alCerrarDialogo() {
 
     <div class="pg-barra">
       <div class="pg-barra-fila">
-        <div class="prv-busq">
+        <div class="pg-barra-col pg-barra-col--busq">
           <label class="pg-filtro-etiq" for="busq-nom">Buscar</label>
           <input
             id="busq-nom"
@@ -312,7 +312,7 @@ function alCerrarDialogo() {
             autocomplete="off"
           />
         </div>
-        <div class="prv-acciones">
+        <div class="pg-barra-col pg-barra-col--accion">
           <button
             v-if="puedeGestionarProveedores"
             type="button"
@@ -392,9 +392,14 @@ function alCerrarDialogo() {
           <header class="prv-ed-cab">
             <div class="prv-ed-cab-marca">
               <p class="prv-ed-eyebrow">Proveedores · datos maestros</p>
-              <h2 id="prv-dlg-tit" class="prv-ed-tit">
-                {{ tituloModalProveedor }}
-              </h2>
+              <div class="prv-ed-cab-titular">
+                <h2 id="prv-dlg-tit" class="prv-ed-tit">
+                  {{ tituloModalProveedor }}
+                </h2>
+                <button type="button" class="prv-modal-x" aria-label="Cerrar" @click="cerrarDialogo">
+                  ×
+                </button>
+              </div>
               <p v-if="modoDialogoProveedor === 'alta'" id="prv-dlg-sub" class="prv-ed-sub">
                 Registre los datos para compras, facturación y seguimiento del proveedor.
               </p>
@@ -436,9 +441,6 @@ function alCerrarDialogo() {
                   <span class="prv-sw-ui" aria-hidden="true" />
                 </label>
               </div>
-              <button type="button" class="prv-modal-x" aria-label="Cerrar" @click="cerrarDialogo">
-                ×
-              </button>
             </div>
           </header>
 
@@ -692,35 +694,15 @@ function alCerrarDialogo() {
   --pg-reserva-vertical-vista: clamp(12.5rem, 24dvh, 18rem);
 }
 
-.pg-barra-fila {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+.pg-marco--proveedores .pg-barra-col--accion .pg-btn-primario {
+  width: 100%;
 }
 
 @media (min-width: 720px) {
-  .pg-barra-fila {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
+  .pg-marco--proveedores .pg-barra-col--accion .pg-btn-primario {
+    width: auto;
+    min-width: 10.5rem;
   }
-
-  .prv-busq {
-    flex: 1;
-    max-width: none;
-    min-width: 14rem;
-  }
-
-  .prv-acciones {
-    margin-left: auto;
-  }
-}
-
-.prv-acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
 }
 
 .prv-btn-nuevo {
@@ -798,10 +780,6 @@ function alCerrarDialogo() {
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
-}
-
-.prv-busq {
-  max-width: 24rem;
 }
 
 .prv-card {
@@ -1145,6 +1123,13 @@ function alCerrarDialogo() {
   flex: 1;
 }
 
+.prv-ed-cab-titular {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .prv-ed-cab-acciones {
   display: flex;
   align-items: center;
@@ -1287,6 +1272,8 @@ function alCerrarDialogo() {
 
 .prv-ed-tit {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.035em;
@@ -1372,6 +1359,49 @@ function alCerrarDialogo() {
   .prv-ed-cuerpo {
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 767px) {
+  .prv-ed-cab {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem 0.55rem;
+  }
+
+  .prv-ed-cab-acciones {
+    justify-content: flex-start;
+  }
+
+  .prv-ed-eyebrow {
+    margin-bottom: 0.28rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+
+  .prv-ed-tit {
+    font-size: 1.08rem;
+    line-height: 1.25;
+  }
+
+  .prv-ed-sub {
+    margin-top: 0.4rem;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  .prv-ed-contexto {
+    margin-top: 0.4rem;
+    gap: 0.4rem 0.55rem;
+  }
+
+  .prv-ed-contexto-nombre {
+    font-size: 0.86rem;
+  }
+
+  .prv-ed-chip-doc {
+    font-size: 0.75rem;
   }
 }
 

@@ -1,72 +1,81 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core';
-import { RouterLink, useRoute } from 'vue-router';
-import { useElementosMenuFiltrados } from '../../composables/useElementosMenuFiltrados';
+import { useBarraContextoMovil } from '../../composables/useBarraContextoMovil';
 
-const esMovil = useMediaQuery('(max-width: 767px)');
-const rutaActiva = useRoute();
-const { elementoMenuActivo, subelementosMenuActivo } = useElementosMenuFiltrados();
+const { mostrarBarraContextoMovil, tituloContexto, descripcionContexto, iconoModulo } =
+  useBarraContextoMovil();
 </script>
 
 <template>
-  <nav
-    v-if="esMovil && subelementosMenuActivo.length > 0"
-    class="submenu-movil"
-    :aria-label="`Subsecciones de ${elementoMenuActivo?.etiqueta ?? 'módulo'}`"
+  <header
+    v-if="mostrarBarraContextoMovil"
+    class="contexto-movil"
+    :aria-label="`Sección: ${tituloContexto}`"
   >
-    <div class="submenu-movil-scroll">
-      <RouterLink
-        v-for="sub in subelementosMenuActivo"
-        :key="sub.nombreRuta"
-        :to="{ name: sub.nombreRuta }"
-        class="submenu-enlace"
-        :class="{ activo: rutaActiva.name === sub.nombreRuta }"
-      >
-        {{ sub.etiqueta }}
-      </RouterLink>
+    <div class="contexto-movil-enc">
+      <component
+        :is="iconoModulo"
+        v-if="iconoModulo"
+        :size="18"
+        stroke-width="2"
+        class="contexto-movil-ico"
+        aria-hidden="true"
+      />
+      <div class="contexto-movil-textos">
+        <h1 class="contexto-movil-tit">{{ tituloContexto }}</h1>
+        <p v-if="descripcionContexto" class="contexto-movil-desc">
+          {{ descripcionContexto }}
+        </p>
+      </div>
     </div>
-  </nav>
+  </header>
 </template>
 
 <style scoped>
-.submenu-movil {
+.contexto-movil {
   flex-shrink: 0;
   border-bottom: 1px solid var(--color-borde);
   background: var(--color-fondo-cabecera);
 }
 
-.submenu-movil-scroll {
+.contexto-movil-enc {
   display: flex;
-  gap: 0.35rem;
-  padding: 0.45rem 0.65rem;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem 0.5rem;
+  min-height: 2.65rem;
 }
 
-.submenu-movil-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.submenu-enlace {
+.contexto-movil-ico {
   flex-shrink: 0;
-  padding: 0.4rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--color-texto-apagado);
-  border: 1px solid transparent;
+  margin-top: 0.1rem;
+  color: var(--color-acento);
+}
+
+.contexto-movil-textos {
+  min-width: 0;
+  flex: 1;
+}
+
+.contexto-movil-tit {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--color-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.submenu-enlace:hover {
-  color: var(--color-texto-suave);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.submenu-enlace.activo {
-  color: var(--color-texto);
-  background: var(--color-acento-suave);
-  border-color: var(--color-acento-borde);
+.contexto-movil-desc {
+  margin: 0.18rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-texto-apagado);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

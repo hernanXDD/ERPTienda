@@ -9,16 +9,18 @@ const { elementosMenuFiltrados } = useElementosMenuFiltrados();
 
 <template>
   <nav class="barra-fija" aria-label="Navegación principal móvil">
-    <RouterLink
-      v-for="elemento in elementosMenuFiltrados"
-      :key="elemento.nombreRuta"
-      :to="{ name: elemento.nombreRuta }"
-      class="pestana"
-      :class="{ activa: elementoMenuCoincideRuta(rutaActiva.name, elemento) }"
-    >
-      <component :is="elemento.icono" :size="22" stroke-width="1.75" aria-hidden="true" />
-      <span class="etiqueta">{{ elemento.etiqueta }}</span>
-    </RouterLink>
+    <div class="barra-fija-scroll">
+      <RouterLink
+        v-for="elemento in elementosMenuFiltrados"
+        :key="elemento.nombreRuta"
+        :to="{ name: elemento.nombreRuta }"
+        class="pestana"
+        :class="{ activa: elementoMenuCoincideRuta(rutaActiva.name, elemento) }"
+      >
+        <component :is="elemento.icono" :size="24" stroke-width="1.75" aria-hidden="true" />
+        <span class="etiqueta">{{ elemento.etiqueta }}</span>
+      </RouterLink>
+    </div>
   </nav>
 </template>
 
@@ -29,36 +31,48 @@ const { elementosMenuFiltrados } = useElementosMenuFiltrados();
   left: 0;
   right: 0;
   z-index: 40;
-  display: flex;
-  align-items: stretch;
-  justify-content: space-around;
-  gap: 0.15rem;
-  min-height: var(--alto-barra-inferior);
-  padding: 0.25rem 0.35rem calc(0.25rem + env(safe-area-inset-bottom, 0px));
   background: var(--color-fondo-cabecera);
   border-top: 1px solid var(--color-borde);
-  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 -6px 22px rgba(0, 0, 0, 0.28);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.barra-fija-scroll {
+  display: flex;
+  align-items: stretch;
+  gap: 0.15rem;
+  min-height: var(--alto-barra-inferior);
+  padding: 0.3rem 0.45rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.barra-fija-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .pestana {
-  flex: 1;
+  flex: 0 0 auto;
+  scroll-snap-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
-  min-width: 0;
-  padding: 0.2rem;
-  font-size: 0.62rem;
+  gap: 0.18rem;
+  min-width: 4.85rem;
+  max-width: 5.75rem;
+  min-height: 3.35rem;
+  padding: 0.28rem 0.35rem;
+  font-size: 0.64rem;
   color: var(--color-texto-apagado);
-  border-radius: 8px;
+  border-radius: 12px;
   border: none;
   background: transparent;
   transition: color 0.15s ease, background 0.15s ease;
-}
-
-.pestana:hover {
-  color: var(--color-texto-suave);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .pestana.activa {
@@ -72,5 +86,19 @@ const { elementosMenuFiltrados } = useElementosMenuFiltrados();
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 767px) {
+  .pestana {
+    min-width: 4.35rem;
+    max-width: 5.25rem;
+  }
+
+  .etiqueta {
+    font-size: 0.6rem;
+  }
 }
 </style>

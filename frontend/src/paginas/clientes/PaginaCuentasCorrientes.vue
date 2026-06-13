@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RefreshCw } from 'lucide-vue-next';
+import { RefreshCw, ScrollText } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
@@ -366,34 +366,51 @@ async function imprimirCuentaCliente(): Promise<void> {
           </span>
         </header>
 
-        <div class="pg-tabla-scroll" role="region" aria-label="Cuentas corrientes por cliente">
-          <table class="pg-tabla pg-tabla--estado">
+        <div
+          class="pg-tabla-scroll cc-cartera-scroll"
+          role="region"
+          aria-label="Cuentas corrientes por cliente"
+        >
+          <table class="pg-tabla pg-tabla--estado cc-tabla-cartera">
             <thead>
               <tr>
                 <th scope="col" class="cc-col-cliente">Cliente</th>
-                <th scope="col" class="cc-col-documento">Documento</th>
-                <th scope="col" class="pg-der cc-col-monto-lista">Límite CC</th>
-                <th scope="col" class="pg-der cc-col-monto-lista">Saldo actual</th>
-                <th scope="col" class="pg-der cc-col-monto-lista">Disponible</th>
-                <th scope="col" class="pg-acc cc-col-acciones">Acciones</th>
+                <th scope="col" class="cc-col-documento cc-col-oculta-movil">Documento</th>
+                <th scope="col" class="pg-der cc-col-monto-lista cc-col-limite cc-col-oculta-movil">
+                  Límite CC
+                </th>
+                <th scope="col" class="pg-der cc-col-monto-lista cc-col-saldo-actual">Saldo actual</th>
+                <th scope="col" class="pg-der cc-col-monto-lista cc-col-disponible cc-col-oculta-movil">
+                  Disponible
+                </th>
+                <th scope="col" class="pg-acc cc-col-acciones">
+                  <span class="cc-col-acciones-etiq">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="c in cuentasFiltradas" :key="c.id">
                 <td class="cc-cel-cliente">{{ c.nombre }}</td>
-                <td class="pg-mono cc-col-documento">{{ c.documento }}</td>
-                <td class="pg-der pg-mono cc-col-monto-lista">{{ formatoPeso.format(c.limiteCompraCuentaCorriente) }}</td>
-                <td class="pg-der pg-mono cc-col-monto-lista">{{ formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(c.id)) }}</td>
-                <td class="pg-der pg-mono cc-col-monto-lista cc-cel-disponible">
+                <td class="pg-mono cc-col-documento cc-col-oculta-movil">{{ c.documento }}</td>
+                <td class="pg-der pg-mono cc-col-monto-lista cc-col-limite cc-col-oculta-movil">
+                  {{ formatoPeso.format(c.limiteCompraCuentaCorriente) }}
+                </td>
+                <td class="pg-der pg-mono cc-col-monto-lista cc-col-saldo-actual">
+                  {{ formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(c.id)) }}
+                </td>
+                <td class="pg-der pg-mono cc-col-monto-lista cc-col-disponible cc-cel-disponible cc-col-oculta-movil">
                   {{ formatoPeso.format(creditoDisponible(c)) }}
                 </td>
                 <td class="pg-acc cc-col-acciones">
                   <button
                     type="button"
-                    class="pg-btn pg-btn--lg"
+                    class="pg-btn pg-btn--lg cc-btn-movimientos"
+                    aria-label="Movimientos de cuenta"
+                    title="Movimientos de cuenta"
                     @click="abrirMovimientosCliente(c)"
                   >
-                    Movimientos de cuenta
+                    <ScrollText :size="20" stroke-width="1.85" aria-hidden="true" />
+                    <span class="cc-btn-movimientos-texto">Movimientos de cuenta</span>
                   </button>
                 </td>
               </tr>
@@ -704,6 +721,13 @@ async function imprimirCuentaCliente(): Promise<void> {
 .cc-col-acciones {
   width: 1%;
   min-width: 10.75rem;
+}
+
+.cc-btn-movimientos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
 .cc-cel-cliente {
@@ -1589,5 +1613,54 @@ async function imprimirCuentaCliente(): Promise<void> {
 .cc-btn-imprimir-recibo:focus-visible {
   outline: 2px solid var(--color-acento);
   outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .cc-cartera-scroll::after {
+    display: none;
+  }
+
+  .cc-tabla-cartera .cc-col-oculta-movil {
+    display: none;
+  }
+
+  .cc-tabla-cartera .cc-col-cliente {
+    min-width: 0;
+    width: auto;
+  }
+
+  .cc-tabla-cartera .cc-col-saldo-actual {
+    min-width: 5.5rem;
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .cc-tabla-cartera .cc-col-acciones {
+    min-width: 0;
+    width: 1%;
+  }
+
+  .cc-tabla-cartera .cc-col-acciones-etiq {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .cc-btn-movimientos {
+    min-width: 2.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+  }
+
+  .cc-btn-movimientos-texto {
+    display: none;
+  }
 }
 </style>

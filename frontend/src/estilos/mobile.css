@@ -1,0 +1,270 @@
+/**
+ * Estilos exclusivos para teléfono (≤767px).
+ * No altera escritorio: todo vive dentro de este media query.
+ */
+
+@media (max-width: 767px) {
+  :root {
+    --pg-reserva-vertical-vista: clamp(10.5rem, 26dvh, 15rem);
+  }
+
+  /* —— Shell principal —— */
+  .relleno {
+    padding: 0.6rem 0.7rem 0.9rem;
+  }
+
+  .relleno:has(.pg-wrap) {
+    padding-inline: 0.45rem;
+  }
+
+  .relleno:has(.centro-ventas) {
+    padding: 0.08rem 0.35rem 0.12rem;
+  }
+
+  .relleno:has(.cfg-ficha-vista) {
+    padding: 0.25rem 0.4rem 0.35rem;
+  }
+
+  /* —— Páginas de gestión (pg-*) —— */
+  .pg-wrap {
+    max-width: none;
+    padding: 0 0 0.85rem;
+  }
+
+  .pg-marco {
+    border-radius: 12px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
+  }
+
+  .pg-cab {
+    gap: 0.75rem;
+    padding: 0.85rem 0.85rem 0.95rem;
+    padding-top: 0.95rem;
+  }
+
+  .pg-cab-izq {
+    gap: 0.55rem;
+  }
+
+  .pg-cab-ico {
+    width: 1.15rem;
+    height: 1.15rem;
+    margin-top: 0.15rem;
+  }
+
+  .pg-eyebrow {
+    font-size: 0.62rem;
+    margin-bottom: 0.12rem;
+  }
+
+  .pg-titulo {
+    font-size: 1.12rem;
+  }
+
+  .pg-sub {
+    display: none;
+  }
+
+  /*
+   * BarraSubmenuMovil ya muestra el título de la sección (.shell--contexto-movil).
+   * Ocultamos el bloque de título interno y dejamos KPIs, acciones y avisos útiles.
+   */
+  .shell--contexto-movil .pg-marco .pg-cab .pg-eyebrow,
+  .shell--contexto-movil .pg-marco .pg-cab .pg-titulo,
+  .shell--contexto-movil .pg-marco .pg-cab .pg-cab-ico {
+    display: none;
+  }
+
+  .shell--contexto-movil .pg-marco .pg-cab .pg-cab-txt:not(:has(.rep-volver)),
+  .shell--contexto-movil .pg-marco .pg-cab .pg-cab-izq {
+    display: none;
+  }
+
+  .shell--contexto-movil .pg-marco .pg-cab:not(:has(.pg-kpis)):not(:has(.pg-cab-acciones)):not(:has(.rep-volver)):not(:has(.stk-banner-lectura)) {
+    display: none;
+  }
+
+  .shell--contexto-movil .pg-marco .pg-cab:has(.pg-kpis),
+  .shell--contexto-movil .pg-marco .pg-cab:has(.pg-cab-acciones),
+  .shell--contexto-movil .pg-marco .pg-cab:has(.rep-volver),
+  .shell--contexto-movil .pg-marco .pg-cab:has(.stk-banner-lectura) {
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem 0.65rem;
+  }
+
+  .shell--contexto-movil .pg-marco .pg-cab:has(.pg-kpis) .pg-kpis {
+    width: 100%;
+  }
+
+  .pg-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .pg-kpis.pg-kpis--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pg-kpi {
+    padding: 0.55rem 0.65rem;
+    border-radius: 10px;
+  }
+
+  .pg-kpi-valor {
+    font-size: 0.98rem;
+  }
+
+  .pg-barra {
+    margin-inline: 0.5rem;
+    padding: 0.7rem 0.65rem 0.75rem;
+    gap: 0.55rem;
+    border-radius: 10px;
+    overflow: visible;
+  }
+
+  .pg-barra-fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.55rem;
+    width: 100%;
+  }
+
+  .pg-barra-col,
+  .pg-barra-col--busq,
+  .pg-barra-col--cat,
+  .pg-barra-col--filtro,
+  .pg-barra-col--fecha,
+  .pg-barra-col--atajos,
+  .pg-barra-col--reinicio,
+  .pg-barra-col--accion {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .pg-barra-col--accion .pg-btn-primario {
+    width: 100%;
+  }
+
+  .pg-filtro-inp,
+  .pg-filtro-sel {
+    width: 100%;
+    max-width: none;
+  }
+
+  .pg-btn-reset-filtros {
+    width: 100%;
+  }
+
+  .pg-filtro-inp,
+  .pg-btn-reset-filtros,
+  .pg-btn-primario,
+  .pg-btn--lg {
+    min-height: 2.75rem;
+    font-size: 0.9rem;
+  }
+
+  .pg-btn,
+  .pg-btn-primario {
+    min-height: 2.65rem;
+    padding: 0.48rem 0.85rem;
+  }
+
+  .pg-resumen {
+    margin-inline: 0.65rem;
+    font-size: 0.76rem;
+  }
+
+  .pg-cuerpo,
+  .pg-tabla-cuerpo {
+    padding: 0.75rem 0.65rem 0.9rem;
+  }
+
+  .pg-tabla-scroll {
+    --pg-cap-de-filas: 999;
+    max-height: none;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pg-tabla-scroll::after {
+    content: 'Deslizá horizontalmente para ver más columnas →';
+    display: block;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-align: center;
+    color: var(--color-texto-apagado);
+    border-top: 1px solid var(--color-borde);
+    background: rgba(7, 11, 20, 0.35);
+  }
+
+  .pg-tabla-scroll--libre::after {
+    display: none;
+  }
+
+  .pg-tabla {
+    font-size: 0.84rem;
+  }
+
+  .pg-grilla-viewport {
+    margin-inline: 0.65rem;
+    height: auto;
+    max-height: none;
+    min-height: 8rem;
+  }
+
+  .pg-vacio--grilla {
+    margin-inline: 0.65rem;
+  }
+
+  /* —— Formularios de configuración —— */
+  .cfg-ficha-scroll {
+    padding: 0.55rem 0.65rem 0.5rem;
+  }
+
+  .cfg-ficha-bloque {
+    border-radius: 10px;
+  }
+
+  .cfg-ficha-bloque-enc {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .cfg-ficha-bloque-cuerpo {
+    padding: 0 0.75rem 0.85rem;
+  }
+
+  .cfg-ficha-inp,
+  .cfg-ficha-pie .pg-btn-primario {
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+
+  .cfg-ficha-pie {
+    padding: 0.65rem 0.75rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    background: linear-gradient(180deg, transparent, rgba(12, 18, 34, 0.92) 28%);
+    backdrop-filter: blur(6px);
+  }
+
+  .cfg-ficha-pie .pg-btn-primario {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* —— Inicio —— */
+  .ini-actividad {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .ini-panel {
+    padding: 0.75rem 0.8rem;
+  }
+}

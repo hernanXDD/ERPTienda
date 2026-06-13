@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Barcode, Layers, Package, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
+import { Barcode, Layers, Package, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-vue-next';
 import { computed, onMounted, reactive, ref, useTemplateRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
@@ -600,44 +600,68 @@ onMounted(() => {
           <h2 class="pg-tabla-h2">Productos registrados</h2>
           <span class="pg-tabla-meta pg-mono">{{ productosFiltrados.length }} filas</span>
         </div>
-        <div class="pg-tabla-scroll cat-tabla-scroll">
-          <table class="pg-tabla pg-tabla--estado">
+        <div class="pg-tabla-scroll cat-tabla-scroll cat-catalogo-scroll">
+          <table class="pg-tabla pg-tabla--estado cat-tabla-catalogo">
             <thead>
               <tr>
-                <th scope="col">Producto</th>
-                <th scope="col">Categoría</th>
-                <th scope="col">Descripción</th>
-                <th scope="col" class="pg-der">Variantes</th>
-                <th scope="col" class="pg-der">Precio ref.</th>
-                <th v-if="puedeGestionarCatalogo" scope="col" class="pg-acc">Acciones</th>
+                <th scope="col" class="cat-col-producto">Producto</th>
+                <th scope="col" class="cat-col-categoria">Categoría</th>
+                <th scope="col" class="cat-col-desc cat-col-oculta-movil">Descripción</th>
+                <th scope="col" class="pg-der cat-col-variantes cat-col-oculta-movil">Variantes</th>
+                <th scope="col" class="pg-der cat-col-precio">
+                  <span class="cat-col-precio-etiq">Precio ref.</span>
+                  <span class="cat-col-precio-etiq-movil">Precio</span>
+                </th>
+                <th v-if="puedeGestionarCatalogo" scope="col" class="pg-acc cat-col-acciones">
+                  <span class="cat-col-acciones-etiq">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="p in productosFiltrados" :key="p.id">
-                <td>
+                <td class="cat-col-producto">
                   <div class="cat-prod-cel-nombre">
                     <span class="cat-prod-nombre">{{ p.nombre }}</span>
                     <span class="cat-prod-marca">{{ p.marca }}</span>
                   </div>
                 </td>
-                <td>
+                <td class="cat-col-categoria">
                   <span class="cat-prod-chip">
                     <Layers :size="12" aria-hidden="true" />
                     {{ catalogo.nombreCategoria(p.categoriaId) }}
                   </span>
                 </td>
-                <td class="cat-prod-cel-desc" :title="p.descripcion.trim() || undefined">
+                <td
+                  class="cat-prod-cel-desc cat-col-desc cat-col-oculta-movil"
+                  :title="p.descripcion.trim() || undefined"
+                >
                   {{ resumenDescripcion(p.descripcion) }}
                 </td>
-                <td class="pg-der pg-mono">{{ cantidadVariantesProducto(p.id) }}</td>
-                <td class="pg-der pg-mono">{{ formatoPeso.format(p.precioVenta) }}</td>
-                <td v-if="puedeGestionarCatalogo" class="pg-acc">
+                <td class="pg-der pg-mono cat-col-variantes cat-col-oculta-movil">
+                  {{ cantidadVariantesProducto(p.id) }}
+                </td>
+                <td class="pg-der pg-mono cat-col-precio">{{ formatoPeso.format(p.precioVenta) }}</td>
+                <td v-if="puedeGestionarCatalogo" class="pg-acc cat-col-acciones">
                   <div class="cat-prod-acciones">
-                    <button type="button" class="pg-btn" @click="abrirModificar(p)">
-                      Editar
+                    <button
+                      type="button"
+                      class="pg-btn cat-prod-btn-accion"
+                      aria-label="Editar producto"
+                      title="Editar producto"
+                      @click="abrirModificar(p)"
+                    >
+                      <Pencil :size="18" stroke-width="1.85" aria-hidden="true" />
+                      <span class="cat-prod-btn-texto">Editar</span>
                     </button>
-                    <button type="button" class="pg-btn cat-prod-btn-peligro" @click="borrar(p)">
-                      Borrar
+                    <button
+                      type="button"
+                      class="pg-btn cat-prod-btn-peligro cat-prod-btn-accion"
+                      aria-label="Borrar producto"
+                      title="Borrar producto"
+                      @click="borrar(p)"
+                    >
+                      <Trash2 :size="18" stroke-width="1.85" aria-hidden="true" />
+                      <span class="cat-prod-btn-texto">Borrar</span>
                     </button>
                   </div>
                 </td>
@@ -948,6 +972,94 @@ onMounted(() => {
   justify-content: center;
 }
 
+@media (max-width: 767px) {
+  .pg-marco--catalogo .pg-barra {
+    margin-inline: 0.45rem;
+  }
+
+  .pg-marco--catalogo .pg-resumen {
+    margin-inline: 0.45rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .pg-marco--catalogo .cat-tabla-scroll {
+    margin-inline: 0;
+  }
+
+  .pg-marco--catalogo .pg-tabla-cuerpo {
+    padding-inline: 0.45rem;
+  }
+
+  .cat-catalogo-scroll::after {
+    display: none;
+  }
+
+  .cat-tabla-catalogo .cat-col-oculta-movil {
+    display: none;
+  }
+
+  .cat-tabla-catalogo .cat-col-producto {
+    min-width: 0;
+  }
+
+  .cat-tabla-catalogo .cat-col-categoria {
+    min-width: 0;
+  }
+
+  .cat-tabla-catalogo .cat-col-precio {
+    min-width: 4.75rem;
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .cat-col-precio-etiq {
+    display: none;
+  }
+
+  .cat-col-precio-etiq-movil {
+    display: inline;
+  }
+
+  .cat-tabla-catalogo .cat-col-acciones {
+    min-width: 0;
+    width: 1%;
+  }
+
+  .cat-tabla-catalogo .cat-col-acciones-etiq {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .cat-prod-cel-nombre {
+    min-width: 0;
+  }
+
+  .cat-prod-acciones {
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+  }
+
+  .cat-prod-btn-accion {
+    min-width: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+  }
+
+  .cat-prod-btn-texto {
+    display: none;
+  }
+}
+
 @media (min-width: 720px) {
   .cat-prod-btn-nuevo {
     width: auto;
@@ -1019,6 +1131,23 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 0.4rem;
   justify-content: flex-end;
+}
+
+.cat-prod-btn-accion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.cat-col-precio-etiq-movil {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .cat-prod-btn-accion svg {
+    display: none;
+  }
 }
 
 .cat-prod-btn-peligro {

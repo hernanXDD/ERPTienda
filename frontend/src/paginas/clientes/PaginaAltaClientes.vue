@@ -503,9 +503,14 @@ function alCerrarDialogo() {
           <header class="lc-ed-cab">
             <div class="lc-ed-cab-marca">
               <p class="lc-ed-eyebrow">Clientes · datos maestros</p>
-              <h2 id="lc-dlg-tit" class="lc-ed-tit">
-                {{ tituloModalCliente }}
-              </h2>
+              <div class="lc-ed-cab-titular">
+                <h2 id="lc-dlg-tit" class="lc-ed-tit">
+                  {{ tituloModalCliente }}
+                </h2>
+                <button type="button" class="lc-modal-x" aria-label="Cerrar" @click="cerrarDialogo">
+                  ×
+                </button>
+              </div>
               <p v-if="modoDialogoCliente === 'alta'" id="lc-dlg-sub" class="lc-ed-sub">
                 Registre los datos para ventas, facturación y seguimiento del cliente.
               </p>
@@ -547,9 +552,6 @@ function alCerrarDialogo() {
                   <span class="lc-sw-ui" aria-hidden="true" />
                 </label>
               </div>
-              <button type="button" class="lc-modal-x" aria-label="Cerrar" @click="cerrarDialogo">
-                ×
-              </button>
             </div>
           </header>
 
@@ -1187,6 +1189,13 @@ function alCerrarDialogo() {
   flex: 1;
 }
 
+.lc-ed-cab-titular {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .lc-ed-cab-acciones {
   display: flex;
   align-items: center;
@@ -1329,6 +1338,8 @@ function alCerrarDialogo() {
 
 .lc-ed-tit {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.035em;
@@ -1414,6 +1425,43 @@ function alCerrarDialogo() {
   .lc-ed-cuerpo {
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 767px) {
+  .lc-ed-cab {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem 0.55rem;
+  }
+
+  .lc-ed-cab-acciones {
+    justify-content: flex-start;
+  }
+
+  .lc-ed-eyebrow {
+    margin-bottom: 0.28rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+
+  .lc-ed-tit {
+    font-size: 1.08rem;
+    line-height: 1.25;
+  }
+
+  .lc-ed-contexto {
+    margin-top: 0.4rem;
+    gap: 0.4rem 0.55rem;
+  }
+
+  .lc-ed-contexto-nombre {
+    font-size: 0.86rem;
+  }
+
+  .lc-ed-chip-doc {
+    font-size: 0.75rem;
   }
 }
 

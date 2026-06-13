@@ -4,15 +4,17 @@ import { useMediaQuery } from '@vueuse/core';
 import { useRoute, useRouter } from 'vue-router';
 import ToastGlobal from '../componentes/nucleo/ToastGlobal.vue';
 import ModalBienvenidaCambioContrasena from '../componentes/autenticacion/ModalBienvenidaCambioContrasena.vue';
-import BarraInferiorMovil from '../componentes/navegacion/BarraInferiorMovil.vue';
+import BarraLateralMovil from '../componentes/navegacion/BarraLateralMovil.vue';
 import BarraLateral from '../componentes/navegacion/BarraLateral.vue';
 import BarraSubmenuMovil from '../componentes/navegacion/BarraSubmenuMovil.vue';
 import BarraSuperior from '../componentes/navegacion/BarraSuperior.vue';
+import { useBarraContextoMovil } from '../composables/useBarraContextoMovil';
 import { refrescarDatosPorRuta } from '../modulos/nucleo/refrescarDatosPorRuta';
 import { cargarDatosMaestros, errorCargaDatosMaestros, reintentarCargaDatosMaestros } from '../stores/inicializacionDatos';
 import { useSesionStore } from '../stores/sesion';
 
 const esMovil = useMediaQuery('(max-width: 767px)');
+const { mostrarBarraContextoMovil } = useBarraContextoMovil();
 const sesion = useSesionStore();
 const route = useRoute();
 const router = useRouter();
@@ -66,7 +68,13 @@ router.afterEach((to) => {
 </script>
 
 <template>
-  <div class="shell" :class="{ 'shell--contrasena-pendiente': requiereCambioContrasena }">
+  <div
+    class="shell"
+    :class="{
+      'shell--contrasena-pendiente': requiereCambioContrasena,
+      'shell--contexto-movil': mostrarBarraContextoMovil,
+    }"
+  >
     <ModalBienvenidaCambioContrasena :visible="requiereCambioContrasena" />
 
     <template v-if="!requiereCambioContrasena">
@@ -77,7 +85,6 @@ router.afterEach((to) => {
           <BarraSubmenuMovil />
           <main
             class="contenido"
-            :class="{ 'con-barra-movil': esMovil }"
             id="contenido-principal"
             tabindex="-1"
           >
@@ -93,7 +100,7 @@ router.afterEach((to) => {
           </main>
         </div>
       </div>
-      <BarraInferiorMovil v-if="esMovil" />
+      <BarraLateralMovil />
       <ToastGlobal />
     </template>
 
@@ -142,10 +149,6 @@ router.afterEach((to) => {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-}
-
-.contenido.con-barra-movil {
-  padding-bottom: var(--alto-barra-inferior);
 }
 
 .relleno {
@@ -219,5 +222,16 @@ router.afterEach((to) => {
 
 .aviso-carga-maestros-btn:hover {
   background: rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 767px) {
+  .shell {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .contenido {
+    overscroll-behavior-y: contain;
+  }
 }
 </style>

@@ -334,16 +334,22 @@ async function manejarCerrarSesion() {
   opacity: 0.9;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 767px) {
+  .barra {
+    min-height: 3.15rem;
+    padding: 0 calc(0.65rem + env(safe-area-inset-right, 0px)) 0
+      calc(0.75rem + env(safe-area-inset-left, 0px));
+  }
+
   .marca-logo {
-    height: 2.45rem;
-    max-width: min(9rem, 48vw);
+    height: 2.35rem;
+    max-width: min(8.5rem, 38vw);
   }
 
   .marca-escudo {
-    width: 2.45rem;
-    height: 2.45rem;
-    font-size: 0.8rem;
+    width: 2.35rem;
+    height: 2.35rem;
+    font-size: 0.78rem;
   }
 
   .bloque-usuario-corto {
@@ -351,8 +357,34 @@ async function manejarCerrarSesion() {
   }
 
   .boton-usuario {
-    min-width: auto;
-    padding-inline: 0.35rem;
+    min-width: 2.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .icono-chevron {
+    display: none;
+  }
+
+  .menu-desplegable {
+    right: 0;
+    left: auto;
+    min-width: min(14rem, calc(100vw - 1.25rem));
+  }
+}
+
+@media (max-width: 420px) {
+  .marca-logo {
+    height: 2.25rem;
+    max-width: min(7.5rem, 42vw);
+  }
+
+  .marca-escudo {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 0.75rem;
   }
 }
 </style>

@@ -158,4 +158,62 @@ const opcionesEstadoFacturacionResueltas = computed(() => props.opcionesEstadoFa
   font-size: 0.82rem;
   color: #f87171;
 }
+
+@media (max-width: 767px) {
+  .rep-filtro {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+    padding: 0.45rem 0.5rem;
+  }
+
+  .rep-filtro-ico {
+    display: none;
+  }
+
+  .rep-filtro-campos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem 0.45rem;
+    min-width: 0;
+  }
+
+  .rep-filtro-etiq--entidad {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .rep-filtro-etiq {
+    gap: 0.12rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+  }
+
+  .rep-filtro-inp {
+    min-width: 0;
+    width: 100%;
+    font-size: 0.8rem;
+    padding: 0.26rem 0.38rem;
+    min-height: 2.05rem;
+    border-radius: 7px;
+  }
+
+  .rep-filtro-sel {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+
+  .rep-filtro-actualizar {
+    margin-left: 0;
+    width: 100%;
+    min-height: 2.15rem;
+    padding: 0.32rem 0.6rem;
+    font-size: 0.82rem;
+  }
+
+  .rep-filtro-error {
+    font-size: 0.76rem;
+  }
+}
 </style>

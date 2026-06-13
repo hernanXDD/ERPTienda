@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useMediaQuery, useResizeObserver } from '@vueuse/core';
 import { ArrowLeft, ExternalLink, Loader2 } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router';
 import type { FiltrosReporteVista, OpcionEntidadReporte } from '../../modulos/reportes/filtroEntidadReporte';
@@ -8,6 +9,7 @@ import {
   exportarVistaReporteComoPdf,
   nombreArchivoReportePdf,
 } from '../../modulos/reportes/impresionReporte';
+import { estilosBaseReporteCss } from '../../modulos/reportes/estilosReporteCss';
 import BarraFiltrosReporte from './BarraFiltrosReporte.vue';
 import { notificarError } from '../../utilidades/notificacion';
 
@@ -43,8 +45,128 @@ const emit = defineEmits<{
 }>();
 
 const refVistaReporte = ref<HTMLElement | null>(null);
+const refEscalaMovil = ref<HTMLElement | null>(null);
 const exportandoPdf = ref(false);
 const errorExportacionPdf = ref('');
+
+const esMovil = useMediaQuery('(max-width: 767px)');
+const escalaMovil = ref(1);
+const anchoReportePx = ref(0);
+const altoReportePx = ref(0);
+
+const vistaPreviaReducidaMovil = computed(
+  () => esMovil.value && escalaMovil.value < 0.999 && anchoReportePx.value > 0,
+);
+
+const estilosPistaMovil = computed(() => {
+  if (!vistaPreviaReducidaMovil.value) return undefined;
+  return {
+    width: `${anchoReportePx.value * escalaMovil.value}px`,
+    height: `${altoReportePx.value * escalaMovil.value}px`,
+  };
+});
+
+const estilosPreviewMovil = computed(() => {
+  if (!vistaPreviaReducidaMovil.value) return undefined;
+  return {
+    width: `${anchoReportePx.value}px`,
+    maxWidth: 'none',
+    transform: `scale(${escalaMovil.value})`,
+    transformOrigin: 'top left',
+  };
+});
+
+let observadorRecursosReporte: MutationObserver | undefined;
+
+const ID_ESTILOS_VISTA_PREVIA = 'rep-vista-previa-estilos';
+
+function asegurarEstilosVistaPreviaReporte(): void {
+  if (document.getElementById(ID_ESTILOS_VISTA_PREVIA)) return;
+  const hoja = document.createElement('style');
+  hoja.id = ID_ESTILOS_VISTA_PREVIA;
+  hoja.textContent = estilosBaseReporteCss;
+  document.head.appendChild(hoja);
+}
+
+function desconectarObservadorRecursosReporte(): void {
+  observadorRecursosReporte?.disconnect();
+  observadorRecursosReporte = undefined;
+}
+
+function observarRecursosReporte(vista: HTMLElement): void {
+  desconectarObservadorRecursosReporte();
+
+  const recalcular = () => void actualizarEscalaVistaPreviaMovil();
+  vista.querySelectorAll('img').forEach((img) => {
+    if (!img.complete) {
+      img.addEventListener('load', recalcular, { once: true });
+      img.addEventListener('error', recalcular, { once: true });
+    }
+  });
+
+  observadorRecursosReporte = new MutationObserver(recalcular);
+  observadorRecursosReporte.observe(vista, { childList: true, subtree: true });
+}
+
+async function actualizarEscalaVistaPreviaMovil(): Promise<void> {
+  await nextTick();
+  asegurarEstilosVistaPreviaReporte();
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!esMovil.value || !refEscalaMovil.value || !refVistaReporte.value) {
+        escalaMovil.value = 1;
+        anchoReportePx.value = 0;
+        altoReportePx.value = 0;
+        desconectarObservadorRecursosReporte();
+        return;
+      }
+
+      const contenedor = refEscalaMovil.value;
+      const vista = refVistaReporte.value;
+      const anchoDisponible = contenedor.clientWidth;
+      const documento = vista.querySelector('.rep-doc');
+
+      if (!(documento instanceof HTMLElement)) {
+        escalaMovil.value = 1;
+        anchoReportePx.value = 0;
+        altoReportePx.value = 0;
+        return;
+      }
+
+      const anchoReporte = documento.offsetWidth || documento.scrollWidth;
+      const altoReporte = Math.max(
+        vista.scrollHeight,
+        documento.offsetHeight,
+        documento.scrollHeight,
+      );
+
+      if (anchoDisponible <= 0 || anchoReporte <= 0 || altoReporte <= 0) return;
+
+      const escala = Math.min(1, anchoDisponible / anchoReporte);
+      escalaMovil.value = escala;
+      anchoReportePx.value = anchoReporte;
+      altoReportePx.value = altoReporte;
+      observarRecursosReporte(vista);
+    });
+  });
+}
+
+useResizeObserver(refEscalaMovil, () => void actualizarEscalaVistaPreviaMovil());
+useResizeObserver(refVistaReporte, () => void actualizarEscalaVistaPreviaMovil());
+
+watch([() => props.htmlReporte, esMovil], () => void actualizarEscalaVistaPreviaMovil(), {
+  flush: 'post',
+});
+
+onMounted(() => {
+  asegurarEstilosVistaPreviaReporte();
+  void actualizarEscalaVistaPreviaMovil();
+});
+
+onUnmounted(() => {
+  desconectarObservadorRecursosReporte();
+});
 
 async function exportarPdf(): Promise<void> {
   if (!props.htmlReporte.trim() || exportandoPdf.value) return;
@@ -115,15 +237,27 @@ async function exportarPdf(): Promise<void> {
       />
 
       <div class="rep-preview-envoltorio">
+        <p v-if="vistaPreviaReducidaMovil && htmlReporte" class="rep-preview-aviso-movil">
+          Vista reducida para ver la página completa. Usá «Abrir PDF» para el tamaño real.
+        </p>
         <div
           v-if="htmlReporte"
-          ref="refVistaReporte"
-          :key="tituloImpresion"
-          class="rep-preview"
-          role="document"
-          aria-label="Vista previa del reporte"
-          v-html="htmlReporte"
-        />
+          ref="refEscalaMovil"
+          class="rep-preview-escala"
+          :class="{ 'rep-preview-escala--activa': vistaPreviaReducidaMovil }"
+        >
+          <div class="rep-preview-pista" :style="estilosPistaMovil">
+            <div
+              ref="refVistaReporte"
+              :key="tituloImpresion"
+              class="rep-preview"
+              :style="estilosPreviewMovil"
+              role="document"
+              aria-label="Vista previa del reporte"
+              v-html="htmlReporte"
+            />
+          </div>
+        </div>
         <p v-else class="rep-preview-vacio">
           {{ errorFiltro || 'Ajustá el rango de fechas y pulsá «Actualizar».' }}
         </p>
@@ -194,6 +328,38 @@ async function exportarPdf(): Promise<void> {
   background: #e8ecf1;
 }
 
+.rep-preview-aviso-movil {
+  margin: 0 0 0.55rem;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.rep-preview-escala {
+  width: 100%;
+}
+
+.rep-preview-escala--activa {
+  display: flex;
+  justify-content: center;
+}
+
+.rep-preview-pista {
+  position: relative;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.rep-preview-escala--activa .rep-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  overflow: visible;
+}
+
 .rep-preview {
   width: 100%;
   max-width: 210mm;
@@ -215,5 +381,45 @@ async function exportarPdf(): Promise<void> {
   text-align: center;
   color: var(--color-texto-apagado);
   font-size: 0.92rem;
+}
+
+@media (max-width: 767px) {
+  .pg-marco--reporte-vista {
+    min-height: min(62vh, 640px);
+  }
+
+  .pg-marco--reporte-vista .pg-cab {
+    padding: 0.65rem 0.65rem 0.7rem;
+    gap: 0.55rem;
+  }
+
+  .pg-marco--reporte-vista .pg-titulo {
+    font-size: 1.05rem;
+  }
+
+  .pg-marco--reporte-vista .pg-sub {
+    display: none;
+  }
+
+  .pg-marco--reporte-vista .pg-cab-acciones {
+    width: 100%;
+  }
+
+  .pg-marco--reporte-vista .rep-btn-imprimir {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.35rem;
+    font-size: 0.84rem;
+  }
+
+  .rep-preview-envoltorio {
+    overflow-x: hidden;
+    padding: 0.45rem 0.35rem 0.65rem;
+  }
+
+  .rep-preview-aviso-movil {
+    margin-bottom: 0.4rem;
+    font-size: 0.66rem;
+  }
 }
 </style>

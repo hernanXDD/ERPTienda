@@ -129,15 +129,13 @@ function alSalirMouse() {
   position: relative;
   flex-shrink: 0;
   align-self: center;
-  width: var(--ancho-barra-lateral-colapsada);
+  width: var(--ancho-barra-lateral);
   height: var(--alto-barra-lateral);
   max-height: var(--alto-barra-lateral);
 }
 
 .lateral {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -145,19 +143,14 @@ function alSalirMouse() {
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-control);
   background: var(--color-fondo-elevado);
-  transition:
-    width 0.2s ease,
-    box-shadow 0.2s ease;
+  box-shadow: var(--sombra-suave);
   overflow: hidden;
+  transition: width 0.2s ease;
 }
 
 .lateral--colapsada {
   width: var(--ancho-barra-lateral-colapsada);
-}
-
-.lateral:not(.lateral--colapsada) {
-  z-index: 55;
-  box-shadow: var(--sombra-suave);
+  box-shadow: none;
 }
 
 .lateral-cabecera {
