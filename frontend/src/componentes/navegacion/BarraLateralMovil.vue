@@ -162,10 +162,7 @@ onKeyStroke('Escape', () => {
                 class="menu-movil-enlace menu-movil-enlace--sub"
                 :class="{ activo: rutaActiva.name === sub.nombreRuta }"
               >
-                <span class="menu-movil-enlace-col">
-                  <span class="menu-movil-enlace-etiq">{{ sub.etiqueta }}</span>
-                  <span v-if="sub.descripcion" class="menu-movil-enlace-desc">{{ sub.descripcion }}</span>
-                </span>
+                {{ sub.etiqueta }}
               </RouterLink>
             </div>
           </div>
@@ -184,12 +181,7 @@ onKeyStroke('Escape', () => {
               aria-hidden="true"
               class="menu-movil-ico"
             />
-            <span class="menu-movil-enlace-col">
-              <span class="menu-movil-enlace-etiq">{{ elemento.etiqueta }}</span>
-              <span v-if="elemento.descripcion" class="menu-movil-enlace-desc">
-                {{ elemento.descripcion }}
-              </span>
-            </span>
+            <span class="menu-movil-enlace-etiq">{{ elemento.etiqueta }}</span>
           </RouterLink>
         </template>
       </nav>
@@ -343,9 +335,9 @@ onKeyStroke('Escape', () => {
 
 .menu-movil-enlace {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.55rem;
-  min-height: 2.75rem;
+  min-height: 2.5rem;
   padding: 0.55rem 0.65rem;
   border-radius: var(--radio-control);
   font-size: 0.92rem;
@@ -354,47 +346,20 @@ onKeyStroke('Escape', () => {
   border: 1px solid transparent;
 }
 
-.menu-movil-enlace-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-  flex: 1;
-}
-
 .menu-movil-enlace-etiq {
+  flex: 1;
+  min-width: 0;
   font-size: inherit;
   font-weight: inherit;
   line-height: 1.25;
   color: inherit;
 }
 
-.menu-movil-enlace-desc {
-  font-size: 0.68rem;
-  font-weight: 400;
-  line-height: 1.3;
-  color: var(--color-texto-apagado);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .menu-movil-enlace--sub {
-  min-height: 2.85rem;
-  padding-top: 0.48rem;
-  padding-bottom: 0.48rem;
+  min-height: 2.35rem;
   padding-left: 2.35rem;
   font-size: 0.86rem;
   font-weight: 500;
-}
-
-.menu-movil-enlace--sub .menu-movil-enlace-etiq {
-  font-size: 0.86rem;
-}
-
-.menu-movil-enlace.activo .menu-movil-enlace-desc,
-.menu-movil-grupo-tit.activo .menu-movil-enlace-desc {
-  color: var(--color-texto-suave);
 }
 
 .menu-movil-enlace.activo,
@@ -406,7 +371,6 @@ onKeyStroke('Escape', () => {
 
 .menu-movil-ico {
   flex-shrink: 0;
-  margin-top: 0.08rem;
 }
 
 .menu-movil-pie {
