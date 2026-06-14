@@ -179,6 +179,37 @@ function restablecerTemaClaroPorDefecto(): void {
   Object.assign(borrador.value, datosTemaClaroNegocioPorDefecto());
 }
 
+function temaClaroEditableDesdeOrigen(
+  origen: Partial<DatosNegocioEditable>,
+): Pick<
+  DatosNegocioEditable,
+  | 'temaClaroColorAcento'
+  | 'temaClaroColorFondo'
+  | 'temaClaroColorSuperficie'
+  | 'temaClaroColorCabecera'
+  | 'temaClaroColorTexto'
+  | 'temaClaroColorBorde'
+> {
+  const tema = normalizarTemaClaroNegocio(origen);
+  return {
+    temaClaroColorAcento: tema.colorAcento,
+    temaClaroColorFondo: tema.colorFondo,
+    temaClaroColorSuperficie: tema.colorSuperficie,
+    temaClaroColorCabecera: tema.colorCabecera,
+    temaClaroColorTexto: tema.colorTexto,
+    temaClaroColorBorde: tema.colorBorde,
+  };
+}
+
+function hexParaPickerColor(campo: CampoColorTemaClaro, porDefecto: string): string {
+  return normalizarColorHex(borrador.value[campo], porDefecto);
+}
+
+function alCambiarColorPicker(campo: CampoColorTemaClaro, porDefecto: string, event: Event): void {
+  const valor = (event.target as HTMLInputElement).value;
+  borrador.value[campo] = normalizarColorHex(valor, porDefecto);
+}
+
 function alEscribirColorHex(campo: CampoColorTemaClaro, valor: string): void {
   const limpio = valor.trim().replace(/[^#0-9a-fA-F]/g, '');
   const conHash = limpio.startsWith('#') ? limpio : `#${limpio}`;
@@ -209,12 +240,7 @@ function aplicarNegocioAlBorrador(): void {
     mostrarTwitter: actual.mostrarTwitter,
     tiktok: actual.tiktok,
     mostrarTiktok: actual.mostrarTiktok,
-    temaClaroColorAcento: actual.temaClaroColorAcento,
-    temaClaroColorFondo: actual.temaClaroColorFondo,
-    temaClaroColorSuperficie: actual.temaClaroColorSuperficie,
-    temaClaroColorCabecera: actual.temaClaroColorCabecera,
-    temaClaroColorTexto: actual.temaClaroColorTexto,
-    temaClaroColorBorde: actual.temaClaroColorBorde,
+    ...temaClaroEditableDesdeOrigen(actual),
   };
 }
 
@@ -895,7 +921,11 @@ async function guardarNegocio(): Promise<void> {
               </section>
               </div>
 
-              <section class="perm-bloque perm-bloque--apariencia" aria-labelledby="cfg-neg-sec-apariencia">
+              <section
+                class="perm-bloque perm-bloque--apariencia"
+                :style="estilosVistaPreviaTemaClaro"
+                aria-labelledby="cfg-neg-sec-apariencia"
+              >
                 <header class="perm-bloque-enc">
                   <span class="perm-bloque-ico" aria-hidden="true">
                     <Palette :size="18" stroke-width="2" />
@@ -939,15 +969,16 @@ async function guardarNegocio(): Promise<void> {
                             <label
                               class="cfg-tema-color-muestra"
                               :for="`${color.id}-picker`"
-                              :style="{ backgroundColor: borrador[color.campo] }"
+                              :style="{ backgroundColor: hexParaPickerColor(color.campo, color.porDefecto) }"
                             >
                               <input
                                 :id="`${color.id}-picker`"
-                                v-model="borrador[color.campo]"
                                 type="color"
                                 class="cfg-tema-color-input"
+                                :value="hexParaPickerColor(color.campo, color.porDefecto)"
                                 :aria-labelledby="color.id"
                                 :disabled="!modoEdicion || guardando"
+                                @input="alCambiarColorPicker(color.campo, color.porDefecto, $event)"
                               />
                             </label>
                             <div class="cfg-tema-color-hex-wrap">
@@ -991,15 +1022,16 @@ async function guardarNegocio(): Promise<void> {
                             <label
                               class="cfg-tema-color-muestra"
                               :for="`${color.id}-picker`"
-                              :style="{ backgroundColor: borrador[color.campo] }"
+                              :style="{ backgroundColor: hexParaPickerColor(color.campo, color.porDefecto) }"
                             >
                               <input
                                 :id="`${color.id}-picker`"
-                                v-model="borrador[color.campo]"
                                 type="color"
                                 class="cfg-tema-color-input"
+                                :value="hexParaPickerColor(color.campo, color.porDefecto)"
                                 :aria-labelledby="color.id"
                                 :disabled="!modoEdicion || guardando"
+                                @input="alCambiarColorPicker(color.campo, color.porDefecto, $event)"
                               />
                             </label>
                             <div class="cfg-tema-color-hex-wrap">
