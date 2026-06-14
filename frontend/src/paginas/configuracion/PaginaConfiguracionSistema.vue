@@ -13,6 +13,7 @@ import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema'
 import type { ConfiguracionSistemaEditable } from '../../tipos/configuracionSistema';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
+import '../../estilos/formularioConfiguracion.css';
 
 const descripcionPagina = obtenerDescripcionPagina('configuracion-sistema');
 const { tienePermiso } = usePermisosOperador();
@@ -38,6 +39,7 @@ const vistaPreviaResumen = computed(() => {
     pct: normalizado.porcentajeGananciaSugerida,
     dias: normalizado.diasDeudaCuentaCorriente,
     stock: normalizado.stockMinimoAlerta,
+    movimientoManual: normalizado.movimientoManualStockHabilitado,
   };
 });
 
@@ -125,8 +127,8 @@ async function guardarConfiguracion(): Promise<void> {
 </script>
 
 <template>
-  <section class="pg-wrap cfg-ficha-vista" aria-labelledby="titulo-config-sistema">
-    <div class="pg-marco cfg-sys-marco cfg-ficha-marco">
+  <section class="pg-wrap" aria-labelledby="titulo-config-sistema">
+    <div class="pg-marco pg-marco--permisos">
       <header class="pg-cab">
         <div class="pg-cab-txt">
           <div class="pg-cab-izq">
@@ -135,42 +137,99 @@ async function guardarConfiguracion(): Promise<void> {
               <p class="pg-eyebrow">Configuración · Sistema</p>
               <h1 id="titulo-config-sistema" class="pg-titulo">Parámetros del sistema</h1>
               <p class="pg-sub">{{ descripcionPagina }}</p>
-              <p class="cfg-sys-vista-previa" aria-live="polite">
-                <span class="cfg-sys-chip">CC $ {{ vistaPreviaResumen.max.toLocaleString('es-AR') }}</span>
-                <span class="cfg-sys-chip">+{{ vistaPreviaResumen.pct }} % venta</span>
-                <span class="cfg-sys-chip">{{ vistaPreviaResumen.dias }} días deuda</span>
-                <span class="cfg-sys-chip">Stock ≤ {{ vistaPreviaResumen.stock }}</span>
-              </p>
             </div>
+          </div>
+        </div>
+        <div class="pg-kpis" aria-label="Resumen de parámetros">
+          <div class="pg-kpi pg-kpi--acento">
+            <span class="pg-kpi-etiq">Máx. CC</span>
+            <span class="pg-kpi-valor pg-mono">
+              $ {{ vistaPreviaResumen.max.toLocaleString('es-AR') }}
+            </span>
+          </div>
+          <div class="pg-kpi">
+            <span class="pg-kpi-etiq">Ganancia sugerida</span>
+            <span class="pg-kpi-valor pg-mono">+{{ vistaPreviaResumen.pct }} %</span>
+          </div>
+          <div class="pg-kpi">
+            <span class="pg-kpi-etiq">Días deuda</span>
+            <span class="pg-kpi-valor pg-mono">{{ vistaPreviaResumen.dias }}</span>
+          </div>
+          <div class="pg-kpi">
+            <span class="pg-kpi-etiq">Stock mínimo</span>
+            <span class="pg-kpi-valor pg-mono">{{ vistaPreviaResumen.stock }}</span>
+          </div>
+          <div class="pg-kpi">
+            <span class="pg-kpi-etiq">Entrada manual</span>
+            <span class="pg-kpi-valor">
+              {{ vistaPreviaResumen.movimientoManual ? 'Habilitada' : 'Deshabilitada' }}
+            </span>
           </div>
         </div>
       </header>
 
-      <div class="cfg-sys-bandera" aria-hidden="true" />
+      <form id="form-config-sistema" @submit.prevent="manejarAccionPie">
+        <div class="pg-barra">
+          <div class="pg-barra-fila">
+            <div class="pg-barra-col pg-barra-col--accion">
+              <span class="pg-filtro-etiq pg-sr">Acción</span>
+              <button
+                v-if="puedeEditarConfiguracionSistema"
+                type="submit"
+                class="pg-btn-primario"
+                :disabled="guardando || cargandoInicial"
+              >
+                {{
+                  guardando
+                    ? 'Guardando…'
+                    : modoEdicion
+                      ? 'Guardar configuración'
+                      : 'Editar configuración'
+                }}
+              </button>
+            </div>
+          </div>
+          <p v-if="mensajeExito" class="perm-aviso perm-aviso--ok" role="status">
+            {{ mensajeExito }}
+          </p>
+          <p v-if="mensajeError" class="perm-aviso perm-aviso--error" role="alert">
+            {{ mensajeError }}
+          </p>
+        </div>
 
-      <div class="cfg-ficha-panel">
+        <div v-if="!cargandoInicial" class="perm-ficha" aria-label="Estado de la configuración">
+          <div class="perm-ficha-ident">
+            <p class="perm-ficha-nombre">Preferencias operativas del negocio</p>
+            <p class="perm-ficha-login">
+              Cuentas corrientes, alertas de stock y márgenes sugeridos en catálogo.
+            </p>
+          </div>
+          <div class="perm-ficha-chips">
+            <span class="perm-chip perm-chip--rol">Parámetros globales</span>
+            <span v-if="modoEdicion" class="perm-chip perm-chip--edicion">Modo edición</span>
+            <span v-else class="perm-chip">Solo lectura</span>
+          </div>
+        </div>
+
         <div v-if="cargandoInicial" class="cfg-ficha-carga" role="status">
           <div class="cfg-ficha-carga-pulso" />
           <p>Cargando parámetros del sistema…</p>
         </div>
 
-        <form
+        <fieldset
           v-else
-          id="form-config-sistema"
-          class="cfg-ficha-form"
-          :class="{ 'cfg-ficha-form--solo-lectura': !modoEdicion }"
-          @submit.prevent="manejarAccionPie"
+          class="perm-cuerpo perm-cuerpo--dos-bloques"
+          :class="{ 'perm-cuerpo--solo-lectura': !modoEdicion }"
+          :disabled="!modoEdicion || guardando"
         >
-          <div class="cfg-ficha-scroll">
-            <div class="cfg-ficha-contenido cfg-ficha-contenido--sistema">
-              <section class="cfg-ficha-bloque" aria-labelledby="cfg-sys-sec-cc">
-                <div class="cfg-ficha-bloque-enc">
-                  <span class="cfg-ficha-bloque-ico" aria-hidden="true">
-                    <Wallet :size="18" stroke-width="2" />
-                  </span>
-                  <h2 id="cfg-sys-sec-cc" class="cfg-ficha-bloque-tit">Cuentas corrientes</h2>
-                </div>
-                <div class="cfg-ficha-bloque-cuerpo cfg-ficha-grid">
+          <section class="perm-bloque" aria-labelledby="cfg-sys-sec-cc">
+            <header class="perm-bloque-enc">
+              <span class="perm-bloque-ico" aria-hidden="true">
+                <Wallet :size="16" stroke-width="2" />
+              </span>
+              <h2 id="cfg-sys-sec-cc" class="perm-bloque-tit">Cuentas corrientes</h2>
+            </header>
+            <div class="perm-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--vertical">
                   <div class="cfg-ficha-campo">
                     <label class="cfg-ficha-etiq" for="cfg-max-cc">
                       Máximo en cuenta corriente (por defecto)
@@ -222,16 +281,16 @@ async function guardarConfiguracion(): Promise<void> {
                 </div>
               </section>
 
-              <section class="cfg-ficha-bloque" aria-labelledby="cfg-sys-sec-operacion">
-                <div class="cfg-ficha-bloque-enc">
-                  <span class="cfg-ficha-bloque-ico" aria-hidden="true">
-                    <Package :size="18" stroke-width="2" />
+              <section class="perm-bloque" aria-labelledby="cfg-sys-sec-operacion">
+                <header class="perm-bloque-enc">
+                  <span class="perm-bloque-ico" aria-hidden="true">
+                    <Package :size="16" stroke-width="2" />
                   </span>
-                  <h2 id="cfg-sys-sec-operacion" class="cfg-ficha-bloque-tit">
+                  <h2 id="cfg-sys-sec-operacion" class="perm-bloque-tit">
                     Inventario y precios
                   </h2>
-                </div>
-                <div class="cfg-ficha-bloque-cuerpo cfg-ficha-grid">
+                </header>
+                <div class="perm-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--sistema-inv">
                   <div class="cfg-ficha-campo">
                     <label class="cfg-ficha-etiq" for="cfg-stock-min">
                       Stock mínimo para alertas
@@ -282,6 +341,46 @@ async function guardarConfiguracion(): Promise<void> {
                     </div>
                   </div>
 
+                  <div class="cfg-ficha-campo cfg-ficha-campo--ancho">
+                    <div class="cfg-ficha-opcion">
+                      <div class="cfg-ficha-opcion-info">
+                        <label class="cfg-ficha-etiq" for="cfg-mov-manual">
+                          Movimiento manual de stock
+                        </label>
+                        <p class="cfg-ficha-ayuda cfg-ficha-ayuda--inline">
+                          Permite registrar entradas manuales en Stock actual. Requiere además el
+                          permiso por usuario; las compras y conteos siguen disponibles.
+                        </p>
+                      </div>
+                      <div class="cfg-ficha-opcion-accion">
+                        <span
+                          class="cfg-ficha-red-sw-txt"
+                          :class="{
+                            'cfg-ficha-red-sw-txt--activa': borrador.movimientoManualStockHabilitado,
+                          }"
+                        >
+                          {{
+                            borrador.movimientoManualStockHabilitado
+                              ? 'Habilitado'
+                              : 'Deshabilitado'
+                          }}
+                        </span>
+                        <label class="perm-sw">
+                          <input
+                            id="cfg-mov-manual"
+                            v-model="borrador.movimientoManualStockHabilitado"
+                            type="checkbox"
+                            class="perm-sw-input"
+                            role="switch"
+                            aria-label="Habilitar movimiento manual de stock"
+                            :disabled="!modoEdicion || guardando"
+                          />
+                          <span class="perm-sw-ui" aria-hidden="true" />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="cfg-ficha-nota cfg-ficha-campo--ancho">
                     <CalendarClock
                       class="cfg-ficha-nota-ico"
@@ -301,81 +400,8 @@ async function guardarConfiguracion(): Promise<void> {
                   </div>
                 </div>
               </section>
-
-              <div v-if="mensajeError || mensajeExito" class="cfg-ficha-feedback">
-                <p v-if="mensajeError" class="cfg-ficha-alerta cfg-ficha-alerta--error" role="alert">
-                  {{ mensajeError }}
-                </p>
-                <p v-if="mensajeExito" class="cfg-ficha-alerta cfg-ficha-alerta--ok" role="status">
-                  {{ mensajeExito }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <footer class="cfg-ficha-pie">
-            <button
-              v-if="puedeEditarConfiguracionSistema"
-              type="submit"
-              class="pg-btn-primario"
-              :disabled="guardando"
-            >
-              {{
-                guardando
-                  ? 'Guardando…'
-                  : modoEdicion
-                    ? 'Guardar configuración'
-                    : 'Editar configuración'
-              }}
-            </button>
-          </footer>
-        </form>
-      </div>
+        </fieldset>
+      </form>
     </div>
   </section>
 </template>
-
-<style scoped>
-.cfg-sys-marco {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.cfg-sys-vista-previa {
-  margin: 0.48rem 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.38rem;
-  align-items: center;
-}
-
-.cfg-sys-chip {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  padding: 0.22rem 0.58rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--color-texto-suave);
-  border: 1px solid rgba(124, 140, 240, 0.22);
-  background: rgba(7, 11, 20, 0.45);
-  font-variant-numeric: tabular-nums;
-}
-
-.cfg-sys-bandera {
-  height: 4px;
-  flex-shrink: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(124, 140, 240, 0.15),
-    rgba(154, 124, 240, 0.55),
-    rgba(124, 140, 240, 0.2)
-  );
-}
-</style>
-
-<style src="../../estilos/formularioConfiguracion.css"></style>

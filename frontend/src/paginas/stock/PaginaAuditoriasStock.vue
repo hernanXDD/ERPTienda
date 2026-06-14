@@ -327,7 +327,7 @@ function alCerrarDetalleAuditoria(): void {
   color: var(--color-acento-hover);
   font-weight: 600;
   text-decoration: none;
-  border-bottom: 1px solid rgba(124, 140, 240, 0.45);
+  border-bottom: 1px solid var(--color-acento-borde);
 }
 
 .aud-enlace-interno:hover {
@@ -389,21 +389,21 @@ function alCerrarDetalleAuditoria(): void {
 }
 
 .aud-chip--venta {
-  color: #fbbf24;
-  background: rgba(234, 179, 8, 0.1);
-  border-color: rgba(234, 179, 8, 0.32);
+  color: var(--color-advertencia);
+  background: var(--color-advertencia-suave);
+  border-color: var(--color-advertencia-borde);
 }
 
 .aud-chip--compra {
   color: var(--color-exito);
-  background: rgba(74, 222, 128, 0.1);
-  border-color: rgba(74, 222, 128, 0.32);
+  background: var(--color-exito-suave);
+  border-color: var(--color-exito-borde);
 }
 
 .aud-chip--conteo {
   color: var(--color-acento-hover);
-  background: rgba(124, 140, 240, 0.1);
-  border-color: rgba(124, 140, 240, 0.32);
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
 }
 
 .aud-var--sube {
@@ -427,8 +427,8 @@ function alCerrarDetalleAuditoria(): void {
   gap: 0.35rem;
   padding: 0.32rem 0.62rem;
   border-radius: 9px;
-  border: 1px solid rgba(124, 140, 240, 0.35);
-  background: rgba(124, 140, 240, 0.08);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   color: var(--color-acento-hover);
   font-size: 0.72rem;
   font-weight: 600;
@@ -456,12 +456,12 @@ function alCerrarDetalleAuditoria(): void {
   border-radius: 14px;
   background: transparent;
   box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(124, 140, 240, 0.12);
+    var(--color-sombra-elevada),
+    0 0 0 1px var(--color-acento-borde);
 }
 
 .aud-dlg::backdrop {
-  background: rgba(8, 10, 20, 0.72);
+  background: var(--color-scrim);
   backdrop-filter: blur(3px);
 }
 
@@ -515,8 +515,8 @@ function alCerrarDetalleAuditoria(): void {
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--color-texto-suave);
-  background: rgba(124, 140, 240, 0.06);
-  border: 1px solid rgba(124, 140, 240, 0.18);
+  background: var(--color-acento-suave);
+  border: 1px solid var(--color-acento-borde);
 }
 
 .aud-dlg-resumen {

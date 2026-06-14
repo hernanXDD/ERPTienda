@@ -362,7 +362,7 @@ function alCerrarDialogoRegistrar() {
   color: var(--color-texto-sobre-acento);
   background: linear-gradient(180deg, var(--color-acento-hover), var(--color-acento));
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(91, 110, 230, 0.35);
+  box-shadow: var(--color-sombra-elevada);
 }
 
 .rcp-btn-pri:hover {
@@ -444,11 +444,11 @@ function alCerrarDialogoRegistrar() {
   border-radius: 14px;
   background: var(--color-fondo-elevado);
   color: var(--color-texto);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--color-sombra-elevada);
 }
 
 .rcp-modal::backdrop {
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-scrim);
 }
 
 .rcp-modal-panel {
@@ -523,8 +523,8 @@ function alCerrarDialogoRegistrar() {
   padding: 0.65rem 0.75rem;
   margin-bottom: 0.65rem;
   border-radius: var(--radio-control);
-  background: rgba(124, 140, 240, 0.1);
-  border: 1px solid rgba(124, 140, 240, 0.28);
+  background: var(--color-acento-suave);
+  border: 1px solid var(--color-acento-borde);
 }
 
 .rcp-modal-total strong {
@@ -554,8 +554,8 @@ function alCerrarDialogoRegistrar() {
   margin: 0 0 1rem;
   padding: 0.65rem 0.82rem;
   border-radius: 10px;
-  border: 1px solid rgba(124, 140, 240, 0.28);
-  background: rgba(124, 140, 240, 0.06);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   font-size: 0.84rem;
   line-height: 1.45;
   color: var(--color-texto-suave);
@@ -575,12 +575,12 @@ function alCerrarDialogoRegistrar() {
   border-radius: 16px;
   background: var(--color-fondo-elevado);
   color: var(--color-texto);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--color-sombra-elevada);
   overflow: hidden;
 }
 
 .rcp-dlg-overlay::backdrop {
-  background: rgba(6, 10, 20, 0.72);
+  background: var(--color-scrim);
   backdrop-filter: blur(2px);
 }
 

@@ -26,10 +26,12 @@ export function permisosPorDefectoSegunRol(rol: RolUsuario): PermisosOperativosU
   const esElevado = rolEsElevado(rol);
   return {
     puedeAjustarStock: esElevado,
+    puedeMoverStockManualmente: esElevado,
     puedeRegistrarCompras: esElevado,
     puedeGestionarCatalogoProductos: esElevado,
     puedeGestionarClientes: esElevado,
     puedeGestionarCuentaCorriente: esElevado,
+    puedeGestionarCuentaCorrienteProveedor: esElevado,
     puedeRegistrarVentas: esElevado,
     puedeCargarFacturaciones: esElevado,
     puedeGestionarProveedores: esElevado,
@@ -51,9 +53,15 @@ export function permisosResueltos(
 ): PermisosOperativosUsuario {
   const base = permisosPorDefectoSegunRol(rol);
   if (!parcial) return base;
+
+  const puedeMoverStockManualmente =
+    parcial.puedeMoverStockManualmente ??
+    (parcial.puedeAjustarStock === true ? true : base.puedeMoverStockManualmente);
+
   return {
     ...base,
     ...parcial,
+    puedeMoverStockManualmente,
     menusVisibles: menusVisiblesResueltos(parcial.menusVisibles),
   };
 }

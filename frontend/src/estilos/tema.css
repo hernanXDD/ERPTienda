@@ -5,13 +5,22 @@
 }
 
 /**
- * Maqueta oscura “slate + índigo”: neutros fríos y un solo acento para ESTADOS y CTAs.
- * Ajustá solo :root si querés otra variación.
+ * Modo oscuro: apariencia fija actual de la app (`data-tema="oscuro"`).
+ * Modo claro: variables base; el dueño puede personalizarlas vía JS al cargar el negocio.
  */
 :root {
+  --radio-control: 10px;
+  --alto-barra-inferior: 4rem;
+  --ancho-barra-lateral: 15rem;
+  --ancho-barra-lateral-colapsada: 3.35rem;
+  --alto-barra-lateral: 98%;
+}
+
+[data-tema='oscuro'] {
   --color-fondo: #0c1222;
   --color-fondo-elevado: #151d2e;
   --color-fondo-cabecera: #070b14;
+  --color-fondo-sutil: rgba(0, 0, 0, 0.12);
   --color-borde: #2a3a54;
   --color-texto: #f1f5f9;
   --color-texto-suave: #cbd5e1;
@@ -23,14 +32,54 @@
   --color-acento-borde: rgba(170, 180, 255, 0.38);
   --color-texto-sobre-acento: #f8fafc;
   --color-peligro: #fb7185;
+  --color-peligro-suave: rgba(251, 113, 133, 0.12);
+  --color-peligro-borde: rgba(251, 113, 133, 0.35);
   --color-exito: #4ade80;
-  --radio-control: 10px;
-  --alto-barra-inferior: 4rem;
-  --ancho-barra-lateral: 15rem;
-  --ancho-barra-lateral-colapsada: 3.35rem;
-  --alto-barra-lateral: 98%;
+  --color-exito-suave: rgba(74, 222, 128, 0.12);
+  --color-exito-borde: rgba(74, 222, 128, 0.28);
+  --color-advertencia: #fbbf24;
+  --color-advertencia-suave: rgba(234, 179, 8, 0.1);
+  --color-advertencia-borde: rgba(234, 179, 8, 0.35);
+  --color-fila-alterna: rgba(124, 140, 240, 0.03);
+  --color-fila-hover: rgba(124, 140, 240, 0.07);
+  --color-hover-neutro: rgba(255, 255, 255, 0.07);
+  --color-scrim: rgba(2, 6, 23, 0.72);
   --sombra-suave: 0 2px 16px rgba(0, 0, 0, 0.35);
+  --color-sombra-elevada: 0 10px 24px rgba(0, 0, 0, 0.28);
   color-scheme: dark;
+}
+
+[data-tema='claro'] {
+  --color-fondo: #f2f5fa;
+  --color-fondo-elevado: #ffffff;
+  --color-fondo-cabecera: #e4eaf4;
+  --color-fondo-sutil: #e8edf5;
+  --color-borde: #cbd5e1;
+  --color-texto: #0f172a;
+  --color-texto-suave: #334155;
+  --color-texto-apagado: #64748b;
+  --color-acento: #4a5fd7;
+  --color-acento-hover: #3f52c4;
+  --color-acento-intenso: #3548b3;
+  --color-acento-suave: rgba(74, 95, 215, 0.12);
+  --color-acento-borde: rgba(74, 95, 215, 0.35);
+  --color-texto-sobre-acento: #f8fafc;
+  --color-peligro: #e11d48;
+  --color-peligro-suave: rgba(225, 29, 72, 0.1);
+  --color-peligro-borde: rgba(225, 29, 72, 0.35);
+  --color-exito: #16a34a;
+  --color-exito-suave: rgba(22, 163, 74, 0.1);
+  --color-exito-borde: rgba(22, 163, 74, 0.28);
+  --color-advertencia: #d97706;
+  --color-advertencia-suave: rgba(217, 119, 6, 0.1);
+  --color-advertencia-borde: rgba(217, 119, 6, 0.35);
+  --color-fila-alterna: rgba(74, 95, 215, 0.04);
+  --color-fila-hover: rgba(74, 95, 215, 0.08);
+  --color-hover-neutro: rgba(15, 23, 42, 0.06);
+  --color-scrim: rgba(15, 23, 42, 0.45);
+  --sombra-suave: 0 2px 16px rgba(15, 23, 42, 0.12);
+  --color-sombra-elevada: 0 10px 24px rgba(15, 23, 42, 0.12);
+  color-scheme: light;
 }
 
 html,
@@ -41,6 +90,10 @@ body {
   background: var(--color-fondo);
   color: var(--color-texto);
   -webkit-font-smoothing: antialiased;
+}
+
+html[data-tema] {
+  transition: none;
 }
 
 :focus-visible {

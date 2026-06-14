@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, TipoAuditoriaStock } from '@prisma/client';
 import {
   ID_MOTIVO_AJUSTE_CONTEO,
@@ -10,6 +10,7 @@ import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogoService } from '../catalogo/catalogo.service';
+import { ConfiguracionSistemaService } from '../configuracion-sistema/configuracion-sistema.service';
 import { AjusteConteoDto } from './dto/ajuste-conteo.dto';
 import { EntradaManualDto } from './dto/entrada-manual.dto';
 import { ImportarConteoDto } from './dto/importar-conteo.dto';
@@ -139,6 +140,7 @@ export class StockService {
     private readonly prisma: PrismaService,
     private readonly idSecuencia: IdSecuenciaService,
     private readonly catalogoService: CatalogoService,
+    private readonly configuracionSistemaService: ConfiguracionSistemaService,
   ) {}
 
   async obtenerCantidad(varianteId: string, tx?: ClienteTx): Promise<number> {
@@ -543,6 +545,13 @@ export class StockService {
     datos: EntradaManualDto,
     ejecutadoPorUsuarioId: string,
   ): Promise<{ cantidadAnterior: number; cantidadNueva: number }> {
+    const configuracion = await this.configuracionSistemaService.obtener();
+    if (!configuracion.movimientoManualStockHabilitado) {
+      throw new ForbiddenException(
+        'Las entradas manuales de stock están deshabilitadas en la configuración del sistema.',
+      );
+    }
+
     const nombreVariante = await this.catalogoService.nombreLineaComercial(datos.varianteId);
     await this.validarVariante(datos.varianteId);
     const nota = datos.nota?.trim() || 'Entrada manual de stock';

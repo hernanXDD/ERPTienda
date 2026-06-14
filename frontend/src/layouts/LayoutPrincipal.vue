@@ -10,6 +10,7 @@ import BarraSuperior from '../componentes/navegacion/BarraSuperior.vue';
 import { useBarraContextoMovil } from '../composables/useBarraContextoMovil';
 import { useEsMovil } from '../composables/useEsMovil';
 import { refrescarDatosPorRuta } from '../modulos/nucleo/refrescarDatosPorRuta';
+import { useApariencia } from '../composables/useApariencia';
 import { cargarDatosMaestros, errorCargaDatosMaestros, reintentarCargaDatosMaestros } from '../stores/inicializacionDatos';
 import { useSesionStore } from '../stores/sesion';
 
@@ -18,6 +19,8 @@ const { mostrarBarraContextoMovil } = useBarraContextoMovil();
 const sesion = useSesionStore();
 const route = useRoute();
 const router = useRouter();
+
+useApariencia();
 
 const requiereCambioContrasena = computed(
   () => sesion.usuario?.debeCambiarContrasena === true,
@@ -163,11 +166,6 @@ router.afterEach((to) => {
   padding-inline: clamp(0.35rem, 1.5vw, 0.75rem);
 }
 
-.relleno:has(.centro-ventas) {
-  max-width: none;
-  padding: 0.12rem 0.45rem 0.15rem;
-}
-
 .relleno:has(.cfg-ficha-vista) {
   max-width: none;
   padding: 0.35rem clamp(0.35rem, 1.2vw, 0.65rem) 0.4rem;
@@ -176,10 +174,6 @@ router.afterEach((to) => {
 @media (min-width: 901px) {
   .relleno {
     padding: 1.25rem 1.5rem 1.5rem;
-  }
-
-  .relleno:has(.centro-ventas) {
-    padding: 0.15rem 0.65rem 0.2rem;
   }
 
   .relleno:has(.cfg-ficha-vista) {
@@ -195,9 +189,9 @@ router.afterEach((to) => {
   margin: 0 0 0.85rem;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radio-control);
-  border: 1px solid rgba(240, 120, 120, 0.45);
-  background: rgba(120, 28, 28, 0.22);
-  color: #ffc9c9;
+  border: 1px solid var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
+  color: var(--color-peligro);
   font-size: 0.9375rem;
   line-height: 1.45;
 }
@@ -211,8 +205,8 @@ router.afterEach((to) => {
   flex-shrink: 0;
   padding: 0.38rem 0.72rem;
   border-radius: var(--radio-control);
-  border: 1px solid rgba(255, 201, 201, 0.45);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-peligro-borde);
+  background: var(--color-hover-neutro);
   color: inherit;
   font: inherit;
   font-size: 0.84rem;
@@ -221,7 +215,7 @@ router.afterEach((to) => {
 }
 
 .aviso-carga-maestros-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--color-hover-neutro);
 }
 
 @media (max-width: 900px) {

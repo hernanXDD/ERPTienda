@@ -100,7 +100,7 @@ const opcionesEstadoFacturacionResueltas = computed(() => props.opcionesEstadoFa
   gap: 0.65rem 1rem;
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--color-borde);
-  background: rgba(15, 23, 42, 0.35);
+  background: var(--color-fondo-sutil);
 }
 
 .rep-filtro-ico {
@@ -156,7 +156,7 @@ const opcionesEstadoFacturacionResueltas = computed(() => props.opcionesEstadoFa
   flex: 1 1 100%;
   margin: 0;
   font-size: 0.82rem;
-  color: #f87171;
+  color: var(--color-peligro);
 }
 
 @media (max-width: 900px) {

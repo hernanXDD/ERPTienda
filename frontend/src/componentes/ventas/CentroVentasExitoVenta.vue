@@ -86,7 +86,7 @@ function alCerrarDialog() {
 }
 
 .cv-exito-modal::backdrop {
-  background: rgba(2, 6, 23, 0.72);
+  background: var(--color-scrim);
   backdrop-filter: blur(5px);
   animation: cv-exito-backdrop 0.28s ease;
 }
@@ -101,7 +101,7 @@ function alCerrarDialog() {
   border-radius: calc(var(--radio-control) + 4px);
   border: 1px solid var(--color-borde);
   background: linear-gradient(180deg, var(--color-fondo-elevado) 0%, var(--color-fondo-cabecera) 100%);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--color-sombra-elevada);
   text-align: center;
 }
 
@@ -188,12 +188,12 @@ function alCerrarDialog() {
 
 .cv-exito-btn--sec {
   color: var(--color-texto);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-fondo-cabecera);
   border-color: var(--color-borde);
 }
 
 .cv-exito-btn--sec:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: var(--color-hover-neutro);
 }
 
 .cv-exito-btn--prim {

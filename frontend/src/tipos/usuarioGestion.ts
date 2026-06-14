@@ -16,10 +16,13 @@ export type MenusVisiblesUsuario = Record<ClaveMenuPrincipal, boolean>;
 /** Permisos operativos editables desde “Permisos usuario”, independientes del rol en primera aproximación. */
 export interface PermisosOperativosUsuario {
   puedeAjustarStock: boolean;
+  /** Entradas manuales fuera de compras o conteos físicos. */
+  puedeMoverStockManualmente: boolean;
   puedeRegistrarCompras: boolean;
   puedeGestionarCatalogoProductos: boolean;
   puedeGestionarClientes: boolean;
   puedeGestionarCuentaCorriente: boolean;
+  puedeGestionarCuentaCorrienteProveedor: boolean;
   puedeRegistrarVentas: boolean;
   puedeCargarFacturaciones: boolean;
   puedeGestionarProveedores: boolean;

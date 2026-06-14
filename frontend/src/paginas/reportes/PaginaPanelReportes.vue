@@ -161,8 +161,8 @@ const gruposPanel = computed(() => obtenerGruposReportesPanel());
 }
 
 .rep-item--activa:hover {
-  background: rgba(124, 140, 240, 0.09);
-  border-color: rgba(124, 140, 240, 0.25);
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
 }
 
 .rep-item--activa:focus-visible {
@@ -174,7 +174,7 @@ const gruposPanel = computed(() => obtenerGruposReportesPanel());
   opacity: 0.78;
   cursor: default;
   border: 1px dashed color-mix(in srgb, var(--color-borde) 85%, transparent);
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--color-fondo-sutil);
 }
 
 .rep-item-ico {
@@ -187,7 +187,7 @@ const gruposPanel = computed(() => obtenerGruposReportesPanel());
   border-radius: 7px;
   flex-shrink: 0;
   color: var(--color-acento-hover);
-  background: rgba(124, 140, 240, 0.12);
+  background: var(--color-acento-suave);
 }
 
 .rep-item-ico--prox {

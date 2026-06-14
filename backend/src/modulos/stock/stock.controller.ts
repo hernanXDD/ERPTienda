@@ -92,7 +92,7 @@ export class StockController {
   }
 
   @Post('entrada-manual')
-  @RequierePermiso('puedeAjustarStock')
+  @RequierePermiso('puedeMoverStockManualmente')
   async entradaManual(
     @Body() datos: EntradaManualDto,
     @UsuarioSesionActual() operador: UsuarioSesion,

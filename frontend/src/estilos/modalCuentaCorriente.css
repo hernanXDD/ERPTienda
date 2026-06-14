@@ -1,0 +1,25 @@
+/**
+ * Modal de cuenta corriente (clientes y proveedores).
+ * Complementa estilos scoped en PaginaCuentasCorrientes*.vue
+ */
+
+[data-tema='claro'] .cc-modal {
+  box-shadow: var(--sombra-suave);
+}
+
+[data-tema='claro'] .cc-modal::backdrop {
+  background: var(--color-scrim);
+}
+
+[data-tema='claro'] .cc-fecha-inp,
+[data-tema='claro'] .cc-inp {
+  background: var(--color-fondo-elevado);
+}
+
+[data-tema='claro'] .cc-btn.imprimir {
+  background: var(--color-fondo-elevado);
+}
+
+[data-tema='claro'] .cc-btn.imprimir:hover {
+  background: var(--color-acento-suave);
+}

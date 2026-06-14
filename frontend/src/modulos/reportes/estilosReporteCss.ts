@@ -1,7 +1,11 @@
+import { normalizarTemaClaroNegocio } from '../../stores/tema';
+import { TEMA_CLARO_POR_DEFECTO, type TemaClaroNegocio } from '../tema/temaClaroPorDefecto';
+import { bloqueVariablesCssReporte } from './variablesCssReporte';
+
 /** Estilos compartidos para vista previa e impresión de reportes (EtaJS). Formato A4. */
 export const claseExportacionPdfReporte = 'rep-doc--exportacion-pdf';
 
-export const estilosBaseReporteCss = `
+const estilosReporteCssPlantilla = `
 @page {
   size: A4 portrait;
   margin: 12mm 14mm 16mm;
@@ -11,8 +15,8 @@ export const estilosBaseReporteCss = `
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-size: 11pt;
   line-height: 1.45;
-  color: #0f172a;
-  background: #fff;
+  color: var(--rep-texto);
+  background: var(--rep-fondo);
   width: 210mm;
   max-width: 210mm;
   min-height: 297mm;
@@ -27,11 +31,11 @@ export const estilosBaseReporteCss = `
   display: flex;
   align-items: stretch;
   margin-bottom: 1.25rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--rep-borde);
   border-radius: 14px;
   overflow: hidden;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  background: var(--rep-gradiente-enc);
+  box-shadow: var(--rep-sombra-enc);
 }
 
 .rep-emisor {
@@ -65,8 +69,8 @@ export const estilosBaseReporteCss = `
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
-  color: #f8fafc;
+  background: var(--rep-gradiente-logo);
+  color: var(--rep-texto-sobre-acento);
   font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -99,14 +103,14 @@ export const estilosBaseReporteCss = `
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #64748b;
+  color: var(--rep-texto-apagado);
 }
 
 .rep-emisor-reporte {
   margin: 0 0 0.45rem;
   font-size: 1.38rem;
   font-weight: 800;
-  color: #1e3a5f;
+  color: var(--rep-acento);
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
@@ -117,7 +121,7 @@ export const estilosBaseReporteCss = `
   align-items: center;
   gap: 0.3rem 0.5rem;
   font-size: 0.8rem;
-  color: #475569;
+  color: var(--rep-texto-suave);
   line-height: 1.45;
 }
 
@@ -131,7 +135,7 @@ export const estilosBaseReporteCss = `
 }
 
 .rep-emisor-sep {
-  color: #94a3b8;
+  color: var(--rep-texto-sep);
 }
 
 .rep-doc-meta {
@@ -141,7 +145,7 @@ export const estilosBaseReporteCss = `
   justify-content: flex-end;
   padding: 0.85rem 1.15rem;
   background: transparent;
-  border-left: 1px solid #cbd5e1;
+  border-left: 1px solid var(--rep-borde);
 }
 
 .rep-meta-grid {
@@ -156,10 +160,10 @@ export const estilosBaseReporteCss = `
   max-width: 14rem;
   padding: 0.45rem 0.65rem;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: 1px solid var(--rep-borde-claro);
+  background: var(--rep-fondo);
   font-size: 0.76rem;
-  color: #64748b;
+  color: var(--rep-texto-apagado);
   text-align: right;
 }
 
@@ -170,12 +174,12 @@ export const estilosBaseReporteCss = `
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #475569;
+  color: var(--rep-texto-suave);
 }
 
 .rep-meta-item span {
   display: block;
-  color: #0f172a;
+  color: var(--rep-texto);
   font-weight: 600;
   line-height: 1.35;
 }
@@ -190,8 +194,8 @@ export const estilosBaseReporteCss = `
 .rep-kpi {
   padding: 0.7rem 0.8rem;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  border: 1px solid var(--rep-borde-claro);
+  background: var(--rep-gradiente-kpi);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
@@ -201,7 +205,7 @@ export const estilosBaseReporteCss = `
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #64748b;
+  color: var(--rep-texto-apagado);
   margin-bottom: 0.25rem;
 }
 
@@ -209,17 +213,17 @@ export const estilosBaseReporteCss = `
   font-size: 1.12rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #1e3a5f;
+  color: var(--rep-acento);
 }
 
 .rep-nota {
   margin: 0 0 1rem;
   padding: 0.55rem 0.75rem;
   border-radius: 8px;
-  border-left: 3px solid #1e3a5f;
-  background: #f8fafc;
+  border-left: 3px solid var(--rep-acento);
+  background: var(--rep-fondo-alt);
   font-size: 0.82rem;
-  color: #475569;
+  color: var(--rep-texto-suave);
   line-height: 1.45;
 }
 
@@ -228,19 +232,19 @@ export const estilosBaseReporteCss = `
 .rep-seccion-tit {
   margin: 0 0 0.55rem;
   padding-bottom: 0.35rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--rep-borde-claro);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #1e3a5f;
+  color: var(--rep-acento);
 }
 
 .rep-tabla {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.82rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--rep-borde);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -248,8 +252,8 @@ export const estilosBaseReporteCss = `
 .rep-tabla th {
   text-align: left;
   padding: 0.5rem 0.6rem;
-  background: linear-gradient(180deg, #1e3a5f 0%, #152a45 100%);
-  color: #f8fafc;
+  background: var(--rep-gradiente-acento);
+  color: var(--rep-texto-sobre-acento);
   font-weight: 600;
   font-size: 0.66rem;
   text-transform: uppercase;
@@ -260,30 +264,30 @@ export const estilosBaseReporteCss = `
 
 .rep-tabla td {
   padding: 0.42rem 0.6rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--rep-borde-claro);
   vertical-align: top;
 }
 
-.rep-tabla tbody tr:nth-child(even) td { background: #f8fafc; }
+.rep-tabla tbody tr:nth-child(even) td { background: var(--rep-fondo-alt); }
 
 .rep-tabla tbody tr:last-child td { border-bottom: none; }
 
 .rep-tabla tfoot td {
   font-weight: 700;
-  background: #e2e8f0;
-  border-top: 2px solid #94a3b8;
-  color: #0f172a;
+  background: var(--rep-fondo-cabecera);
+  border-top: 2px solid var(--rep-texto-sep);
+  color: var(--rep-texto);
 }
 
 .rep-vacio {
   margin: 0;
   padding: 1rem;
   text-align: center;
-  color: #64748b;
+  color: var(--rep-texto-apagado);
   font-style: italic;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--rep-borde);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--rep-fondo-alt);
 }
 
 .rep-pie-pagina {
@@ -293,8 +297,8 @@ export const estilosBaseReporteCss = `
   bottom: 0;
   min-height: 14mm;
   padding: 1.5mm 14mm 3mm;
-  border-top: 0.35mm solid #e2e8f0;
-  background: #fff;
+  border-top: 0.35mm solid var(--rep-borde-claro);
+  background: var(--rep-fondo);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -305,14 +309,14 @@ export const estilosBaseReporteCss = `
 .rep-pie-contacto {
   text-align: center;
   font-size: 6.8pt;
-  color: #475569;
+  color: var(--rep-texto-suave);
   line-height: 1.4;
 }
 
 .rep-pie-dir {
   margin: 0;
   font-weight: 600;
-  color: #334155;
+  color: var(--rep-texto-medio);
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -332,7 +336,7 @@ export const estilosBaseReporteCss = `
 }
 
 .rep-pie-sep {
-  color: #94a3b8;
+  color: var(--rep-texto-sep);
 }
 
 .rep-pie-pagina-redes {
@@ -353,11 +357,11 @@ export const estilosBaseReporteCss = `
 
 .rep-pie-pagina-red-nom {
   font-weight: 700;
-  color: #475569;
+  color: var(--rep-texto-suave);
 }
 
 .rep-pie-pagina-red-val {
-  color: #1e3a5f;
+  color: var(--rep-acento);
   font-weight: 600;
   text-decoration: none;
 }
@@ -368,7 +372,7 @@ export const estilosBaseReporteCss = `
   align-items: center;
   gap: 4mm;
   font-size: 6pt;
-  color: #94a3b8;
+  color: var(--rep-texto-sep);
   line-height: 1.2;
 }
 
@@ -376,7 +380,7 @@ export const estilosBaseReporteCss = `
   font-size: 6.5pt;
   font-weight: 700;
   letter-spacing: 0.09em;
-  color: #94a3b8;
+  color: var(--rep-texto-sep);
   white-space: nowrap;
 }
 
@@ -535,3 +539,19 @@ export const estilosBaseReporteCss = `
   margin-bottom: 0.3rem;
 }
 `;
+
+/** Genera CSS completo con variables del tema claro del negocio (nunca modo oscuro de la app). */
+export function generarEstilosBaseReporteCss(tema?: TemaClaroNegocio | null): string {
+  const temaFinal = tema ?? { ...TEMA_CLARO_POR_DEFECTO };
+  return `${bloqueVariablesCssReporte(temaFinal)}\n${estilosReporteCssPlantilla}`;
+}
+
+/** Estilos con la paleta por defecto (fallback cuando aún no hay negocio cargado). */
+export const estilosBaseReporteCss = generarEstilosBaseReporteCss(TEMA_CLARO_POR_DEFECTO);
+
+/** Resuelve estilos a partir de los campos de tema del negocio. */
+export function generarEstilosReporteNegocio(
+  negocio: Parameters<typeof normalizarTemaClaroNegocio>[0] | null | undefined,
+): string {
+  return generarEstilosBaseReporteCss(normalizarTemaClaroNegocio(negocio ?? {}));
+}

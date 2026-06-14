@@ -65,8 +65,15 @@ export const GRUPOS_PERMISOS_OPERATIVOS: GrupoPermisosOperativos[] = [
     permisos: [
       {
         clave: 'puedeAjustarStock',
-        etiqueta: 'Ajustes de inventario',
-        descripcion: 'Entradas de mercadería, conteos físicos y correcciones de stock.',
+        etiqueta: 'Conteos de inventario',
+        descripcion: 'Exportar plantilla, importar conteo físico y ajustar existencias por conteo.',
+        sensibilidad: 'normal',
+      },
+      {
+        clave: 'puedeMoverStockManualmente',
+        etiqueta: 'Movimiento manual de stock',
+        descripcion:
+          'Registrar entradas manuales de mercadería. Sin este permiso, el stock solo se mueve con compras o conteos.',
         sensibilidad: 'normal',
       },
       {
@@ -80,6 +87,12 @@ export const GRUPOS_PERMISOS_OPERATIVOS: GrupoPermisosOperativos[] = [
         etiqueta: 'Proveedores',
         descripcion: 'Alta, edición y baja de proveedores.',
         sensibilidad: 'normal',
+      },
+      {
+        clave: 'puedeGestionarCuentaCorrienteProveedor',
+        etiqueta: 'Pagos en cuenta corriente proveedor',
+        descripcion: 'Registrar pagos a proveedores y emitir comprobantes.',
+        sensibilidad: 'elevada',
       },
       {
         clave: 'puedeGestionarCatalogoProductos',

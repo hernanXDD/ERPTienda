@@ -88,6 +88,11 @@ const router = createRouter({
               name: 'compras-registro',
               component: () => import('../paginas/compras/PaginaRegistroCompras.vue'),
             },
+            {
+              path: 'cuentas-corrientes',
+              name: 'compras-cuentas-corrientes-proveedor',
+              component: () => import('../paginas/compras/PaginaCuentasCorrientesProveedor.vue'),
+            },
           ],
         },
         {
@@ -163,6 +168,12 @@ const router = createRouter({
               path: 'compras-proveedor',
               name: 'reportes-compras-proveedor',
               component: () => import('../paginas/reportes/PaginaReporteComprasProveedor.vue'),
+            },
+            {
+              path: 'cuentas-corrientes-proveedor',
+              name: 'reportes-cuentas-corrientes-proveedor',
+              component: () =>
+                import('../paginas/reportes/PaginaReporteCuentasCorrientesProveedor.vue'),
             },
             {
               path: 'productos-mas-vendidos',

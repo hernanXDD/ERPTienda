@@ -49,7 +49,36 @@ const { parametros: parametrosSistema } = storeToRefs(configuracionSistemaStore)
 
 const umbralStockBajo = computed(() => parametrosSistema.value.stockMinimoAlerta);
 
-const puedeGestionar = computed(() => tienePermiso('puedeAjustarStock'));
+const movimientoManualHabilitadoEnSistema = computed(
+  () => parametrosSistema.value.movimientoManualStockHabilitado,
+);
+
+const puedeAjustarConteo = computed(() => tienePermiso('puedeAjustarStock'));
+const puedeEntradaManual = computed(
+  () =>
+    movimientoManualHabilitadoEnSistema.value && tienePermiso('puedeMoverStockManualmente'),
+);
+
+const textoBannerRestricciones = computed(() => {
+  if (puedeAjustarConteo.value && puedeEntradaManual.value) return '';
+
+  const partes: string[] = [];
+
+  if (!puedeAjustarConteo.value) {
+    partes.push('Los conteos físicos requieren el permiso de conteos de inventario.');
+  }
+  if (!tienePermiso('puedeMoverStockManualmente')) {
+    partes.push('Las entradas manuales requieren el permiso «Movimiento manual de stock».');
+  } else if (!movimientoManualHabilitadoEnSistema.value) {
+    partes.push('Las entradas manuales están deshabilitadas en Configuración → Sistema.');
+  }
+
+  if (partes.length === 0) return '';
+
+  return `Podés consultar existencias y filtros. ${partes.join(' ')} El stock también se actualiza al registrar compras.`;
+});
+
+const columnasTablaStock = computed(() => 6 + (puedeEntradaManual.value ? 1 : 0));
 const busqueda = ref('');
 const categoriaSeleccionada = ref<string>('');
 const soloStockCritico = ref(false);
@@ -427,13 +456,12 @@ function guardarModalEntrada(): void {
         <div class="stk-cab-textos">
           <h1 id="tit-stock-actual" class="pg-titulo">Stock actual</h1>
           <p class="pg-sub">{{ descripcionPagina }}</p>
+          <p v-if="textoBannerRestricciones" class="stk-banner-lectura">
+            <Info class="stk-banner-ico" :size="16" aria-hidden="true" />
+            {{ textoBannerRestricciones }}
+          </p>
         </div>
       </div>
-      <p v-if="!puedeGestionar" class="stk-banner-lectura">
-        <Info class="stk-banner-ico" :size="16" aria-hidden="true" />
-        Como empleado podés revisar filtros y existencias. La plantilla de conteo físico y la entrada
-        manual están reservadas al dueño de la tienda o al usuario administrativo.
-      </p>
     </header>
 
     <div class="pg-barra">
@@ -479,7 +507,7 @@ function guardarModalEntrada(): void {
         </div>
       </div>
 
-      <div v-if="puedeGestionar" class="pg-barra-col pg-barra-col--conteo">
+      <div v-if="puedeAjustarConteo" class="pg-barra-col pg-barra-col--conteo">
         <div class="pg-filtro-bl">
           <span class="pg-filtro-etiq">Conteo</span>
           <div class="stk-conteo-acciones">
@@ -537,7 +565,7 @@ function guardarModalEntrada(): void {
             <th scope="col" class="stk-col-corta">Código</th>
             <th scope="col" class="stk-der stk-col-stock">Cantidad</th>
             <th scope="col">Estado</th>
-            <th v-if="puedeGestionar" scope="col" class="stk-col-acc stk-acc-h stk-der">Entrada</th>
+            <th v-if="puedeEntradaManual" scope="col" class="stk-col-acc stk-acc-h stk-der">Entrada</th>
           </tr>
         </thead>
         <tbody>
@@ -555,7 +583,7 @@ function guardarModalEntrada(): void {
             <td>
               <span :class="claseEstadoCantidad(fila.existencia)">{{ textoEstadoCantidad(fila.existencia) }}</span>
             </td>
-            <td v-if="puedeGestionar" class="stk-acc-cel stk-der stk-acc-h">
+            <td v-if="puedeEntradaManual" class="stk-acc-cel stk-der stk-acc-h">
               <button type="button" class="stk-ac-mini stk-ac-mini--entr" title="Entrada tipo compra manual" @click="abrirModalEntrada(fila)">
                 <PackagePlus class="stk-ac-mini-ico" :size="17" aria-hidden="true" />
                 Entrada
@@ -563,7 +591,7 @@ function guardarModalEntrada(): void {
             </td>
           </tr>
           <tr v-if="filasFiltradas.length === 0">
-            <td :colspan="puedeGestionar ? 7 : 6" class="stk-vacio">
+            <td :colspan="columnasTablaStock" class="stk-vacio">
               No encontramos líneas para las condiciones marcadas en los filtros.
             </td>
           </tr>
@@ -853,22 +881,28 @@ function guardarModalEntrada(): void {
   color: var(--color-acento-hover);
   font-weight: 600;
   text-decoration: none;
-  border-bottom: 1px solid rgba(124, 140, 240, 0.45);
+  border-bottom: 1px solid var(--color-acento-borde);
 }
 
 .stk-enlace-interno:hover {
   filter: brightness(1.08);
 }
 
+.stk-cab-textos {
+  min-width: 0;
+  flex: 1;
+}
+
 .stk-banner-lectura {
   display: flex;
   gap: 0.5rem;
   align-items: flex-start;
-  margin: 1rem 0 0;
+  margin: 0.75rem 0 0;
+  max-width: 58rem;
   padding: 0.65rem 0.82rem;
   border-radius: 10px;
-  border: 1px solid rgba(124, 140, 240, 0.28);
-  background: rgba(124, 140, 240, 0.06);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   color: var(--color-texto-suave);
   font-size: 0.81rem;
   line-height: 1.45;
@@ -939,8 +973,8 @@ function guardarModalEntrada(): void {
   min-height: 2.38rem;
   padding: 0.45rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid rgba(124, 140, 240, 0.38);
-  background: rgba(124, 140, 240, 0.08);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   color: var(--color-acento-hover);
   font-size: 0.85rem;
   font-weight: 600;
@@ -1096,14 +1130,14 @@ function guardarModalEntrada(): void {
 
 .stk-aviso--ok {
   color: var(--color-exito);
-  background: rgba(52, 211, 153, 0.1);
-  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: var(--color-exito-suave);
+  border: 1px solid var(--color-exito-borde);
 }
 
 .stk-aviso--error {
   color: var(--color-peligro);
-  background: rgba(251, 113, 133, 0.1);
-  border: 1px solid rgba(251, 113, 133, 0.32);
+  background: var(--color-peligro-suave);
+  border: 1px solid var(--color-peligro-borde);
 }
 
 .stk-tab-wrap {
@@ -1184,15 +1218,15 @@ function guardarModalEntrada(): void {
 }
 
 .stk-chip--agotado {
-  background: rgba(251, 113, 133, 0.16);
+  background: var(--color-peligro-suave);
   color: var(--color-peligro);
-  border: 1px solid rgba(251, 113, 133, 0.35);
+  border: 1px solid var(--color-peligro-borde);
 }
 
 .stk-chip--bajo {
-  background: rgba(249, 200, 80, 0.12);
+  background: var(--color-advertencia-suave);
   color: rgb(237, 206, 120);
-  border: 1px solid rgba(249, 200, 80, 0.35);
+  border: 1px solid var(--color-advertencia-borde);
 }
 
 .stk-chip--normal {
@@ -1217,8 +1251,8 @@ function guardarModalEntrada(): void {
   align-items: center;
   gap: 0.38rem;
   border-radius: 9px;
-  border: 1px solid rgba(124, 140, 240, 0.35);
-  background: rgba(124, 140, 240, 0.08);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   color: var(--color-acento-hover);
   padding: 0.3rem 0.62rem;
   font-size: 0.695rem;
@@ -1227,8 +1261,8 @@ function guardarModalEntrada(): void {
 }
 
 .stk-ac-mini--entr {
-  border-color: rgba(74, 222, 128, 0.35);
-  background: rgba(74, 222, 128, 0.1);
+  border-color: var(--color-exito-borde);
+  background: var(--color-exito-suave);
   color: var(--color-exito);
 }
 
@@ -1258,9 +1292,7 @@ function guardarModalEntrada(): void {
   max-width: calc(100vw - 2rem);
   width: min(28rem, 100%);
   border-radius: 14px;
-  box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(124, 140, 240, 0.12);
+  box-shadow: var(--color-sombra-elevada);
   background: transparent;
 }
 
@@ -1288,8 +1320,8 @@ function guardarModalEntrada(): void {
   height: 4.5rem;
   margin-bottom: 0.85rem;
   border-radius: 999px;
-  background: rgba(52, 211, 153, 0.12);
-  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: var(--color-exito-suave);
+  border: 1px solid var(--color-exito-borde);
 }
 
 .stk-exito-ico {
@@ -1364,14 +1396,14 @@ function guardarModalEntrada(): void {
 
 .stk-import-alerta--error {
   color: var(--color-peligro);
-  background: rgba(251, 113, 133, 0.1);
-  border: 1px solid rgba(251, 113, 133, 0.32);
+  background: var(--color-peligro-suave);
+  border: 1px solid var(--color-peligro-borde);
 }
 
 .stk-import-alerta--aviso {
-  color: #fbbf24;
-  background: rgba(234, 179, 8, 0.08);
-  border: 1px solid rgba(234, 179, 8, 0.28);
+  color: var(--color-advertencia);
+  background: var(--color-advertencia-suave);
+  border: 1px solid var(--color-advertencia-borde);
 }
 
 .stk-import-alerta-tit {
@@ -1438,7 +1470,7 @@ function guardarModalEntrada(): void {
 }
 
 .stk-dlg-conte::backdrop {
-  background: rgba(8, 10, 20, 0.72);
+  background: var(--color-scrim);
   backdrop-filter: blur(3px);
 }
 

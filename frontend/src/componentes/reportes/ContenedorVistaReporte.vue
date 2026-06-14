@@ -10,7 +10,8 @@ import {
   exportarVistaReporteComoPdf,
   nombreArchivoReportePdf,
 } from '../../modulos/reportes/impresionReporte';
-import { estilosBaseReporteCss } from '../../modulos/reportes/estilosReporteCss';
+import { generarEstilosReporteNegocio } from '../../modulos/reportes/estilosReporteCss';
+import { useNegocioStore } from '../../stores/negocio';
 import BarraFiltrosReporte from './BarraFiltrosReporte.vue';
 import { notificarError } from '../../utilidades/notificacion';
 
@@ -38,6 +39,8 @@ const props = withDefaults(
     opcionesEstadoFacturacion: () => [],
   }
 );
+
+const negocioStore = useNegocioStore();
 
 const filtro = defineModel<FiltrosReporteVista>({ required: true });
 
@@ -81,12 +84,18 @@ let observadorRecursosReporte: MutationObserver | undefined;
 
 const ID_ESTILOS_VISTA_PREVIA = 'rep-vista-previa-estilos';
 
+const estilosVistaPreviaReporte = computed(() =>
+  generarEstilosReporteNegocio(negocioStore.negocio),
+);
+
 function asegurarEstilosVistaPreviaReporte(): void {
-  if (document.getElementById(ID_ESTILOS_VISTA_PREVIA)) return;
-  const hoja = document.createElement('style');
-  hoja.id = ID_ESTILOS_VISTA_PREVIA;
-  hoja.textContent = estilosBaseReporteCss;
-  document.head.appendChild(hoja);
+  let hoja = document.getElementById(ID_ESTILOS_VISTA_PREVIA) as HTMLStyleElement | null;
+  if (!hoja) {
+    hoja = document.createElement('style');
+    hoja.id = ID_ESTILOS_VISTA_PREVIA;
+    document.head.appendChild(hoja);
+  }
+  hoja.textContent = estilosVistaPreviaReporte.value;
 }
 
 function desconectarObservadorRecursosReporte(): void {
@@ -160,7 +169,10 @@ watch([() => props.htmlReporte, esMovil], () => void actualizarEscalaVistaPrevia
   flush: 'post',
 });
 
-onMounted(() => {
+watch(estilosVistaPreviaReporte, () => asegurarEstilosVistaPreviaReporte());
+
+onMounted(async () => {
+  await negocioStore.asegurarCargado();
   asegurarEstilosVistaPreviaReporte();
   void actualizarEscalaVistaPreviaMovil();
 });

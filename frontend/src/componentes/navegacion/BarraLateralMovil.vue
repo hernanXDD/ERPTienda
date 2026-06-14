@@ -211,7 +211,7 @@ onKeyStroke('Escape', () => {
   border-radius: 0 10px 10px 0;
   background: var(--color-fondo-elevado);
   color: var(--color-acento-hover);
-  box-shadow: 2px 0 14px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--color-sombra-elevada);
   transform: translateY(-50%);
   transition: left 0.28s ease;
   -webkit-tap-highlight-color: transparent;
@@ -227,7 +227,7 @@ onKeyStroke('Escape', () => {
   z-index: 58;
   border: none;
   padding: 0;
-  background: rgba(4, 8, 16, 0.62);
+  background: var(--color-scrim);
   backdrop-filter: blur(2px);
   cursor: pointer;
   transition: opacity 0.25s ease;
@@ -249,7 +249,7 @@ onKeyStroke('Escape', () => {
   max-height: 100dvh;
   border-right: 1px solid var(--color-borde);
   background: var(--color-fondo-elevado);
-  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--color-sombra-elevada);
   transform: translateX(-100%);
   transition: transform 0.28s ease;
   padding-top: env(safe-area-inset-top, 0px);
@@ -377,7 +377,7 @@ onKeyStroke('Escape', () => {
 .menu-movil-pie {
   flex-shrink: 0;
   padding: 0.65rem 1rem 0.85rem;
-  border-top: 1px solid rgba(42, 58, 84, 0.4);
+  border-top: 1px solid var(--color-borde);
   text-align: center;
 }
 

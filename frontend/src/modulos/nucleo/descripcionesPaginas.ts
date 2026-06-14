@@ -14,6 +14,8 @@ export const DESCRIPCIONES_PAGINA: Record<string, string> = {
     'Directorio de proveedores con datos de contacto, condiciones de compra y condiciones de pago.',
   'compras-registro':
     'Compras registradas contra proveedores con impacto automático en stock e inventario.',
+  'compras-cuentas-corrientes-proveedor':
+    'Saldos y movimientos con proveedores. Abrí el detalle para filtrar períodos y registrar pagos.',
   'productos-catalogo':
     'Artículos del negocio con variantes por talle y color. El stock y las ventas operan sobre cada variante; el precio de referencia aplica a todo el producto.',
   'productos-categorias':

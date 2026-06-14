@@ -1,0 +1,10 @@
+{
+  "name": "erp-tienda",
+  "private": true,
+  "description": "ERP Tienda — scripts de desarrollo en la raíz",
+  "scripts": {
+    "test": "npm run test --prefix backend && npm run test --prefix frontend",
+    "test:backend": "npm run test --prefix backend",
+    "test:frontend": "npm run test --prefix frontend"
+  }
+}

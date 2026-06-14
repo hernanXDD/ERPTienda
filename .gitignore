@@ -7,12 +7,17 @@ dist-ssr/
 build/
 *.tsbuildinfo
 
-# Entorno y secretos
+# Entorno y secretos (Easypanel/Vercel usan variables en el panel, no archivos .env)
 .env
 .env.*
 !.env.example
 !.env.production.example
 *.local
+*.pem
+*.key
+id_rsa*
+credentials.json
+secrets.json
 
 # Logs
 logs/
@@ -22,7 +27,7 @@ yarn-debug.log*
 pnpm-debug.log*
 
 # IDE / SO / editor
-.vscode/*
+.vscode/
 !.vscode/extensions.json
 .idea/
 .DS_Store
@@ -31,14 +36,23 @@ Thumbs.db
 *~
 .cursor/
 
-# Vercel (deploy local)
+# Deploy local (Vercel CLI, etc.)
 .vercel/
 
-# Prisma / tests
+# Tests y cobertura
 coverage/
 .nyc_output/
+*.lcov
+.vitest/
+
+# Prisma / bases locales
 *.db
 *.db-journal
+
+# Logo subido en runtime (solo se versionan .gitkeep y .gitignore de logo/)
+logo/*
+!logo/.gitignore
+!logo/.gitkeep
 
 # Python (scripts de documentación)
 __pycache__/

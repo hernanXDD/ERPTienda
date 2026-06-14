@@ -14,6 +14,12 @@ export interface Negocio {
   mostrarTwitter: boolean;
   tiktok: string;
   mostrarTiktok: boolean;
+  temaClaroColorAcento: string;
+  temaClaroColorFondo: string;
+  temaClaroColorSuperficie: string;
+  temaClaroColorCabecera: string;
+  temaClaroColorTexto: string;
+  temaClaroColorBorde: string;
   tieneLogo: boolean;
   logoVersion: number | null;
   nombreArchivoLogo: string | null;

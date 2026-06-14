@@ -91,7 +91,11 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   padding: 0.65rem 0.85rem;
   border-radius: var(--radio-control);
   border: 1px solid var(--color-acento-borde);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-acento-suave) 0%,
+    var(--color-fondo-cabecera) 100%
+  );
 }
 
 .cv-total-etiq {

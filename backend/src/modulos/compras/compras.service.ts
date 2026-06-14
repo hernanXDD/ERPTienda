@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { CondicionCompra, Prisma } from '@prisma/client';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { siguienteNumeroComprobante } from '../../comunes/utilidades/numero-comprobante';
 import { validarLineasYTotalComprobante } from '../../comunes/utilidades/validar-totales-comprobante';
@@ -8,6 +8,7 @@ import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { CatalogoService } from '../catalogo/catalogo.service';
+import { CuentaCorrienteProveedorService } from '../cuenta-corriente-proveedor/cuenta-corriente-proveedor.service';
 import { StockService } from '../stock/stock.service';
 import { RegistrarCompraDto } from './dto/registrar-compra.dto';
 
@@ -38,6 +39,7 @@ export class ComprasService {
     private readonly idSecuencia: IdSecuenciaService,
     private readonly stockService: StockService,
     private readonly catalogoService: CatalogoService,
+    private readonly cuentaCorrienteProveedorService: CuentaCorrienteProveedorService,
   ) {}
 
   async listar(): Promise<CompraRegistradaApi[]> {
@@ -73,6 +75,17 @@ export class ComprasService {
     });
     if (!proveedor) throw new NotFoundException('Proveedor no encontrado.');
 
+    let limiteCreditoCompras = 0;
+    if (datos.condicionCompra === CondicionCompra.CUENTA_PROVEEDOR) {
+      if (!proveedor.comprasCreditoHabilitadas) {
+        throw new ConflictException('El proveedor no tiene cuenta corriente habilitada.');
+      }
+      if (!proveedor.habilitado) {
+        throw new ConflictException('El proveedor no está habilitado para operar.');
+      }
+      limiteCreditoCompras = decimalANumero(proveedor.limiteCreditoCompras);
+    }
+
     const compra = await this.prisma.$transaction(async (tx) => {
       const ultima = await tx.compra.findFirst({
         orderBy: { numero: 'desc' },
@@ -81,6 +94,15 @@ export class ComprasService {
       const numero = siguienteNumeroComprobante('C', ultima?.numero ?? null);
       const idCompra = await this.idSecuencia.siguienteCompra(tx);
       const idsLineas = await this.idSecuencia.siguientesCompraLinea(datos.lineas.length, tx);
+
+      if (datos.condicionCompra === CondicionCompra.CUENTA_PROVEEDOR) {
+        await this.cuentaCorrienteProveedorService.validarCreditoDisponibleParaCargo(
+          datos.proveedorId,
+          totalCalculado,
+          limiteCreditoCompras,
+          tx,
+        );
+      }
 
       const creada = await tx.compra.create({
         data: {
@@ -131,6 +153,15 @@ export class ComprasService {
       }
 
       await this.stockService.finalizarAuditoriaStock(tx, idAuditoria);
+
+      if (datos.condicionCompra === CondicionCompra.CUENTA_PROVEEDOR) {
+        await this.cuentaCorrienteProveedorService.registrarCargo(
+          datos.proveedorId,
+          { importe: totalCalculado, descripcion: `Compra ${numero}` },
+          operador.id,
+          tx,
+        );
+      }
 
       return creada;
     });

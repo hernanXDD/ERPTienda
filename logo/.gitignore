@@ -1,4 +1,5 @@
-# Solo un logo en esta carpeta; no versionar archivos subidos.
+# Logos subidos en desarrollo o producción (Easypanel monta volumen en /app/logo).
+# No versionar imágenes; la carpeta debe existir vacía en el repo.
 *
 !.gitignore
-!.gitkeep
+!/.gitkeep

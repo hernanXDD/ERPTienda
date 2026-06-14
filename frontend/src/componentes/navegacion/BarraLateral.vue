@@ -275,7 +275,7 @@ function alSalirMouse() {
 }
 
 .enlace:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-hover-neutro);
   color: var(--color-texto);
 }
 
@@ -293,7 +293,7 @@ function alSalirMouse() {
   flex-shrink: 0;
   margin-top: auto;
   padding: 0.55rem 0.4rem 0.7rem;
-  border-top: 1px solid rgba(42, 58, 84, 0.4);
+  border-top: 1px solid var(--color-borde);
   text-align: center;
   pointer-events: none;
   user-select: none;

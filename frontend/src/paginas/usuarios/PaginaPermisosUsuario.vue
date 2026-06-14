@@ -21,6 +21,7 @@ import {
   ORDEN_CLAVES_MENU_PRINCIPAL,
 } from '../../modulos/nucleo/menuPrincipal';
 import { useGestionUsuariosStore } from '../../stores/gestionUsuarios';
+import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema';
 import { useSesionStore } from '../../stores/sesion';
 import type {
   MenusVisiblesUsuario,
@@ -33,9 +34,19 @@ const descripcionPagina = obtenerDescripcionPagina('usuarios-permisos');
 
 const gestionStore = useGestionUsuariosStore();
 const sesionStore = useSesionStore();
+const configuracionSistemaStore = useConfiguracionSistemaStore();
 const router = useRouter();
 const route = useRoute();
 const { usuarios } = storeToRefs(gestionStore);
+const { parametros: parametrosSistema } = storeToRefs(configuracionSistemaStore);
+
+const movimientoManualHabilitadoEnSistema = computed(
+  () => parametrosSistema.value.movimientoManualStockHabilitado,
+);
+
+function permisoDeshabilitadoPorSistema(clave: keyof PermisosOperativosUsuario): boolean {
+  return clave === 'puedeMoverStockManualmente' && !movimientoManualHabilitadoEnSistema.value;
+}
 
 const mensajeExito = ref('');
 const tipoMensaje = ref<'ok' | 'info' | 'error'>('ok');
@@ -190,6 +201,7 @@ function igualALosGuardados(
   const menusB = menusVisiblesResueltos(permisosB.menusVisibles);
   return (
     permisosA.puedeAjustarStock === permisosB.puedeAjustarStock &&
+    permisosA.puedeMoverStockManualmente === permisosB.puedeMoverStockManualmente &&
     permisosA.puedeRegistrarCompras === permisosB.puedeRegistrarCompras &&
     permisosA.puedeGestionarCatalogoProductos === permisosB.puedeGestionarCatalogoProductos &&
     permisosA.puedeGestionarFichasDeUsuario === permisosB.puedeGestionarFichasDeUsuario &&
@@ -442,7 +454,13 @@ function guardarCambiosPermisos(): void {
                       {{ etiquetaSensibilidadPermiso(permiso.sensibilidad) }}
                     </span>
                   </div>
-                  <p class="perm-item-resumen">{{ permiso.descripcion }}</p>
+                  <p class="perm-item-resumen">
+                    {{
+                      permisoDeshabilitadoPorSistema(permiso.clave)
+                        ? `${permiso.descripcion} Deshabilitado globalmente en Configuración → Sistema.`
+                        : permiso.descripcion
+                    }}
+                  </p>
                 </div>
                 <label class="perm-sw">
                   <input
@@ -451,6 +469,7 @@ function guardarCambiosPermisos(): void {
                     class="perm-sw-input"
                     role="switch"
                     :aria-labelledby="`lbl-p-${permiso.clave}`"
+                    :disabled="permisoDeshabilitadoPorSistema(permiso.clave)"
                   />
                   <span class="perm-sw-ui" aria-hidden="true" />
                 </label>
@@ -468,456 +487,11 @@ function guardarCambiosPermisos(): void {
   </section>
 </template>
 
+<style src="../../estilos/panelGestionPermisos.css"></style>
+
 <style scoped>
-.pg-marco--permisos {
-  --pg-reserva-vertical-vista: clamp(17rem, 38dvh, 24rem);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.perm-kpi-estado {
-  font-size: 0.82rem;
-  letter-spacing: -0.01em;
-}
-
-.perm-aviso-dueno {
-  margin: 0 clamp(1rem, 3vw, 1.65rem);
-  padding: 0.5rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid rgba(234, 179, 8, 0.35);
-  background: rgba(234, 179, 8, 0.08);
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--color-texto-suave);
-}
-
 .perm-select-usuario {
   font-weight: 500;
   min-width: min(100%, 18rem);
-}
-
-.perm-aviso {
-  flex: 1 1 100%;
-  margin: 0;
-  padding: 0.45rem 0.65rem;
-  border-radius: 8px;
-  font-size: 0.84rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.perm-aviso--ok {
-  color: var(--color-exito);
-  background: rgba(52, 211, 153, 0.1);
-  border: 1px solid rgba(52, 211, 153, 0.28);
-}
-
-.perm-aviso--info {
-  color: var(--color-texto-suave);
-  background: rgba(124, 140, 240, 0.08);
-  border: 1px solid rgba(124, 140, 240, 0.22);
-}
-
-.perm-aviso--error {
-  color: var(--color-peligro);
-  background: rgba(251, 113, 133, 0.1);
-  border: 1px solid rgba(251, 113, 133, 0.32);
-}
-
-.perm-ficha {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem 0.85rem;
-  margin: 0.4rem clamp(1rem, 3vw, 1.65rem) 0;
-  padding: 0.45rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--color-borde);
-  background: linear-gradient(
-    155deg,
-    rgba(124, 140, 240, 0.07) 0%,
-    rgba(15, 23, 42, 0.28) 100%
-  );
-}
-
-.perm-ficha-nombre {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--color-texto);
-}
-
-.perm-ficha-login {
-  margin: 0.1rem 0 0;
-  font-size: 0.72rem;
-  color: var(--color-texto-apagado);
-}
-
-.perm-ficha-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  justify-content: flex-end;
-}
-
-.perm-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.16rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  border: 1px solid var(--color-borde);
-  color: var(--color-texto-suave);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.perm-chip--rol {
-  border-color: rgba(124, 140, 240, 0.35);
-  background: rgba(124, 140, 240, 0.12);
-  color: var(--color-texto);
-}
-
-.perm-chip--habilitado {
-  border-color: rgba(74, 222, 128, 0.35);
-  color: var(--color-exito);
-  background: rgba(74, 222, 128, 0.08);
-}
-
-.perm-chip--inhabilitado {
-  border-color: rgba(251, 113, 133, 0.35);
-  color: var(--color-peligro);
-  background: rgba(251, 113, 133, 0.07);
-}
-
-.perm-chip--pendiente {
-  border-color: rgba(234, 179, 8, 0.4);
-  color: #fbbf24;
-  background: rgba(234, 179, 8, 0.1);
-}
-
-.perm-chip--edicion {
-  border-color: rgba(124, 140, 240, 0.38);
-  color: var(--color-acento-hover);
-  background: rgba(124, 140, 240, 0.12);
-}
-
-.perm-cuerpo {
-  border: none;
-  margin: 0;
-  min-width: 0;
-  flex: 1 1 auto;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.58rem;
-  padding: 0.52rem clamp(1rem, 3vw, 1.65rem) 0.72rem;
-  overflow-x: hidden;
-  overflow-y: auto;
-  align-items: stretch;
-}
-
-.perm-cuerpo--solo-lectura {
-  opacity: 0.94;
-}
-
-.perm-cuerpo:disabled .perm-sw-ui {
-  cursor: not-allowed;
-  opacity: 0.72;
-}
-
-@media (max-width: 1023px) {
-  .perm-cuerpo {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow-y: auto;
-  }
-
-  .perm-bloque--menus {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 639px) {
-  .perm-cuerpo {
-    grid-template-columns: 1fr;
-  }
-}
-
-.perm-bloque {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-radius: 10px;
-  border: 1px solid rgba(52, 68, 96, 0.48);
-  background: rgba(14, 20, 34, 0.78);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
-  overflow: hidden;
-}
-
-.perm-bloque--menus {
-  min-height: 0;
-}
-
-.perm-bloque--adm {
-  border-color: rgba(124, 140, 240, 0.2);
-}
-
-.perm-bloque-enc {
-  display: flex;
-  align-items: center;
-  gap: 0.48rem;
-  padding: 0.48rem 0.72rem;
-  border-bottom: 1px solid rgba(52, 68, 96, 0.38);
-  background: rgba(21, 29, 46, 0.38);
-}
-
-.perm-bloque-ico {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.72rem;
-  height: 1.72rem;
-  border-radius: 7px;
-  color: var(--color-acento-hover);
-  background: rgba(124, 140, 240, 0.1);
-  border: 1px solid rgba(124, 140, 240, 0.2);
-}
-
-.perm-bloque-tit {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--color-texto);
-  line-height: 1.2;
-}
-
-.perm-bloque-badge {
-  flex-shrink: 0;
-  padding: 0.14rem 0.46rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-acento-hover);
-  background: rgba(124, 140, 240, 0.1);
-  border: 1px solid rgba(124, 140, 240, 0.24);
-}
-
-.perm-malla-modulos {
-  list-style: none;
-  margin: 0;
-  padding: 0.42rem 0.5rem 0.5rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.32rem;
-  align-content: start;
-}
-
-.perm-lista-acciones {
-  list-style: none;
-  margin: 0;
-  padding: 0.42rem 0.5rem 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.32rem;
-}
-
-.perm-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: flex-start;
-  gap: 0.48rem;
-  padding: 0.42rem 0.52rem;
-  border-radius: 9px;
-  border: 1px solid rgba(42, 58, 84, 0.48);
-  background: rgba(7, 11, 20, 0.38);
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.perm-item--accion {
-  grid-template-columns: 1fr auto;
-  align-items: center;
-}
-
-.perm-item--menu .perm-sw {
-  margin-top: 0.12rem;
-}
-
-.perm-item:hover {
-  border-color: rgba(124, 140, 240, 0.22);
-  background: rgba(124, 140, 240, 0.04);
-}
-
-.perm-item--activo {
-  border-color: rgba(124, 140, 240, 0.28);
-  background: rgba(124, 140, 240, 0.06);
-}
-
-.perm-item--elevada.perm-item--activo {
-  border-color: rgba(234, 179, 8, 0.28);
-  background: rgba(234, 179, 8, 0.05);
-}
-
-.perm-item--critica.perm-item--activo {
-  border-color: rgba(251, 113, 133, 0.3);
-  background: rgba(251, 113, 133, 0.05);
-}
-
-.perm-item-ico {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.72rem;
-  height: 1.72rem;
-  margin-top: 0.06rem;
-  border-radius: 7px;
-  color: var(--color-texto-suave);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(42, 58, 84, 0.55);
-}
-
-.perm-item--activo .perm-item-ico {
-  color: var(--color-acento-hover);
-  border-color: rgba(124, 140, 240, 0.24);
-  background: rgba(124, 140, 240, 0.1);
-}
-
-.perm-item-info {
-  min-width: 0;
-}
-
-.perm-item-cab {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.28rem 0.42rem;
-  min-width: 0;
-}
-
-.perm-item-tit {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-texto);
-  line-height: 1.28;
-}
-
-.perm-item-resumen {
-  margin: 0.14rem 0 0;
-  font-size: 0.71rem;
-  line-height: 1.35;
-  color: var(--color-texto-apagado);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.perm-item-nivel {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.08rem 0.34rem;
-  border-radius: 999px;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border: 1px solid var(--color-borde);
-  color: var(--color-texto-apagado);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.perm-item-nivel--elevada {
-  border-color: rgba(234, 179, 8, 0.32);
-  color: #fbbf24;
-  background: rgba(234, 179, 8, 0.07);
-}
-
-.perm-item-nivel--critica {
-  border-color: rgba(251, 113, 133, 0.32);
-  color: var(--color-peligro);
-  background: rgba(251, 113, 133, 0.07);
-}
-
-.perm-sw {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.perm-sw-input {
-  position: absolute;
-  inset: 0;
-  width: 2.2rem;
-  height: 1.2rem;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
-}
-
-.perm-sw-ui {
-  position: relative;
-  display: block;
-  width: 2.2rem;
-  height: 1.2rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--color-borde);
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
-}
-
-.perm-sw-ui::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0.14rem;
-  width: 0.86rem;
-  height: 0.86rem;
-  border-radius: 50%;
-  background: var(--color-texto-apagado);
-  transform: translate(0, -50%);
-  transition:
-    transform 0.18s ease,
-    background 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-}
-
-.perm-sw-input:focus-visible + .perm-sw-ui {
-  outline: 2px solid var(--color-acento);
-  outline-offset: 2px;
-}
-
-.perm-sw-input:checked + .perm-sw-ui {
-  background: rgba(124, 140, 240, 0.38);
-  border-color: rgba(124, 140, 240, 0.58);
-}
-
-.perm-sw-input:checked + .perm-sw-ui::after {
-  transform: translate(0.96rem, -50%);
-  background: var(--color-acento-hover);
-}
-
-@media (max-width: 520px) {
-  .perm-malla-modulos {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

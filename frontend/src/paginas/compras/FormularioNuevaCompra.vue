@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import type { IdCondicionCompra, LineaCompraRegistro } from '../../tipos/compraRegistrada';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
+import { useCuentaCorrienteProveedorStore } from '../../stores/cuentaCorrienteProveedor';
 import { useProveedoresStore } from '../../stores/proveedores';
 import { useRegistroComprasStore } from '../../stores/registroCompras';
 import { useStockStore } from '../../stores/stock';
@@ -11,6 +12,7 @@ const emit = defineEmits<{
 }>();
 
 const proveedoresStore = useProveedoresStore();
+const cuentaCorrienteProveedorStore = useCuentaCorrienteProveedorStore();
 const registroStore = useRegistroComprasStore();
 const stockStore = useStockStore();
 
@@ -71,6 +73,34 @@ const totalCalculado = computed(() => {
   return suma;
 });
 
+const proveedorSeleccionado = computed(() =>
+  proveedorSeleccionadoId.value
+    ? proveedoresStore.proveedorPorId(proveedorSeleccionadoId.value) ?? null
+    : null,
+);
+
+const puedeCuentaProveedor = computed(
+  () =>
+    Boolean(
+      proveedorSeleccionado.value?.habilitado &&
+        proveedorSeleccionado.value.comprasCreditoHabilitadas,
+    ),
+);
+
+const creditoDisponibleProveedor = computed(() => {
+  const p = proveedorSeleccionado.value;
+  if (!p) return 0;
+  const saldo = cuentaCorrienteProveedorStore.saldoProveedorCacheado(p.id);
+  return p.limiteCreditoCompras - saldo;
+});
+
+const excedeCreditoCuentaProveedor = computed(() => {
+  if (condicionCompra.value !== 'CUENTA_PROVEEDOR') return false;
+  const p = proveedorSeleccionado.value;
+  if (!p || p.limiteCreditoCompras <= 0) return false;
+  return totalCalculado.value > creditoDisponibleProveedor.value + 0.001;
+});
+
 function construirLineasValidadas(): LineaCompraRegistro[] | null {
   const resultado: LineaCompraRegistro[] = [];
   for (const ln of lineasEditable.value) {
@@ -116,6 +146,17 @@ async function guardar() {
     mensajeError.value =
       'Agregá al menos un ítem con nombre, cantidad entera mayor a cero y costo unitario válido.';
     return;
+  }
+
+  if (condicionCompra.value === 'CUENTA_PROVEEDOR') {
+    if (!proveedor.comprasCreditoHabilitadas) {
+      mensajeError.value = 'Este proveedor no tiene cuenta corriente habilitada.';
+      return;
+    }
+    if (excedeCreditoCuentaProveedor.value) {
+      mensajeError.value = `La compra supera el crédito disponible (${formatoPeso.format(Math.max(0, creditoDisponibleProveedor.value))}).`;
+      return;
+    }
   }
 
   const totalLineas = lineas.reduce((a, ln) => a + ln.subtotal, 0);
@@ -170,11 +211,24 @@ function cancelar() {
           <input v-model="condicionCompra" type="radio" value="CONTADO" />
           Contado
         </label>
-        <label class="fnc-radio">
-          <input v-model="condicionCompra" type="radio" value="CUENTA_PROVEEDOR" />
+        <label class="fnc-radio" :class="{ 'fnc-radio--deshabilitado': !puedeCuentaProveedor }">
+          <input
+            v-model="condicionCompra"
+            type="radio"
+            value="CUENTA_PROVEEDOR"
+            :disabled="!puedeCuentaProveedor"
+          />
           Cuenta proveedor
         </label>
       </div>
+      <p v-if="condicionCompra === 'CUENTA_PROVEEDOR' && proveedorSeleccionado" class="fnc-aviso">
+        Crédito disponible:
+        <strong>{{ formatoPeso.format(Math.max(0, creditoDisponibleProveedor)) }}</strong>
+        <span v-if="proveedorSeleccionado.limiteCreditoCompras <= 0"> (sin límite configurado)</span>
+      </p>
+      <p v-else-if="!puedeCuentaProveedor && proveedorSeleccionadoId" class="fnc-aviso">
+        El proveedor elegido no tiene cuenta corriente habilitada.
+      </p>
     </fieldset>
 
     <div class="fnc-lineas">
@@ -440,8 +494,8 @@ function cancelar() {
   align-items: baseline;
   padding: 0.5rem 0.65rem;
   border-radius: var(--radio-control);
-  background: rgba(124, 140, 240, 0.08);
-  border: 1px solid rgba(124, 140, 240, 0.25);
+  background: var(--color-acento-suave);
+  border: 1px solid var(--color-acento-borde);
   font-size: 0.86rem;
   flex-shrink: 0;
 }
@@ -454,7 +508,7 @@ function cancelar() {
 .fnc-error {
   margin: 0;
   font-size: 0.82rem;
-  color: #f06161;
+  color: var(--color-peligro);
 }
 
 .fnc-aviso {
@@ -493,7 +547,7 @@ function cancelar() {
   color: var(--color-texto-sobre-acento);
   background: linear-gradient(180deg, var(--color-acento-hover), var(--color-acento));
   cursor: pointer;
-  box-shadow: 0 3px 12px rgba(91, 110, 230, 0.3);
+  box-shadow: var(--color-sombra-elevada);
 }
 
 .fnc-btn-pri:hover {

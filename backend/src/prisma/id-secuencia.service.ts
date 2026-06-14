@@ -93,6 +93,16 @@ export class IdSecuenciaService {
     });
   }
 
+  siguienteMovimientoCuentaCorrienteProveedor(cliente: ClienteTransaccion = this.prisma) {
+    return obtenerSiguienteIdEntidad(async () => {
+      const fila = await cliente.movimientoCuentaCorrienteProveedor.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true },
+      });
+      return fila?.id ?? null;
+    });
+  }
+
   siguienteProveedor(cliente: ClienteTransaccion = this.prisma) {
     return obtenerSiguienteIdEntidad(async () => {
       const fila = await cliente.proveedor.findFirst({

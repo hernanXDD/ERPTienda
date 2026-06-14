@@ -14,6 +14,7 @@ import {
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { VARIABLES_TEMA_LOGIN } from '../../modulos/tema/variablesTemaLogin';
 import { useSesionStore } from '../../stores/sesion';
 
 const router = useRouter();
@@ -25,6 +26,8 @@ const contrasena = ref('');
 const cargando = ref(false);
 const mensajeError = ref('');
 const mostrarContrasena = ref(false);
+
+const estiloPaginaLogin = VARIABLES_TEMA_LOGIN;
 
 const caracteristicas = [
   { icono: ShoppingCart, texto: 'Ventas, facturación y cuentas corrientes' },
@@ -71,7 +74,7 @@ async function enviar() {
 </script>
 
 <template>
-  <div class="pagina">
+  <div class="pagina" :style="estiloPaginaLogin">
     <section class="presentacion" aria-labelledby="titulo-marca">
       <div class="presentacion-contenido">
         <p class="marca-etiqueta">Sistema de gestión</p>
@@ -164,7 +167,9 @@ async function enviar() {
   min-height: 100dvh;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: var(--color-fondo);
+  background: var(--login-color-fondo);
+  color: var(--login-color-texto);
+  color-scheme: dark;
 }
 
 .presentacion {
@@ -176,7 +181,7 @@ async function enviar() {
     radial-gradient(90% 70% at 10% 20%, rgba(124, 140, 240, 0.22), transparent 55%),
     radial-gradient(60% 50% at 80% 90%, rgba(91, 110, 230, 0.12), transparent 50%),
     linear-gradient(145deg, #0a0f1c 0%, #111a2e 45%, #0c1222 100%);
-  border-right: 1px solid var(--color-borde);
+  border-right: 1px solid var(--login-color-borde);
 }
 
 .presentacion-contenido {
@@ -190,7 +195,7 @@ async function enviar() {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-acento-hover);
+  color: var(--login-color-acento-hover);
 }
 
 .marca-titulo {
@@ -205,7 +210,7 @@ async function enviar() {
   margin: 0 0 2rem;
   font-size: 1.05rem;
   line-height: 1.6;
-  color: var(--color-texto-suave);
+  color: var(--login-color-texto-suave);
 }
 
 .lista-caracteristicas {
@@ -223,7 +228,7 @@ async function enviar() {
   gap: 0.75rem;
   font-size: 0.95rem;
   line-height: 1.45;
-  color: var(--color-texto-suave);
+  color: var(--login-color-texto-suave);
 }
 
 .icono-caracteristica {
@@ -231,7 +236,7 @@ async function enviar() {
   width: 1.15rem;
   height: 1.15rem;
   margin-top: 0.15rem;
-  color: var(--color-acento);
+  color: var(--login-color-acento);
 }
 
 .presentacion-pie {
@@ -240,7 +245,7 @@ async function enviar() {
   border-top: 1px solid rgba(42, 58, 84, 0.7);
   font-size: 0.88rem;
   line-height: 1.5;
-  color: var(--color-texto-apagado);
+  color: var(--login-color-texto-apagado);
 }
 
 .acceso {
@@ -248,17 +253,17 @@ async function enviar() {
   align-items: center;
   justify-content: center;
   padding: clamp(1.5rem, 4vw, 3rem);
-  background: var(--color-fondo);
+  background: var(--login-color-fondo);
 }
 
 .panel-login {
   width: 100%;
   max-width: 26rem;
   padding: 2rem 2rem 2.25rem;
-  background: var(--color-fondo-elevado);
-  border: 1px solid var(--color-borde);
+  background: var(--login-color-fondo-elevado);
+  border: 1px solid var(--login-color-borde);
   border-radius: 16px;
-  box-shadow: var(--sombra-suave);
+  box-shadow: var(--login-color-sombra-suave);
 }
 
 .cabecera-login {
@@ -276,7 +281,7 @@ async function enviar() {
   margin: 0;
   font-size: 0.92rem;
   line-height: 1.45;
-  color: var(--color-texto-apagado);
+  color: var(--login-color-texto-apagado);
 }
 
 .formulario {
@@ -295,7 +300,7 @@ async function enviar() {
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--color-texto-suave);
+  color: var(--login-color-texto-suave);
 }
 
 .entrada-envoltorio {
@@ -304,9 +309,9 @@ async function enviar() {
   gap: 0.65rem;
   min-height: 3rem;
   padding: 0 0.85rem;
-  border: 1px solid var(--color-borde);
+  border: 1px solid var(--login-color-borde);
   border-radius: 12px;
-  background: var(--color-fondo-cabecera);
+  background: var(--login-color-fondo-cabecera);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease,
@@ -314,21 +319,21 @@ async function enviar() {
 }
 
 .entrada-envoltorio:focus-within {
-  border-color: var(--color-acento-borde);
-  box-shadow: 0 0 0 3px var(--color-acento-suave);
-  background: var(--color-fondo-elevado);
+  border-color: var(--login-color-acento-borde);
+  box-shadow: 0 0 0 3px var(--login-color-acento-suave);
+  background: var(--login-color-fondo-elevado);
 }
 
 .entrada-icono {
   flex-shrink: 0;
   width: 1.1rem;
   height: 1.1rem;
-  color: var(--color-texto-apagado);
+  color: var(--login-color-texto-apagado);
   transition: color 0.15s ease;
 }
 
 .entrada-envoltorio:focus-within .entrada-icono {
-  color: var(--color-acento);
+  color: var(--login-color-acento);
 }
 
 .entrada {
@@ -337,13 +342,13 @@ async function enviar() {
   border: none;
   padding: 0.65rem 0;
   background: transparent;
-  color: var(--color-texto);
+  color: var(--login-color-texto);
   font-size: 0.95rem;
   line-height: 1.4;
 }
 
 .entrada::placeholder {
-  color: var(--color-texto-apagado);
+  color: var(--login-color-texto-apagado);
 }
 
 .entrada:focus {
@@ -370,12 +375,12 @@ async function enviar() {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--color-texto-apagado);
+  color: var(--login-color-texto-apagado);
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .boton-visibilidad:hover:not(:disabled) {
-  color: var(--color-texto-suave);
+  color: var(--login-color-texto-suave);
   background: rgba(124, 140, 240, 0.08);
 }
 
@@ -395,7 +400,7 @@ async function enviar() {
   border-radius: 10px;
   background: rgba(251, 113, 133, 0.1);
   border: 1px solid rgba(251, 113, 133, 0.35);
-  color: var(--color-peligro);
+  color: var(--login-color-peligro);
   font-size: 0.875rem;
   line-height: 1.4;
 }
@@ -406,8 +411,8 @@ async function enviar() {
   border: none;
   border-radius: 12px;
   padding: 0.75rem 1rem;
-  background: linear-gradient(180deg, var(--color-acento) 0%, var(--color-acento-intenso) 100%);
-  color: var(--color-texto-sobre-acento);
+  background: linear-gradient(180deg, var(--login-color-acento) 0%, var(--login-color-acento-intenso) 100%);
+  color: var(--login-color-texto-sobre-acento);
   font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -415,7 +420,7 @@ async function enviar() {
 }
 
 .boton-principal:hover:not(:disabled) {
-  background: linear-gradient(180deg, var(--color-acento-hover) 0%, var(--color-acento) 100%);
+  background: linear-gradient(180deg, var(--login-color-acento-hover) 0%, var(--login-color-acento) 100%);
   box-shadow: 0 4px 20px rgba(124, 140, 240, 0.25);
 }
 
@@ -436,7 +441,7 @@ async function enviar() {
 
   .presentacion {
     border-right: none;
-    border-bottom: 1px solid var(--color-borde);
+    border-bottom: 1px solid var(--login-color-borde);
     padding: 2rem 1.5rem;
   }
 

@@ -112,6 +112,15 @@ export const catalogoReportes: DefinicionReporte[] = [
     ordenEnGrupo: 1,
   },
   {
+    id: 'cuentas-corrientes-proveedor',
+    titulo: 'Cuentas corrientes proveedores',
+    descripcion: 'Saldos, movimientos del período y límites por proveedor.',
+    nombreRuta: 'reportes-cuentas-corrientes-proveedor',
+    categoria: 'compras',
+    disponible: true,
+    ordenEnGrupo: 2,
+  },
+  {
     id: 'productos-mas-vendidos',
     titulo: 'Productos más vendidos',
     descripcion: 'Ranking por unidades e importe en el período.',

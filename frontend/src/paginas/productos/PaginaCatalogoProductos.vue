@@ -954,8 +954,8 @@ onMounted(() => {
   margin: 0 0 1rem;
   padding: 0.65rem 0.82rem;
   border-radius: 10px;
-  border: 1px solid rgba(124, 140, 240, 0.28);
-  background: rgba(124, 140, 240, 0.06);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   font-size: 0.84rem;
   line-height: 1.45;
   color: var(--color-texto-suave);
@@ -1078,14 +1078,14 @@ onMounted(() => {
 
 .cat-prod-aviso--ok {
   color: var(--color-exito);
-  background: rgba(52, 211, 153, 0.1);
-  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: var(--color-exito-suave);
+  border: 1px solid var(--color-exito-borde);
 }
 
 .cat-prod-aviso--error {
   color: var(--color-peligro);
-  background: rgba(251, 113, 133, 0.1);
-  border: 1px solid rgba(251, 113, 133, 0.32);
+  background: var(--color-peligro-suave);
+  border: 1px solid var(--color-peligro-borde);
 }
 
 .cat-prod-cel-nombre {
@@ -1115,8 +1115,8 @@ onMounted(() => {
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--color-texto-suave);
-  background: rgba(124, 140, 240, 0.1);
-  border: 1px solid rgba(124, 140, 240, 0.22);
+  background: var(--color-acento-suave);
+  border: 1px solid var(--color-acento-borde);
   white-space: nowrap;
 }
 
@@ -1151,13 +1151,13 @@ onMounted(() => {
 }
 
 .cat-prod-btn-peligro {
-  border-color: rgba(251, 113, 133, 0.45);
+  border-color: var(--color-peligro-borde);
   color: var(--color-peligro);
 }
 
 .cat-prod-btn-peligro:hover {
-  background: rgba(251, 113, 133, 0.1);
-  border-color: rgba(251, 113, 133, 0.55);
+  background: var(--color-peligro-suave);
+  border-color: var(--color-peligro-borde);
 }
 
 .cat-prod-link-vacio {
@@ -1183,13 +1183,11 @@ onMounted(() => {
   border-radius: 14px;
   background: var(--color-fondo-elevado);
   color: var(--color-texto);
-  box-shadow:
-    0 4px 28px rgba(0, 0, 0, 0.32),
-    0 0 1px rgba(124, 140, 240, 0.15);
+  box-shadow: var(--sombra-suave);
 }
 
 .cat-prod-modal::backdrop {
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-scrim);
 }
 
 .cat-prod-modal-panel {
@@ -1206,11 +1204,7 @@ onMounted(() => {
   gap: 0.75rem;
   padding: 1.15rem clamp(1rem, 3vw, 1.35rem) 0.85rem;
   border-bottom: 1px solid var(--color-borde);
-  background: linear-gradient(
-    165deg,
-    rgba(7, 11, 20, 0.35) 0%,
-    rgba(21, 29, 46, 0.15) 100%
-  );
+  background: var(--color-fondo-cabecera);
 }
 
 .cat-prod-modal-titulo {
@@ -1318,8 +1312,8 @@ onMounted(() => {
   margin-top: 0.75rem;
   padding: 0.75rem;
   border-radius: 12px;
-  border: 1px solid rgba(124, 140, 240, 0.18);
-  background: rgba(124, 140, 240, 0.04);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
 }
 
 @media (min-width: 720px) {
@@ -1367,7 +1361,7 @@ onMounted(() => {
   margin: 0;
   font-weight: 600;
   color: var(--color-texto-suave);
-  background: rgba(7, 11, 20, 0.35);
+  background: var(--color-scrim);
   border-style: dashed;
   cursor: default;
 }
@@ -1378,20 +1372,20 @@ onMounted(() => {
 
 .cat-prod-valor-ref--bajo {
   color: var(--color-peligro);
-  border-color: rgba(251, 113, 133, 0.35);
-  background: rgba(251, 113, 133, 0.06);
+  border-color: var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
 }
 
 .cat-prod-valor-ref--medio {
-  color: #fbbf24;
-  border-color: rgba(234, 179, 8, 0.35);
-  background: rgba(234, 179, 8, 0.06);
+  color: var(--color-advertencia);
+  border-color: var(--color-advertencia-borde);
+  background: var(--color-advertencia-suave);
 }
 
 .cat-prod-valor-ref--alto {
   color: var(--color-exito);
-  border-color: rgba(74, 222, 128, 0.35);
-  background: rgba(74, 222, 128, 0.06);
+  border-color: var(--color-exito-borde);
+  background: var(--color-exito-suave);
 }
 
 .cat-prod-textarea {
@@ -1439,7 +1433,7 @@ onMounted(() => {
   gap: 0.45rem;
   align-items: end;
   padding-bottom: 0.45rem;
-  border-bottom: 1px dashed rgba(42, 58, 84, 0.45);
+  border-bottom: 1px dashed var(--color-borde);
 }
 
 .cat-prod-var-fila:last-child {
@@ -1506,12 +1500,12 @@ onMounted(() => {
 }
 
 .cat-prod-var-accion--quitar {
-  border-color: rgba(251, 113, 133, 0.4);
+  border-color: var(--color-peligro-borde);
   color: var(--color-peligro);
 }
 
 .cat-prod-var-accion--quitar:hover:not(:disabled) {
-  background: rgba(251, 113, 133, 0.1);
+  background: var(--color-peligro-suave);
 }
 
 .cat-prod-var-lab {

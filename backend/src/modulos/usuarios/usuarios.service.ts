@@ -11,6 +11,7 @@ import { RONDAS_BCRYPT } from '../../comunes/seguridad/bcrypt.config';
 import {
   menusVisiblesResueltos,
   permisosPorDefectoSegunRol,
+  permisosOperativosResueltos,
   type PermisosOperativosUsuario,
 } from '../../comunes/tipos/permisos-usuario';
 import {
@@ -65,7 +66,10 @@ export class UsuariosService {
       contrasenaEstaBlanqueada: usuario.contrasenaEstaBlanqueada,
       rol: rolDesdeBaseDeDatos(usuario.rol),
       habilitado: usuario.habilitado,
-      permisos: usuario.permisosJson as PermisosOperativosUsuario,
+      permisos: permisosOperativosResueltos(
+        usuario.rol,
+        (usuario.permisosJson ?? {}) as Partial<PermisosOperativosUsuario>,
+      ),
     };
   }
 

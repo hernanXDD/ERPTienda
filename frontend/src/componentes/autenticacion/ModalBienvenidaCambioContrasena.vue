@@ -208,7 +208,7 @@ async function enviar() {
 }
 
 .modal-bienvenida::backdrop {
-  background: rgba(7, 11, 20, 0.82);
+  background: var(--color-scrim);
   backdrop-filter: blur(4px);
 }
 
@@ -217,7 +217,7 @@ async function enviar() {
   background: var(--color-fondo-elevado);
   border: 1px solid var(--color-borde);
   border-radius: 16px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--color-sombra-elevada);
 }
 
 .modal-encabezado {
@@ -346,7 +346,7 @@ async function enviar() {
 
 .boton-visibilidad:hover:not(:disabled) {
   color: var(--color-texto-suave);
-  background: rgba(124, 140, 240, 0.08);
+  background: var(--color-acento-suave);
 }
 
 .icono-visibilidad {
@@ -358,8 +358,8 @@ async function enviar() {
   margin: 0;
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
-  background: rgba(251, 113, 133, 0.1);
-  border: 1px solid rgba(251, 113, 133, 0.35);
+  background: var(--color-peligro-suave);
+  border: 1px solid var(--color-peligro-borde);
   color: var(--color-peligro);
   font-size: 0.875rem;
 }

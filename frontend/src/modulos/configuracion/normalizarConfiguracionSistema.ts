@@ -28,6 +28,7 @@ export function normalizarConfiguracionSistemaEditable(
     porcentajeGananciaSugerida: normalizarPorcentajeGananciaSugerida(datos.porcentajeGananciaSugerida),
     diasDeudaCuentaCorriente: normalizarDiasDeudaCuentaCorriente(datos.diasDeudaCuentaCorriente),
     stockMinimoAlerta: normalizarStockMinimoAlerta(datos.stockMinimoAlerta),
+    movimientoManualStockHabilitado: datos.movimientoManualStockHabilitado === true,
   };
 }
 

@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
 import { LimiteIntentosLoginGuard } from '../../comunes/guards/limite-intentos-login.guard';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { AutenticacionService } from './autenticacion.service';
+import { ActualizarPreferenciasAparienciaDto } from './dto/actualizar-preferencias-apariencia.dto';
 import { CambioContrasenaInicialDto } from './dto/cambio-contrasena-inicial.dto';
 import { InicioSesionDto } from './dto/inicio-sesion.dto';
 
@@ -39,5 +40,17 @@ export class AutenticacionController {
     @Body() datos: CambioContrasenaInicialDto,
   ) {
     return this.autenticacionService.cambiarContrasenaInicial(usuario, datos.contrasenaNueva);
+  }
+
+  @Patch('preferencias-apariencia')
+  @UseGuards(JwtAuthGuard)
+  actualizarPreferenciasApariencia(
+    @UsuarioSesionActual() usuario: UsuarioSesion,
+    @Body() datos: ActualizarPreferenciasAparienciaDto,
+  ) {
+    return this.autenticacionService.actualizarPreferenciasApariencia(
+      usuario,
+      datos.modoOscuroHabilitado,
+    );
   }
 }

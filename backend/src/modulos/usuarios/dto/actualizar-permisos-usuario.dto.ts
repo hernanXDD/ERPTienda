@@ -33,6 +33,9 @@ export class ActualizarPermisosUsuarioDto implements PermisosOperativosUsuario {
   puedeAjustarStock!: boolean;
 
   @IsBoolean()
+  puedeMoverStockManualmente!: boolean;
+
+  @IsBoolean()
   puedeRegistrarCompras!: boolean;
 
   @IsBoolean()
@@ -43,6 +46,9 @@ export class ActualizarPermisosUsuarioDto implements PermisosOperativosUsuario {
 
   @IsBoolean()
   puedeGestionarCuentaCorriente!: boolean;
+
+  @IsBoolean()
+  puedeGestionarCuentaCorrienteProveedor!: boolean;
 
   @IsBoolean()
   puedeRegistrarVentas!: boolean;

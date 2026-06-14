@@ -898,7 +898,7 @@ function limpiarFiltros() {
 
 .lv-fila:hover,
 .lv-fila:focus-visible {
-  background: rgba(124, 140, 240, 0.07);
+  background: var(--color-fila-hover);
   outline: none;
 }
 
@@ -931,7 +931,7 @@ function limpiarFiltros() {
   letter-spacing: 0.02em;
   color: var(--color-acento-hover);
   background: var(--color-acento-suave);
-  border: 1px solid rgba(124, 140, 240, 0.22);
+  border: 1px solid var(--color-acento-borde);
 }
 
 .lv-cli {
@@ -955,28 +955,28 @@ function limpiarFiltros() {
 }
 
 .lv-chip--efectivo {
-  color: #86efac;
-  background: rgba(74, 222, 128, 0.12);
-  border-color: rgba(74, 222, 128, 0.28);
+  color: var(--color-exito);
+  background: var(--color-exito-suave);
+  border-color: var(--color-exito-borde);
 }
 
 .lv-chip--debito,
 .lv-chip--credito {
-  color: #a5b4fc;
-  background: rgba(124, 140, 240, 0.14);
-  border-color: rgba(124, 140, 240, 0.32);
+  color: var(--color-acento-hover);
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
 }
 
 .lv-chip--transferencia {
-  color: #c4b5fd;
-  background: rgba(167, 139, 250, 0.12);
-  border-color: rgba(167, 139, 250, 0.3);
+  color: var(--color-acento-hover);
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
 }
 
 .lv-chip--cuenta-corriente {
-  color: #fcd34d;
-  background: rgba(251, 191, 36, 0.1);
-  border-color: rgba(251, 191, 36, 0.28);
+  color: var(--color-advertencia);
+  background: var(--color-advertencia-suave);
+  border-color: var(--color-advertencia-borde);
 }
 
 .lv-der {
@@ -1037,8 +1037,8 @@ function limpiarFiltros() {
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(251, 113, 133, 0.35);
-  background: rgba(251, 113, 133, 0.1);
+  border: 1px solid var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
   color: var(--color-peligro);
   font-size: 0.9rem;
 }
@@ -1085,7 +1085,7 @@ function limpiarFiltros() {
 }
 
 .lv-modal::backdrop {
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--color-scrim);
   backdrop-filter: blur(4px);
 }
 
@@ -1096,7 +1096,7 @@ function limpiarFiltros() {
   border-radius: 16px;
   overflow: hidden;
   background: var(--color-fondo-elevado);
-  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--color-sombra-elevada);
 }
 
 .lv-doc-cab {
@@ -1195,7 +1195,7 @@ function limpiarFiltros() {
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
   border: 1px solid var(--color-borde);
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--color-fondo-sutil);
 }
 
 .lv-doc-tarjeta-ico {
@@ -1305,7 +1305,7 @@ function limpiarFiltros() {
   font-variant-numeric: tabular-nums;
   color: var(--color-acento-hover);
   background: var(--color-acento-suave);
-  border: 1px solid rgba(124, 140, 240, 0.25);
+  border: 1px solid var(--color-acento-borde);
 }
 
 .lv-linea-cuerpo {
@@ -1339,7 +1339,7 @@ function limpiarFiltros() {
   border-radius: 4px;
   font-weight: 700;
   color: var(--color-texto);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-hover-neutro);
 }
 
 .lv-linea-x,
@@ -1361,7 +1361,7 @@ function limpiarFiltros() {
   padding: 0.65rem 0.8rem;
   border-radius: 10px;
   border: 1px dashed var(--color-borde);
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--color-fondo-sutil);
 }
 
 .lv-doc-obs-etiq {
@@ -1386,8 +1386,8 @@ function limpiarFiltros() {
   margin-top: 0.15rem;
   padding: 0.65rem 0.8rem;
   border-radius: 10px;
-  border: 1px solid rgba(124, 140, 240, 0.35);
-  background: rgba(124, 140, 240, 0.08);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -1404,7 +1404,7 @@ function limpiarFiltros() {
 
 .lv-doc-totales-fila--final {
   padding-top: 0.45rem;
-  border-top: 1px solid rgba(124, 140, 240, 0.28);
+  border-top: 1px solid var(--color-acento-borde);
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--color-texto);
@@ -1576,13 +1576,13 @@ function limpiarFiltros() {
 }
 
 .lv-estado-fact--pend {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-advertencia-suave);
+  color: var(--color-advertencia);
 }
 
 .lv-estado-fact--ok {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--color-exito-suave);
+  color: var(--color-exito);
 }
 
 .lv-cel-fact {
@@ -1621,9 +1621,9 @@ function limpiarFiltros() {
   margin: 0;
   padding: 0.65rem 0.85rem 0.65rem 1.5rem;
   border-radius: 10px;
-  border: 1px solid rgba(248, 113, 113, 0.35);
-  background: rgba(248, 113, 113, 0.08);
-  color: #fca5a5;
+  border: 1px solid var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
+  color: var(--color-peligro);
   font-size: 0.82rem;
   list-style: disc;
 }
@@ -1651,7 +1651,7 @@ function limpiarFiltros() {
 }
 
 .lv-estado-fact--trans {
-  background: rgba(124, 140, 240, 0.12);
+  background: var(--color-acento-suave);
   color: var(--color-texto-suave);
   border: 1px solid var(--color-borde);
 }
@@ -1676,12 +1676,12 @@ function limpiarFiltros() {
   height: 4.5rem;
   margin: 0 auto 0.85rem;
   border-radius: 999px;
-  background: rgba(52, 211, 153, 0.12);
-  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: var(--color-exito-suave);
+  border: 1px solid var(--color-exito-borde);
 }
 
 .lv-exito-ico {
-  color: #34d399;
+  color: var(--color-exito);
 }
 
 .lv-exito-tit {

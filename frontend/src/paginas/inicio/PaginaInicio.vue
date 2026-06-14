@@ -400,8 +400,8 @@ const etiquetaRolSesion = computed(() => {
   margin: 0 clamp(1rem, 3vw, 1.65rem) 0.85rem;
   padding: 0.8rem 1rem;
   border-radius: var(--radio-control);
-  border: 1px solid rgba(251, 191, 36, 0.38);
-  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid var(--color-advertencia-borde);
+  background: var(--color-advertencia-suave);
 }
 
 .ini-aviso-config-txt {
@@ -503,18 +503,18 @@ const etiquetaRolSesion = computed(() => {
 }
 
 .ini-alerta--crit {
-  border-color: rgba(251, 113, 133, 0.35);
-  background: rgba(251, 113, 133, 0.08);
+  border-color: var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
 }
 
 .ini-alerta--adv {
-  border-color: rgba(251, 191, 36, 0.32);
-  background: rgba(251, 191, 36, 0.07);
+  border-color: var(--color-advertencia-borde);
+  background: var(--color-advertencia-suave);
 }
 
 .ini-alerta--cc {
-  border-color: rgba(124, 140, 240, 0.32);
-  background: rgba(124, 140, 240, 0.07);
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
 }
 
 .ini-alerta-txt {
@@ -558,8 +558,8 @@ const etiquetaRolSesion = computed(() => {
   margin: 0;
   padding: 0.75rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid rgba(52, 211, 153, 0.28);
-  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid var(--color-exito-borde);
+  background: var(--color-exito-suave);
   font-size: 0.88rem;
   line-height: 1.45;
   color: var(--color-exito);
@@ -660,8 +660,8 @@ const etiquetaRolSesion = computed(() => {
 }
 
 .ini-item-link:hover {
-  background: rgba(124, 140, 240, 0.07);
-  border-color: rgba(124, 140, 240, 0.2);
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
 }
 
 .ini-item-izq {

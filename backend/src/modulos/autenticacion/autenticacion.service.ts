@@ -57,6 +57,7 @@ export class AutenticacionService {
       usuario.nombreUsuario,
       usuario.rol,
       usuario.debeCambiarContrasena,
+      usuario.modoOscuroHabilitado,
     );
 
     const payload: PayloadJwt = {
@@ -86,6 +87,29 @@ export class AutenticacionService {
         rol: rolDesdeBaseDeDatos(registro.rol),
         permisos,
         debeCambiarContrasena: registro.debeCambiarContrasena,
+        modoOscuroHabilitado: registro.modoOscuroHabilitado,
+      },
+    };
+  }
+
+  async actualizarPreferenciasApariencia(
+    usuarioSesion: UsuarioSesion,
+    modoOscuroHabilitado: boolean,
+  ): Promise<RespuestaSesionActual> {
+    const actualizado = await this.prisma.usuario.update({
+      where: { id: usuarioSesion.id },
+      data: { modoOscuroHabilitado },
+    });
+
+    const permisos = await this.permisosUsuario.permisosDeUsuario(actualizado.id);
+    return {
+      usuario: {
+        id: actualizado.id,
+        nombreUsuario: actualizado.nombreUsuario,
+        rol: rolDesdeBaseDeDatos(actualizado.rol),
+        permisos,
+        debeCambiarContrasena: actualizado.debeCambiarContrasena,
+        modoOscuroHabilitado: actualizado.modoOscuroHabilitado,
       },
     };
   }
@@ -125,6 +149,7 @@ export class AutenticacionService {
         rol: rolDesdeBaseDeDatos(actualizado.rol),
         permisos,
         debeCambiarContrasena: false,
+        modoOscuroHabilitado: actualizado.modoOscuroHabilitado,
       },
     };
   }
@@ -139,6 +164,7 @@ export class AutenticacionService {
     nombreUsuario: string,
     rolDb: Parameters<typeof rolDesdeBaseDeDatos>[0],
     debeCambiarContrasena: boolean,
+    modoOscuroHabilitado: boolean,
   ): Promise<UsuarioSesion> {
     const permisos = await this.permisosUsuario.permisosDeUsuario(id);
     return {
@@ -147,6 +173,7 @@ export class AutenticacionService {
       rol: rolDesdeBaseDeDatos(rolDb),
       permisos,
       debeCambiarContrasena,
+      modoOscuroHabilitado,
     };
   }
 }

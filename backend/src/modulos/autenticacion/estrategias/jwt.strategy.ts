@@ -55,6 +55,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       rol: rolDesdeBaseDeDatos(usuario.rol),
       permisos,
       debeCambiarContrasena: usuario.debeCambiarContrasena,
+      modoOscuroHabilitado: usuario.modoOscuroHabilitado,
     };
   }
 }

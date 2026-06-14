@@ -72,6 +72,7 @@ model Usuario {
   contrasenaHash           String     @map("contrasena_hash") @db.VarChar(255) /// Hash bcrypt; nunca almacenar texto plano
   contrasenaEstaBlanqueada Boolean    @default(false) @map("contrasena_esta_blanqueada")
   debeCambiarContrasena    Boolean    @default(true) @map("debe_cambiar_contrasena")
+  modoOscuroHabilitado     Boolean    @default(true) @map("modo_oscuro_habilitado")
   rol                      RolUsuario
   habilitado               Boolean    @default(true)
   /// Permisos operativos + menús visibles (JSON, mismo shape que frontend)
@@ -83,6 +84,7 @@ model Usuario {
 
   movimientosStock           MovimientoStock[]
   movimientosCuentaCorriente MovimientoCuentaCorriente[] @relation("MovimientoCcRegistradoPor")
+  movimientosCuentaCorrienteProveedor MovimientoCuentaCorrienteProveedor[] @relation("MovimientoCcProveedorRegistradoPor")
   auditoriasStock            AuditoriaStock[]
 
   @@index([habilitado])
@@ -306,6 +308,7 @@ model Proveedor {
   fechaEliminacion          DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
 
   compras Compra[]
+  movimientosCuentaCorrienteProveedor MovimientoCuentaCorrienteProveedor[]
 
   @@index([habilitado])
   @@index([documento])
@@ -348,6 +351,24 @@ model CompraLinea {
 
   @@index([compraId])
   @@map("compra_linea")
+}
+
+model MovimientoCuentaCorrienteProveedor {
+  id                     String                        @id @db.Char(6)
+  proveedorId            String                        @map("proveedor_id") @db.Char(6)
+  fecha                  DateTime                      @default(now()) @db.Timestamptz(3)
+  tipoMovimiento         TipoMovimientoCuentaCorriente @map("tipo_movimiento")
+  importe                Decimal                       @db.Decimal(14, 2)
+  descripcion            String                        @db.VarChar(500)
+  auditoriaPagoJson      Json?                         @map("auditoria_pago_json")
+  registradoPorUsuarioId String?                       @map("registrado_por_usuario_id") @db.Char(6)
+  fechaCreacion          DateTime                      @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+
+  proveedor            Proveedor @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  registradoPorUsuario Usuario?  @relation("MovimientoCcProveedorRegistradoPor", fields: [registradoPorUsuarioId], references: [id], onDelete: SetNull)
+
+  @@index([proveedorId, fecha(sort: Desc)])
+  @@map("movimiento_cuenta_corriente_proveedor")
 }
 
 // —— Ventas ——
@@ -424,6 +445,12 @@ model Negocio {
   mostrarTwitter    Boolean  @default(false) @map("mostrar_twitter")
   tiktok            String   @default("") @db.VarChar(120)
   mostrarTiktok     Boolean  @default(false) @map("mostrar_tiktok")
+  temaClaroColorAcento     String   @default("#4a5fd7") @map("tema_claro_color_acento") @db.VarChar(7)
+  temaClaroColorFondo      String   @default("#f2f5fa") @map("tema_claro_color_fondo") @db.VarChar(7)
+  temaClaroColorSuperficie String   @default("#ffffff") @map("tema_claro_color_superficie") @db.VarChar(7)
+  temaClaroColorCabecera   String   @default("#e4eaf4") @map("tema_claro_color_cabecera") @db.VarChar(7)
+  temaClaroColorTexto      String   @default("#0f172a") @map("tema_claro_color_texto") @db.VarChar(7)
+  temaClaroColorBorde      String   @default("#cbd5e1") @map("tema_claro_color_borde") @db.VarChar(7)
   fechaCreacion     DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
   fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
 
@@ -438,6 +465,7 @@ model ConfiguracionSistema {
   porcentajeGananciaSugerida Decimal  @default(35) @map("porcentaje_ganancia_sugerida") @db.Decimal(6, 2)
   diasDeudaCuentaCorriente   Int      @default(30) @map("dias_deuda_cuenta_corriente")
   stockMinimoAlerta          Int      @default(5) @map("stock_minimo_alerta")
+  movimientoManualStockHabilitado Boolean @default(true) @map("movimiento_manual_stock_habilitado")
   fechaCreacion              DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
   fechaActualizacion         DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
 

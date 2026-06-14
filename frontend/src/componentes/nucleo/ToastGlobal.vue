@@ -37,26 +37,26 @@ const { mensaje, tipo } = storeToRefs(notificacion);
   padding: 0.72rem 0.85rem;
   border-radius: 12px;
   border: 1px solid transparent;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--color-sombra-elevada);
   backdrop-filter: blur(8px);
 }
 
 .toast-global--error {
-  border-color: rgba(251, 113, 133, 0.45);
-  background: rgba(76, 18, 28, 0.94);
-  color: #ffe4e6;
+  border-color: var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
+  color: var(--color-peligro);
 }
 
 .toast-global--ok {
-  border-color: rgba(74, 222, 128, 0.42);
-  background: rgba(12, 48, 32, 0.94);
-  color: #dcfce7;
+  border-color: var(--color-exito-borde);
+  background: var(--color-exito-suave);
+  color: var(--color-exito);
 }
 
 .toast-global--info {
-  border-color: rgba(124, 140, 240, 0.42);
-  background: rgba(18, 24, 48, 0.94);
-  color: #e0e7ff;
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
+  color: var(--color-acento-hover);
 }
 
 .toast-global-txt {
@@ -72,7 +72,7 @@ const { mensaje, tipo } = storeToRefs(notificacion);
   height: 1.65rem;
   border: none;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-hover-neutro);
   color: inherit;
   font-size: 1.1rem;
   line-height: 1;
@@ -80,7 +80,7 @@ const { mensaje, tipo } = storeToRefs(notificacion);
 }
 
 .toast-global-x:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--color-hover-neutro);
 }
 
 .toast-global-enter-active,

@@ -281,7 +281,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   width: 100%;
   padding: 0.55rem 0.65rem;
   border: none;
-  border-bottom: 1px solid rgba(42, 58, 84, 0.55);
+  border-bottom: 1px solid var(--color-borde);
   background: transparent;
   color: inherit;
   text-align: left;

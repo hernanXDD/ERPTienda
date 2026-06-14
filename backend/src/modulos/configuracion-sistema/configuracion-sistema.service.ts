@@ -11,6 +11,7 @@ export interface ConfiguracionSistemaApi {
   porcentajeGananciaSugerida: number;
   diasDeudaCuentaCorriente: number;
   stockMinimoAlerta: number;
+  movimientoManualStockHabilitado: boolean;
 }
 
 @Injectable()
@@ -23,6 +24,7 @@ export class ConfiguracionSistemaService {
     porcentajeGananciaSugerida: Prisma.Decimal;
     diasDeudaCuentaCorriente: number;
     stockMinimoAlerta: number;
+    movimientoManualStockHabilitado: boolean;
   }): ConfiguracionSistemaApi {
     return {
       id: registro.id,
@@ -30,6 +32,7 @@ export class ConfiguracionSistemaService {
       porcentajeGananciaSugerida: decimalANumero(registro.porcentajeGananciaSugerida),
       diasDeudaCuentaCorriente: registro.diasDeudaCuentaCorriente,
       stockMinimoAlerta: registro.stockMinimoAlerta,
+      movimientoManualStockHabilitado: registro.movimientoManualStockHabilitado,
     };
   }
 
@@ -53,6 +56,7 @@ export class ConfiguracionSistemaService {
         ),
         diasDeudaCuentaCorriente: datos.diasDeudaCuentaCorriente,
         stockMinimoAlerta: datos.stockMinimoAlerta,
+        movimientoManualStockHabilitado: datos.movimientoManualStockHabilitado,
       },
     });
     return this.mapear(actualizado);

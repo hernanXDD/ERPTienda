@@ -800,12 +800,12 @@ async function imprimirCuentaCliente(): Promise<void> {
 
 .cc-btn.imprimir {
   border: 1px solid var(--color-borde);
-  background: rgba(241, 245, 249, 0.06);
+  background: var(--color-hover-neutro);
 }
 
 .cc-btn.imprimir:hover {
   border-color: var(--color-acento-borde);
-  background: rgba(124, 140, 240, 0.1);
+  background: var(--color-acento-suave);
 }
 
 /* Modal cuenta corriente: ocupa mayor parte del viewport */
@@ -819,11 +819,11 @@ async function imprimirCuentaCliente(): Promise<void> {
   border-radius: 14px;
   background: var(--color-fondo-elevado);
   color: var(--color-texto);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45), 0 0 1px rgba(124, 140, 240, 0.2);
+  box-shadow: var(--sombra-suave);
 }
 
 .cc-modal::backdrop {
-  background: rgba(5, 8, 16, 0.78);
+  background: var(--color-scrim);
   backdrop-filter: blur(3px);
 }
 
@@ -846,12 +846,7 @@ async function imprimirCuentaCliente(): Promise<void> {
   padding-top: 1.35rem;
   padding-bottom: 1.15rem;
   border-bottom: 1px solid var(--color-borde);
-  background: linear-gradient(
-    165deg,
-    rgba(7, 11, 20, 0.98) 0%,
-    rgba(21, 29, 46, 0.92) 45%,
-    rgba(21, 29, 46, 0.55) 100%
-  );
+  background: var(--color-fondo-elevado);
 }
 
 @media (width >= 720px) {
@@ -896,7 +891,7 @@ async function imprimirCuentaCliente(): Promise<void> {
   height: 2.35rem;
   border: 1px solid var(--color-borde);
   border-radius: 10px;
-  background: rgba(12, 18, 34, 0.6);
+  background: var(--color-fondo);
   color: var(--color-texto-apagado);
   display: grid;
   place-items: center;
@@ -985,11 +980,7 @@ async function imprimirCuentaCliente(): Promise<void> {
 
 .cc-kpi--acento {
   border-color: var(--color-acento-borde);
-  background: linear-gradient(
-    155deg,
-    rgba(91, 110, 230, 0.18),
-    rgba(124, 140, 240, 0.08)
-  );
+  background: var(--color-acento-suave);
 }
 
 .cc-kpi-etiq {
@@ -1069,7 +1060,7 @@ async function imprimirCuentaCliente(): Promise<void> {
   font-variant-numeric: tabular-nums;
   border-radius: 10px;
   border: 1px solid var(--color-borde);
-  background: var(--color-fondo-cabecera);
+  background: var(--color-fondo-elevado);
   color: var(--color-texto);
   padding: 0.42rem 0.58rem;
   min-height: 2.35rem;
@@ -1082,8 +1073,8 @@ async function imprimirCuentaCliente(): Promise<void> {
   border-radius: 12px;
   background: linear-gradient(
     165deg,
-    rgba(124, 140, 240, 0.12),
-    rgba(124, 140, 240, 0.04)
+    var(--color-acento-suave),
+    var(--color-fondo-elevado)
   );
   padding: 1rem 1.05rem;
   flex-shrink: 0;
@@ -1151,7 +1142,7 @@ async function imprimirCuentaCliente(): Promise<void> {
   font: inherit;
   border-radius: 10px;
   border: 1px solid var(--color-borde);
-  background: var(--color-fondo-cabecera);
+  background: var(--color-fondo-elevado);
   color: var(--color-texto);
   padding: 0.48rem 0.62rem;
   min-height: 2.35rem;
@@ -1226,16 +1217,16 @@ async function imprimirCuentaCliente(): Promise<void> {
 
 .cc-tabla.cc-tabla-estado td {
   padding: 0.62rem clamp(0.65rem, 1.8vw, 1rem);
-  border-bottom: 1px solid rgba(42, 58, 84, 0.55);
+  border-bottom: 1px solid var(--color-borde);
   vertical-align: middle;
 }
 
 .cc-tabla.cc-tabla-estado tbody tr:nth-child(even) {
-  background: rgba(124, 140, 240, 0.03);
+  background: var(--color-acento-suave);
 }
 
 .cc-tabla.cc-tabla-estado tbody tr:hover {
-  background: rgba(124, 140, 240, 0.07);
+  background: var(--color-acento-suave);
 }
 
 .cc-col-fecha {
@@ -1283,15 +1274,15 @@ async function imprimirCuentaCliente(): Promise<void> {
 }
 
 .cc-pill--cargo {
-  background: rgba(251, 113, 133, 0.14);
+  background: var(--color-peligro-suave);
   color: var(--color-peligro);
-  border: 1px solid rgba(251, 113, 133, 0.35);
+  border: 1px solid var(--color-peligro-borde);
 }
 
 .cc-pill--pago {
-  background: rgba(74, 222, 128, 0.12);
+  background: var(--color-exito-suave);
   color: var(--color-exito);
-  border: 1px solid rgba(74, 222, 128, 0.32);
+  border: 1px solid var(--color-exito-borde);
 }
 
 .cc-vacio-inner {
@@ -1333,12 +1324,7 @@ async function imprimirCuentaCliente(): Promise<void> {
   min-width: 0;
   padding: 1.15rem clamp(1rem, 3vw, 1.5rem) 0.9rem;
   border-bottom: 1px solid var(--color-borde);
-  background: linear-gradient(
-    165deg,
-    rgba(7, 11, 20, 0.98) 0%,
-    rgba(21, 29, 46, 0.88) 50%,
-    rgba(21, 29, 46, 0.45) 100%
-  );
+  background: var(--color-fondo-elevado);
 }
 
 .cc-reg-pago-cab .cc-modal-x {
@@ -1370,12 +1356,12 @@ async function imprimirCuentaCliente(): Promise<void> {
   padding: 0.62rem 0.72rem;
   border-radius: 10px;
   border: 1px solid var(--color-borde);
-  background: rgba(12, 18, 34, 0.35);
+  background: var(--color-fondo-elevado);
 }
 
 .cc-reg-pago-resumen-item--acento {
-  border-color: rgba(74, 222, 128, 0.28);
-  background: linear-gradient(162deg, rgba(74, 222, 128, 0.1), rgba(12, 18, 34, 0.35));
+  border-color: var(--color-exito-borde);
+  background: linear-gradient(162deg, var(--color-exito-suave), var(--color-fondo-elevado));
 }
 
 .cc-reg-pago-resumen-etiq {
@@ -1413,12 +1399,8 @@ async function imprimirCuentaCliente(): Promise<void> {
   min-width: 0;
   padding: 0.72rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid rgba(251, 113, 133, 0.28);
-  background: linear-gradient(
-    165deg,
-    rgba(251, 113, 133, 0.12),
-    rgba(12, 18, 34, 0.42)
-  );
+  border: 1px solid var(--color-peligro-borde);
+  background: linear-gradient(165deg, var(--color-peligro-suave), var(--color-fondo-elevado));
 }
 
 .cc-reg-saldo-deudor-etiq {
@@ -1496,13 +1478,8 @@ async function imprimirCuentaCliente(): Promise<void> {
   min-width: 0;
   padding: 0.85rem clamp(0.85rem, 2.2vw, 1rem) 1rem;
   border-radius: 12px;
-  border: 1px solid rgba(124, 140, 240, 0.22);
-  background: linear-gradient(
-    168deg,
-    rgba(124, 140, 240, 0.08),
-    rgba(12, 18, 34, 0.35)
-  );
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-acento-borde);
+  background: linear-gradient(168deg, var(--color-acento-suave), var(--color-fondo-elevado));
 }
 
 .cc-reg-pago-panel .cc-form-grid {
@@ -1528,7 +1505,7 @@ async function imprimirCuentaCliente(): Promise<void> {
 
 .cc-reg-pago-panel .cc-inp:focus {
   border-color: var(--color-acento-borde);
-  box-shadow: 0 0 0 3px rgba(124, 140, 240, 0.18);
+  box-shadow: 0 0 0 3px var(--color-acento-suave);
   outline: none;
 }
 
@@ -1592,8 +1569,8 @@ async function imprimirCuentaCliente(): Promise<void> {
   justify-content: center;
   padding: 0.28rem 0.5rem;
   border-radius: 8px;
-  border: 1px solid rgba(124, 140, 240, 0.35);
-  background: rgba(124, 140, 240, 0.1);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   color: var(--color-acento-hover);
   font: inherit;
   font-size: 0.68rem;
@@ -1606,8 +1583,8 @@ async function imprimirCuentaCliente(): Promise<void> {
 }
 
 .cc-btn-imprimir-recibo:hover {
-  border-color: rgba(124, 140, 240, 0.55);
-  background: rgba(124, 140, 240, 0.18);
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
 }
 
 .cc-btn-imprimir-recibo:focus-visible {

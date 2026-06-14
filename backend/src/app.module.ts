@@ -7,6 +7,7 @@ import { CatalogoModule } from './modulos/catalogo/catalogo.module';
 import { CategoriasModule } from './modulos/categorias/categorias.module';
 import { ClientesModule } from './modulos/clientes/clientes.module';
 import { ComprasModule } from './modulos/compras/compras.module';
+import { CuentaCorrienteProveedorModule } from './modulos/cuenta-corriente-proveedor/cuenta-corriente-proveedor.module';
 import { CuentaCorrienteModule } from './modulos/cuenta-corriente/cuenta-corriente.module';
 import { ConfiguracionSistemaModule } from './modulos/configuracion-sistema/configuracion-sistema.module';
 import { NegocioModule } from './modulos/negocio/negocio.module';
@@ -31,6 +32,7 @@ import { PermisosModule } from './comunes/permisos/permisos.module';
     CatalogoModule,
     ClientesModule,
     CuentaCorrienteModule,
+    CuentaCorrienteProveedorModule,
     ProveedoresModule,
     StockModule,
     ComprasModule,

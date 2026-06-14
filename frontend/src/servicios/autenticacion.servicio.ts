@@ -26,3 +26,13 @@ export async function establecerContrasenaInicial(datos: CambioContrasenaInicial
 export async function cerrarSesionEnServidor() {
   await clienteHttp.post('/autenticacion/cierre-sesion', {});
 }
+
+export async function actualizarPreferenciasAparienciaApi(datos: {
+  modoOscuroHabilitado: boolean;
+}) {
+  const { data } = await clienteHttp.patch<RespuestaSesionActual>(
+    '/autenticacion/preferencias-apariencia',
+    datos,
+  );
+  return data;
+}

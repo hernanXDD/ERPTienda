@@ -104,12 +104,12 @@ const { mensajeToast } = centroVentas;
   padding: 0.65rem 1rem;
   border-radius: var(--radio-control);
   border: 1px solid var(--color-borde);
-  background: rgba(15, 23, 42, 0.96);
+  background: var(--color-fondo-elevado);
   color: var(--color-texto);
   font-size: 0.84rem;
   line-height: 1.4;
   text-align: center;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--color-sombra-elevada);
   pointer-events: none;
 }
 

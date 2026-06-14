@@ -128,7 +128,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 }
 
 .cv-vaciar:hover {
-  background: rgba(239, 68, 68, 0.12);
+  background: var(--color-peligro-suave);
 }
 
 .cv-tabla-wrap {
@@ -150,8 +150,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(4px);
+  background: var(--color-fondo-cabecera);
 }
 
 .cv-tabla th {
@@ -167,7 +166,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 
 .cv-tabla td {
   padding: 0.55rem 0.65rem;
-  border-bottom: 1px solid rgba(42, 58, 84, 0.45);
+  border-bottom: 1px solid var(--color-borde);
   vertical-align: middle;
 }
 
@@ -216,7 +215,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   padding: 0.15rem;
   border-radius: 999px;
   border: 1px solid var(--color-borde);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-fondo-elevado);
 }
 
 .cv-pm {
@@ -235,7 +234,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 
 .cv-pm:hover {
   color: var(--color-texto);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-hover-neutro);
 }
 
 .cv-cant-num {
@@ -261,7 +260,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 
 .cv-quitar:hover {
   color: var(--color-peligro);
-  background: rgba(239, 68, 68, 0.12);
+  background: var(--color-peligro-suave);
 }
 
 @media (max-width: 640px) {

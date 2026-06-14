@@ -226,7 +226,7 @@ function alPegarDocumento(event: ClipboardEvent) {
 .cv-contexto {
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--color-borde);
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--color-fondo);
   overflow: visible;
 }
 
@@ -327,8 +327,8 @@ function alPegarDocumento(event: ClipboardEvent) {
   overflow: auto;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-control);
-  background: var(--color-fondo-cabecera);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  background: var(--color-fondo-elevado);
+  box-shadow: var(--color-sombra-elevada);
 }
 
 .cv-combo-opc {
@@ -388,13 +388,13 @@ function alPegarDocumento(event: ClipboardEvent) {
   gap: 0.45rem 0.65rem;
   padding: 0.62rem 0.72rem;
   border-radius: var(--radio-control);
-  border: 1px solid rgba(124, 140, 240, 0.28);
-  background: rgba(124, 140, 240, 0.08);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
 }
 
 .cv-credito--alerta {
-  border-color: rgba(251, 113, 133, 0.42);
-  background: rgba(251, 113, 133, 0.1);
+  border-color: var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
 }
 
 .cv-credito-item {

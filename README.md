@@ -61,6 +61,24 @@ npm run dev
 
 App: http://localhost:5173 — Login demo: `admin` / `12345678`
 
+## Tests automáticos
+
+Desde la raíz (backend + frontend):
+
+```bash
+npm test
+```
+
+Por separado:
+
+```bash
+cd backend && npm test          # Jest: unitarios + e2e (salud)
+cd frontend && npm test         # Vitest
+cd frontend && npm run test:watch   # modo watch
+```
+
+Los tests no requieren PostgreSQL en ejecución (el e2e de salud usa Prisma simulado).
+
 ## Documentación API
 
 [backend/README.md](backend/README.md) · [backend/API.md](backend/API.md)

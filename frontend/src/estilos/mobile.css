@@ -17,10 +17,6 @@
     padding-inline: 0.45rem;
   }
 
-  .relleno:has(.centro-ventas) {
-    padding: 0.08rem 0.35rem 0.12rem;
-  }
-
   .relleno:has(.cfg-ficha-vista) {
     padding: 0.25rem 0.4rem 0.35rem;
   }

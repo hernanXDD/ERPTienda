@@ -87,13 +87,13 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 
 .cv-btn--sec {
   color: var(--color-texto-suave);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-fondo-cabecera);
   border-color: var(--color-borde);
 }
 
 .cv-btn--sec:hover {
   color: var(--color-texto);
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--color-hover-neutro);
 }
 
 .cv-btn--prim {

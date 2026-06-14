@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IdCard, Image, MapPin, Phone, Share2, Store, Trash2, Upload } from 'lucide-vue-next';
+import { IdCard, Image, MapPin, Palette, Phone, RotateCcw, Share2, Store, Trash2, Upload } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
 import { formatearDocumentoClienteAlEscribir } from '../../modulos/clientes/formateadorDocumentoCliente';
 import {
@@ -20,6 +20,82 @@ import { useNegocioStore } from '../../stores/negocio';
 import type { DatosNegocioEditable } from '../../tipos/negocio';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
+import { normalizarTemaClaroNegocio } from '../../composables/useApariencia';
+import { normalizarColorHex } from '../../modulos/tema/colorUtilidades';
+import { datosTemaClaroNegocioPorDefecto, TEMA_CLARO_POR_DEFECTO } from '../../modulos/tema/temaClaroPorDefecto';
+import { inicialesNombreNegocio } from '../../modulos/negocio/inicialesNombreNegocio';
+import { variablesCssTemaClaro } from '../../modulos/tema/variablesTemaClaro';
+import '../../estilos/formularioConfiguracion.css';
+
+type CampoColorTemaClaro = keyof Pick<
+  DatosNegocioEditable,
+  | 'temaClaroColorAcento'
+  | 'temaClaroColorFondo'
+  | 'temaClaroColorSuperficie'
+  | 'temaClaroColorCabecera'
+  | 'temaClaroColorTexto'
+  | 'temaClaroColorBorde'
+>;
+
+const definicionesColoresTemaClaroPrincipales: ReadonlyArray<{
+  campo: CampoColorTemaClaro;
+  id: string;
+  etiqueta: string;
+  ayuda: string;
+  porDefecto: string;
+}> = [
+  {
+    campo: 'temaClaroColorAcento',
+    id: 'neg-tema-acento',
+    etiqueta: 'Color de acento',
+    ayuda: 'Botones, links e íconos activos en modo claro.',
+    porDefecto: TEMA_CLARO_POR_DEFECTO.colorAcento,
+  },
+  {
+    campo: 'temaClaroColorFondo',
+    id: 'neg-tema-fondo',
+    etiqueta: 'Color de fondo',
+    ayuda: 'Fondo general de pantallas en modo claro.',
+    porDefecto: TEMA_CLARO_POR_DEFECTO.colorFondo,
+  },
+  {
+    campo: 'temaClaroColorTexto',
+    id: 'neg-tema-texto',
+    etiqueta: 'Color de texto',
+    ayuda: 'Texto principal de pantallas en modo claro.',
+    porDefecto: TEMA_CLARO_POR_DEFECTO.colorTexto,
+  },
+  {
+    campo: 'temaClaroColorBorde',
+    id: 'neg-tema-borde',
+    etiqueta: 'Color de bordes',
+    ayuda: 'Contornos de tarjetas, tablas, campos y separadores.',
+    porDefecto: TEMA_CLARO_POR_DEFECTO.colorBorde,
+  },
+];
+
+const definicionesColoresTemaClaroSuperficie: ReadonlyArray<{
+  campo: CampoColorTemaClaro;
+  id: string;
+  etiqueta: string;
+  ayuda: string;
+  porDefecto: string;
+}> = [
+  {
+    campo: 'temaClaroColorSuperficie',
+    id: 'neg-tema-superficie',
+    etiqueta: 'Color de tarjetas',
+    ayuda: 'Paneles, tablas y bloques elevados.',
+    porDefecto: TEMA_CLARO_POR_DEFECTO.colorSuperficie,
+  },
+  {
+    campo: 'temaClaroColorCabecera',
+    id: 'neg-tema-cabecera',
+    etiqueta: 'Color de encabezados',
+    ayuda: 'Barra superior, cabeceras de tablas y títulos de sección.',
+    porDefecto: TEMA_CLARO_POR_DEFECTO.colorCabecera,
+  },
+];
 
 const descripcionPagina = obtenerDescripcionPagina('configuracion-negocio');
 const { tienePermiso } = usePermisosOperador();
@@ -44,6 +120,7 @@ const borrador = ref<DatosNegocioEditable>({
   mostrarTwitter: false,
   tiktok: '',
   mostrarTiktok: false,
+  ...datosTemaClaroNegocioPorDefecto(),
 });
 
 const refInputLogo = useTemplateRef('refInputLogo');
@@ -68,8 +145,51 @@ const TIPOS_LOGO_PERMITIDOS = [
 const tieneLogo = computed(() => negocioStore.negocio?.tieneLogo === true);
 const nombreArchivoLogo = computed(() => negocioStore.negocio?.nombreArchivoLogo?.trim() ?? '');
 
+const cantidadRedesVisibles = computed(() => {
+  let total = 0;
+  if (borrador.value.mostrarInstagram) total += 1;
+  if (borrador.value.mostrarTwitter) total += 1;
+  if (borrador.value.mostrarTiktok) total += 1;
+  return total;
+});
+
 const vistaPreviaNombre = computed(() => borrador.value.nombre.trim());
 const vistaPreviaCuit = computed(() => borrador.value.cuit.trim());
+const inicialesVistaPreviaNegocio = computed(() => inicialesNombreNegocio(vistaPreviaNombre.value));
+
+const estilosVistaPreviaTemaClaro = computed(() => {
+  const tema = normalizarTemaClaroNegocio(borrador.value);
+  return variablesCssTemaClaro(tema) as Record<string, string>;
+});
+
+const temaClaroEsPorDefecto = computed(() => {
+  const actual = normalizarTemaClaroNegocio(borrador.value);
+  const defecto = normalizarTemaClaroNegocio(datosTemaClaroNegocioPorDefecto());
+  return (
+    actual.colorAcento === defecto.colorAcento &&
+    actual.colorFondo === defecto.colorFondo &&
+    actual.colorSuperficie === defecto.colorSuperficie &&
+    actual.colorCabecera === defecto.colorCabecera &&
+    actual.colorTexto === defecto.colorTexto &&
+    actual.colorBorde === defecto.colorBorde
+  );
+});
+
+function restablecerTemaClaroPorDefecto(): void {
+  Object.assign(borrador.value, datosTemaClaroNegocioPorDefecto());
+}
+
+function alEscribirColorHex(campo: CampoColorTemaClaro, valor: string): void {
+  const limpio = valor.trim().replace(/[^#0-9a-fA-F]/g, '');
+  const conHash = limpio.startsWith('#') ? limpio : `#${limpio}`;
+  if (conHash.length <= 7) {
+    borrador.value[campo] = conHash;
+  }
+}
+
+function alPerderFocoColorHex(campo: CampoColorTemaClaro, porDefecto: string): void {
+  borrador.value[campo] = normalizarColorHex(borrador.value[campo], porDefecto);
+}
 
 function aplicarNegocioAlBorrador(): void {
   const actual = negocioStore.negocio;
@@ -89,6 +209,12 @@ function aplicarNegocioAlBorrador(): void {
     mostrarTwitter: actual.mostrarTwitter,
     tiktok: actual.tiktok,
     mostrarTiktok: actual.mostrarTiktok,
+    temaClaroColorAcento: actual.temaClaroColorAcento,
+    temaClaroColorFondo: actual.temaClaroColorFondo,
+    temaClaroColorSuperficie: actual.temaClaroColorSuperficie,
+    temaClaroColorCabecera: actual.temaClaroColorCabecera,
+    temaClaroColorTexto: actual.temaClaroColorTexto,
+    temaClaroColorBorde: actual.temaClaroColorBorde,
   };
 }
 
@@ -277,6 +403,17 @@ async function guardarNegocio(): Promise<void> {
     mostrarTwitter: borrador.value.mostrarTwitter,
     tiktok: normalizarRedSocialAlPerderFoco(borrador.value.tiktok),
     mostrarTiktok: borrador.value.mostrarTiktok,
+    ...(() => {
+      const tema = normalizarTemaClaroNegocio(borrador.value);
+      return {
+        temaClaroColorAcento: tema.colorAcento,
+        temaClaroColorFondo: tema.colorFondo,
+        temaClaroColorSuperficie: tema.colorSuperficie,
+        temaClaroColorCabecera: tema.colorCabecera,
+        temaClaroColorTexto: tema.colorTexto,
+        temaClaroColorBorde: tema.colorBorde,
+      };
+    })(),
   };
 
   guardando.value = true;
@@ -294,8 +431,8 @@ async function guardarNegocio(): Promise<void> {
 </script>
 
 <template>
-  <section class="pg-wrap cfg-ficha-vista" aria-labelledby="titulo-config-negocio">
-    <div class="pg-marco cfg-neg-marco cfg-ficha-marco">
+  <section class="pg-wrap" aria-labelledby="titulo-config-negocio">
+    <div class="pg-marco pg-marco--permisos">
       <header class="pg-cab">
         <div class="pg-cab-txt">
           <div class="pg-cab-izq">
@@ -304,49 +441,101 @@ async function guardarNegocio(): Promise<void> {
               <p class="pg-eyebrow">Configuración · Negocio</p>
               <h1 id="titulo-config-negocio" class="pg-titulo">Datos de la tienda</h1>
               <p class="pg-sub">{{ descripcionPagina }}</p>
-              <p
-                v-if="vistaPreviaNombre || vistaPreviaCuit"
-                class="cfg-neg-vista-previa"
-                aria-live="polite"
-              >
-                <span v-if="vistaPreviaNombre" class="cfg-neg-chip cfg-neg-chip--nom">
-                  {{ vistaPreviaNombre }}
-                </span>
-                <span v-if="vistaPreviaCuit" class="cfg-neg-chip cfg-neg-chip--doc cfg-mono">
-                  {{ vistaPreviaCuit }}
-                </span>
-              </p>
             </div>
+          </div>
+        </div>
+        <div class="pg-kpis" aria-label="Resumen del negocio">
+          <div class="pg-kpi pg-kpi--acento">
+            <span class="pg-kpi-etiq">Logo</span>
+            <span class="pg-kpi-valor perm-kpi-estado">{{ tieneLogo ? 'Cargado' : 'Sin logo' }}</span>
+          </div>
+          <div class="pg-kpi">
+            <span class="pg-kpi-etiq">Redes visibles</span>
+            <span class="pg-kpi-valor pg-mono">{{ cantidadRedesVisibles }}/3</span>
+          </div>
+          <div class="pg-kpi">
+            <span class="pg-kpi-etiq">Modo</span>
+            <span class="pg-kpi-valor perm-kpi-estado">{{ modoEdicion ? 'Edición' : 'Consulta' }}</span>
           </div>
         </div>
       </header>
 
-      <div class="cfg-neg-bandera" aria-hidden="true" />
+      <form id="form-negocio" @submit.prevent="manejarAccionPie">
+        <div class="pg-barra">
+          <div class="pg-barra-fila">
+            <div class="pg-barra-col pg-barra-col--accion">
+              <span class="pg-filtro-etiq pg-sr">Acción</span>
+              <button
+                v-if="puedeEditarConfiguracionNegocio"
+                type="submit"
+                class="pg-btn-primario"
+                :disabled="guardando || cargandoInicial"
+              >
+                {{
+                  guardando
+                    ? 'Guardando…'
+                    : modoEdicion
+                      ? 'Guardar configuración'
+                      : 'Editar configuración'
+                }}
+              </button>
+            </div>
+          </div>
+          <p
+            v-if="mensajeExito"
+            class="perm-aviso perm-aviso--ok"
+            role="status"
+          >
+            {{ mensajeExito }}
+          </p>
+          <p
+            v-if="mensajeError"
+            class="perm-aviso perm-aviso--error"
+            role="alert"
+          >
+            {{ mensajeError }}
+          </p>
+        </div>
 
-      <div class="cfg-ficha-panel">
+        <div v-if="!cargandoInicial" class="perm-ficha" aria-label="Vista previa del negocio">
+          <div class="perm-ficha-ident">
+            <p class="perm-ficha-nombre">
+              {{ vistaPreviaNombre || 'Nombre del negocio' }}
+            </p>
+            <p v-if="vistaPreviaCuit" class="perm-ficha-login pg-mono">{{ vistaPreviaCuit }}</p>
+          </div>
+          <div class="perm-ficha-chips">
+            <span class="perm-chip perm-chip--rol">Datos fiscales y contacto</span>
+            <span v-if="modoEdicion" class="perm-chip perm-chip--edicion">Modo edición</span>
+            <span
+              class="perm-chip"
+              :class="tieneLogo ? 'perm-chip--habilitado' : 'perm-chip--inhabilitado'"
+            >
+              {{ tieneLogo ? 'Logo activo' : 'Sin logo' }}
+            </span>
+          </div>
+        </div>
+
         <div v-if="cargandoInicial" class="cfg-ficha-carga" role="status">
           <div class="cfg-ficha-carga-pulso" />
           <p>Cargando ficha del negocio…</p>
         </div>
 
-        <form
+        <fieldset
           v-else
-          id="form-negocio"
-          class="cfg-ficha-form"
-          :class="{ 'cfg-ficha-form--solo-lectura': !modoEdicion }"
-          @submit.prevent="manejarAccionPie"
+          class="perm-cuerpo perm-cuerpo--negocio"
+          :class="{ 'perm-cuerpo--solo-lectura': !modoEdicion }"
+          :disabled="!modoEdicion || guardando"
         >
-          <div class="cfg-ficha-scroll">
-            <div class="cfg-ficha-contenido cfg-ficha-contenido--negocio">
-              <section class="cfg-ficha-bloque" aria-labelledby="cfg-neg-sec-ident">
-                <div class="cfg-ficha-bloque-enc">
-                  <span class="cfg-ficha-bloque-ico" aria-hidden="true">
-                    <IdCard :size="18" stroke-width="2" />
-                  </span>
-                  <h2 id="cfg-neg-sec-ident" class="cfg-ficha-bloque-tit">Identificación</h2>
-                </div>
-                <div class="cfg-ficha-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--vertical">
-                  <div class="cfg-ficha-campo">
+          <section class="perm-bloque" aria-labelledby="cfg-neg-sec-ident">
+            <header class="perm-bloque-enc">
+              <span class="perm-bloque-ico" aria-hidden="true">
+                <IdCard :size="16" stroke-width="2" />
+              </span>
+              <h2 id="cfg-neg-sec-ident" class="perm-bloque-tit">Identificación</h2>
+            </header>
+            <div class="perm-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--vertical">
+              <div class="cfg-ficha-campo">
                     <label class="cfg-ficha-etiq" for="neg-nombre">Nombre o razón social</label>
                     <input
                       id="neg-nombre"
@@ -379,14 +568,14 @@ async function guardarNegocio(): Promise<void> {
                 </div>
               </section>
 
-              <section class="cfg-ficha-bloque" aria-labelledby="cfg-neg-sec-contacto">
-                <div class="cfg-ficha-bloque-enc">
-                  <span class="cfg-ficha-bloque-ico" aria-hidden="true">
+              <section class="perm-bloque" aria-labelledby="cfg-neg-sec-contacto">
+                <header class="perm-bloque-enc">
+                  <span class="perm-bloque-ico" aria-hidden="true">
                     <Phone :size="18" stroke-width="2" />
                   </span>
-                  <h2 id="cfg-neg-sec-contacto" class="cfg-ficha-bloque-tit">Contacto</h2>
-                </div>
-                <div class="cfg-ficha-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--vertical">
+                  <h2 id="cfg-neg-sec-contacto" class="perm-bloque-tit">Contacto</h2>
+                </header>
+                <div class="perm-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--vertical">
                   <div class="cfg-ficha-campo">
                     <label class="cfg-ficha-etiq" for="neg-tel">Teléfono</label>
                     <input
@@ -420,14 +609,14 @@ async function guardarNegocio(): Promise<void> {
                 </div>
               </section>
 
-              <section class="cfg-ficha-bloque" aria-labelledby="cfg-neg-sec-ubicacion">
-                <div class="cfg-ficha-bloque-enc">
-                  <span class="cfg-ficha-bloque-ico" aria-hidden="true">
+              <section class="perm-bloque" aria-labelledby="cfg-neg-sec-ubicacion">
+                <header class="perm-bloque-enc">
+                  <span class="perm-bloque-ico" aria-hidden="true">
                     <MapPin :size="18" stroke-width="2" />
                   </span>
-                  <h2 id="cfg-neg-sec-ubicacion" class="cfg-ficha-bloque-tit">Ubicación</h2>
-                </div>
-                <div class="cfg-ficha-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--tres">
+                  <h2 id="cfg-neg-sec-ubicacion" class="perm-bloque-tit">Ubicación</h2>
+                </header>
+                <div class="perm-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--tres">
                   <div class="cfg-ficha-campo cfg-ficha-campo--ancho">
                     <label class="cfg-ficha-etiq" for="neg-dir">Dirección</label>
                     <input
@@ -481,14 +670,16 @@ async function guardarNegocio(): Promise<void> {
                 </div>
               </section>
 
-              <section class="cfg-ficha-bloque" aria-labelledby="cfg-neg-sec-redes">
-                <div class="cfg-ficha-bloque-enc">
-                  <span class="cfg-ficha-bloque-ico" aria-hidden="true">
+              <div class="cfg-neg-columna-izq">
+              <section class="perm-bloque" aria-labelledby="cfg-neg-sec-redes">
+                <header class="perm-bloque-enc">
+                  <span class="perm-bloque-ico" aria-hidden="true">
                     <Share2 :size="18" stroke-width="2" />
                   </span>
-                  <h2 id="cfg-neg-sec-redes" class="cfg-ficha-bloque-tit">Redes sociales</h2>
-                </div>
-                <div class="cfg-ficha-bloque-cuerpo cfg-ficha-redes">
+                  <h2 id="cfg-neg-sec-redes" class="perm-bloque-tit">Redes sociales</h2>
+                  <span class="perm-bloque-badge">{{ cantidadRedesVisibles }}/3</span>
+                </header>
+                <div class="perm-bloque-cuerpo cfg-ficha-redes">
                   <div class="cfg-ficha-red">
                     <div class="cfg-ficha-red-cab">
                       <label class="cfg-ficha-red-nom" for="neg-instagram">Instagram</label>
@@ -499,16 +690,16 @@ async function guardarNegocio(): Promise<void> {
                         >
                           {{ borrador.mostrarInstagram ? 'Visible' : 'Oculta' }}
                         </span>
-                        <label class="cfg-ficha-sw">
+                        <label class="perm-sw">
                           <input
                             v-model="borrador.mostrarInstagram"
                             type="checkbox"
-                            class="cfg-ficha-sw-input"
+                            class="perm-sw-input"
                             role="switch"
                             aria-label="Mostrar Instagram"
                             :disabled="!modoEdicion || guardando"
                           />
-                          <span class="cfg-ficha-sw-ui" aria-hidden="true" />
+                          <span class="perm-sw-ui" aria-hidden="true" />
                         </label>
                       </div>
                     </div>
@@ -537,16 +728,16 @@ async function guardarNegocio(): Promise<void> {
                         >
                           {{ borrador.mostrarTwitter ? 'Visible' : 'Oculta' }}
                         </span>
-                        <label class="cfg-ficha-sw">
+                        <label class="perm-sw">
                           <input
                             v-model="borrador.mostrarTwitter"
                             type="checkbox"
-                            class="cfg-ficha-sw-input"
+                            class="perm-sw-input"
                             role="switch"
                             aria-label="Mostrar Twitter"
                             :disabled="!modoEdicion || guardando"
                           />
-                          <span class="cfg-ficha-sw-ui" aria-hidden="true" />
+                          <span class="perm-sw-ui" aria-hidden="true" />
                         </label>
                       </div>
                     </div>
@@ -575,16 +766,16 @@ async function guardarNegocio(): Promise<void> {
                         >
                           {{ borrador.mostrarTiktok ? 'Visible' : 'Oculta' }}
                         </span>
-                        <label class="cfg-ficha-sw">
+                        <label class="perm-sw">
                           <input
                             v-model="borrador.mostrarTiktok"
                             type="checkbox"
-                            class="cfg-ficha-sw-input"
+                            class="perm-sw-input"
                             role="switch"
                             aria-label="Mostrar TikTok"
                             :disabled="!modoEdicion || guardando"
                           />
-                          <span class="cfg-ficha-sw-ui" aria-hidden="true" />
+                          <span class="perm-sw-ui" aria-hidden="true" />
                         </label>
                       </div>
                     </div>
@@ -605,19 +796,17 @@ async function guardarNegocio(): Promise<void> {
                 </div>
               </section>
 
-              <section
-                class="cfg-ficha-bloque cfg-ficha-bloque--logo"
-                aria-labelledby="cfg-neg-sec-logo"
-              >
-                <div class="cfg-ficha-bloque-enc">
-                  <span class="cfg-ficha-bloque-ico" aria-hidden="true">
+              <section class="perm-bloque" aria-labelledby="cfg-neg-sec-logo">
+                <header class="perm-bloque-enc">
+                  <span class="perm-bloque-ico" aria-hidden="true">
                     <Image :size="18" stroke-width="2" />
                   </span>
-                  <h2 id="cfg-neg-sec-logo" class="cfg-ficha-bloque-tit">Logo de la tienda</h2>
-                </div>
-                <div class="cfg-ficha-bloque-cuerpo cfg-neg-logo-cuerpo">
+                  <h2 id="cfg-neg-sec-logo" class="perm-bloque-tit">Logo de la tienda</h2>
+                </header>
+                <div class="perm-bloque-cuerpo cfg-neg-logo-cuerpo">
                   <p class="cfg-neg-logo-ayuda">
                     Imagen de marca para la barra superior, reportes y comprobantes.
+                    Debe ser una imagen sin fondo (fondo transparente).
                     Formatos admitidos: PNG, JPG, WEBP o SVG. Tamaño máximo: 2 MB.
                     Al importar un archivo nuevo, reemplaza al actual.
                   </p>
@@ -704,89 +893,231 @@ async function guardarNegocio(): Promise<void> {
                   </div>
                 </div>
               </section>
-
-              <div v-if="mensajeError || mensajeExito" class="cfg-ficha-feedback">
-                <p v-if="mensajeError" class="cfg-ficha-alerta cfg-ficha-alerta--error" role="alert">
-                  {{ mensajeError }}
-                </p>
-                <p v-if="mensajeExito" class="cfg-ficha-alerta cfg-ficha-alerta--ok" role="status">
-                  {{ mensajeExito }}
-                </p>
               </div>
-            </div>
-          </div>
 
-          <footer class="cfg-ficha-pie">
-            <button
-              v-if="puedeEditarConfiguracionNegocio"
-              type="submit"
-              class="pg-btn-primario"
-              :disabled="guardando"
-            >
-              {{
-                guardando
-                  ? 'Guardando…'
-                  : modoEdicion
-                    ? 'Guardar configuración'
-                    : 'Editar configuración'
-              }}
-            </button>
-          </footer>
-        </form>
-      </div>
+              <section class="perm-bloque perm-bloque--apariencia" aria-labelledby="cfg-neg-sec-apariencia">
+                <header class="perm-bloque-enc">
+                  <span class="perm-bloque-ico" aria-hidden="true">
+                    <Palette :size="18" stroke-width="2" />
+                  </span>
+                  <h2 id="cfg-neg-sec-apariencia" class="perm-bloque-tit">Apariencia · modo claro</h2>
+                </header>
+                <div class="perm-bloque-cuerpo cfg-tema-apariencia">
+                  <div class="cfg-tema-acciones">
+                    <p class="cfg-tema-paleta-nombre">
+                      Paleta <strong>Horizonte</strong> · índigo suave sobre fondo claro
+                    </p>
+                    <button
+                      type="button"
+                      class="pg-btn-reset-filtros cfg-tema-btn-restaurar"
+                      :disabled="!modoEdicion || guardando || temaClaroEsPorDefecto"
+                      @click="restablecerTemaClaroPorDefecto"
+                    >
+                      <RotateCcw :size="15" stroke-width="2" aria-hidden="true" />
+                      Volver a configuración por defecto
+                    </button>
+                  </div>
+
+                  <div class="cfg-tema-panel">
+                    <div
+                      class="cfg-tema-colores cfg-tema-colores--principales"
+                      role="group"
+                      aria-label="Colores principales del modo claro"
+                    >
+                        <div
+                          v-for="color in definicionesColoresTemaClaroPrincipales"
+                          :key="color.campo"
+                          class="cfg-tema-color"
+                        >
+                          <div class="cfg-tema-color-info">
+                            <label class="cfg-tema-color-etiq" :for="color.id">
+                              {{ color.etiqueta }}
+                            </label>
+                            <p class="cfg-tema-color-ayuda">{{ color.ayuda }}</p>
+                          </div>
+                          <div class="cfg-tema-color-control">
+                            <label
+                              class="cfg-tema-color-muestra"
+                              :for="`${color.id}-picker`"
+                              :style="{ backgroundColor: borrador[color.campo] }"
+                            >
+                              <input
+                                :id="`${color.id}-picker`"
+                                v-model="borrador[color.campo]"
+                                type="color"
+                                class="cfg-tema-color-input"
+                                :aria-labelledby="color.id"
+                                :disabled="!modoEdicion || guardando"
+                              />
+                            </label>
+                            <div class="cfg-tema-color-hex-wrap">
+                              <label class="pg-sr" :for="color.id">Código hexadecimal</label>
+                              <input
+                                :id="color.id"
+                                :value="borrador[color.campo]"
+                                type="text"
+                                class="cfg-tema-color-hex cfg-ficha-inp-mono"
+                                maxlength="7"
+                                spellcheck="false"
+                                autocomplete="off"
+                                inputmode="text"
+                                placeholder="#000000"
+                                :disabled="!modoEdicion || guardando"
+                                @input="alEscribirColorHex(color.campo, ($event.target as HTMLInputElement).value)"
+                                @blur="alPerderFocoColorHex(color.campo, color.porDefecto)"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    <div
+                      class="cfg-tema-colores cfg-tema-colores--superficie"
+                      role="group"
+                      aria-label="Colores de superficie del modo claro"
+                    >
+                        <div
+                          v-for="color in definicionesColoresTemaClaroSuperficie"
+                          :key="color.campo"
+                          class="cfg-tema-color"
+                        >
+                          <div class="cfg-tema-color-info">
+                            <label class="cfg-tema-color-etiq" :for="color.id">
+                              {{ color.etiqueta }}
+                            </label>
+                            <p class="cfg-tema-color-ayuda">{{ color.ayuda }}</p>
+                          </div>
+                          <div class="cfg-tema-color-control">
+                            <label
+                              class="cfg-tema-color-muestra"
+                              :for="`${color.id}-picker`"
+                              :style="{ backgroundColor: borrador[color.campo] }"
+                            >
+                              <input
+                                :id="`${color.id}-picker`"
+                                v-model="borrador[color.campo]"
+                                type="color"
+                                class="cfg-tema-color-input"
+                                :aria-labelledby="color.id"
+                                :disabled="!modoEdicion || guardando"
+                              />
+                            </label>
+                            <div class="cfg-tema-color-hex-wrap">
+                              <label class="pg-sr" :for="color.id">Código hexadecimal</label>
+                              <input
+                                :id="color.id"
+                                :value="borrador[color.campo]"
+                                type="text"
+                                class="cfg-tema-color-hex cfg-ficha-inp-mono"
+                                maxlength="7"
+                                spellcheck="false"
+                                autocomplete="off"
+                                inputmode="text"
+                                placeholder="#000000"
+                                :disabled="!modoEdicion || guardando"
+                                @input="alEscribirColorHex(color.campo, ($event.target as HTMLInputElement).value)"
+                                @blur="alPerderFocoColorHex(color.campo, color.porDefecto)"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    <aside class="cfg-tema-previa-wrap" aria-labelledby="cfg-tema-previa-titulo">
+                      <div class="cfg-tema-previa-encabezado">
+                        <h3 id="cfg-tema-previa-titulo" class="cfg-tema-previa-titulo">Vista previa</h3>
+                        <p class="cfg-tema-previa-subtitulo">
+                          Simulación de la interfaz al guardar con modo oscuro desactivado.
+                        </p>
+                      </div>
+
+                      <div class="cfg-tema-previa" :style="estilosVistaPreviaTemaClaro">
+                        <div class="cfg-tema-previa-shell">
+                          <header class="cfg-tema-previa-nav" aria-hidden="true">
+                            <div class="cfg-tema-previa-nav-marca">
+                              <span
+                                v-if="urlVistaPreviaLogo"
+                                class="cfg-tema-previa-nav-logo superficie-logo-transparente"
+                              >
+                                <img
+                                  :src="urlVistaPreviaLogo"
+                                  alt=""
+                                  class="cfg-tema-previa-nav-logo-img img-logo-transparente"
+                                />
+                              </span>
+                              <span v-else class="cfg-tema-previa-nav-iniciales">
+                                {{ inicialesVistaPreviaNegocio }}
+                              </span>
+                              <span class="cfg-tema-previa-nav-nombre">
+                                {{ vistaPreviaNombre || 'Mi tienda' }}
+                              </span>
+                            </div>
+                            <span class="cfg-tema-previa-nav-usuario">Usuario</span>
+                          </header>
+
+                          <div class="cfg-tema-previa-vista">
+                            <div class="cfg-tema-previa-pg-cab">
+                              <span class="cfg-tema-previa-pg-eyebrow">Ventas · POS</span>
+                              <span class="cfg-tema-previa-pg-titulo">Centro de ventas</span>
+                              <span class="cfg-tema-previa-pg-sub">
+                                Texto secundario sobre el fondo general.
+                              </span>
+                            </div>
+
+                            <div class="cfg-tema-previa-marco">
+                              <div class="cfg-tema-previa-seccion-enc">Sección · ejemplo</div>
+                              <div class="cfg-tema-previa-seccion-cuerpo">
+                                <div class="cfg-tema-previa-campo">
+                                  <span class="cfg-tema-previa-campo-etiq">Campo de formulario</span>
+                                  <span class="cfg-tema-previa-campo-inp">Valor de ejemplo</span>
+                                </div>
+                                <div class="cfg-tema-previa-acciones">
+                                  <button type="button" class="cfg-tema-previa-btn cfg-tema-previa-btn--sec">
+                                    Secundario
+                                  </button>
+                                  <button type="button" class="cfg-tema-previa-btn">Primario</button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="cfg-tema-previa-tabla" role="presentation">
+                              <div class="cfg-tema-previa-tabla-enc">
+                                <span>Producto</span>
+                                <span>Stock</span>
+                              </div>
+                              <div class="cfg-tema-previa-tabla-fila">
+                                <span>Artículo A</span>
+                                <span class="cfg-tema-previa-tabla-num">12</span>
+                              </div>
+                              <div class="cfg-tema-previa-tabla-fila cfg-tema-previa-tabla-fila--alt">
+                                <span>Artículo B</span>
+                                <span class="cfg-tema-previa-tabla-num">5</span>
+                              </div>
+                            </div>
+
+                            <p class="cfg-tema-previa-pie">
+                              <span class="cfg-tema-previa-chip">Etiqueta acento</span>
+                              Texto apagado para descripciones y ayudas.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </aside>
+                  </div>
+
+                  <p class="cfg-tema-nota">
+                    El modo oscuro es fijo para todos. Cada usuario elige si lo usa desde su menú
+                    de cuenta; si lo desactiva, ve estos colores personalizados.
+                  </p>
+                </div>
+              </section>
+        </fieldset>
+      </form>
     </div>
   </section>
 </template>
 
 <style scoped>
-.cfg-neg-marco {
-  display: flex;
-  flex-direction: column;
-  min-height: auto;
-}
-
-.cfg-neg-vista-previa {
-  margin: 0.48rem 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.38rem;
-  align-items: center;
-}
-
-.cfg-neg-chip {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  padding: 0.22rem 0.58rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.cfg-neg-chip--nom {
-  color: var(--color-texto);
-  border: 1px solid rgba(124, 140, 240, 0.28);
-  background: rgba(124, 140, 240, 0.1);
-}
-
-.cfg-neg-chip--doc {
-  color: var(--color-texto-suave);
-  border: 1px solid rgba(124, 140, 240, 0.22);
-  background: rgba(7, 11, 20, 0.45);
-}
-
-.cfg-neg-bandera {
-  height: 4px;
-  flex-shrink: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(124, 140, 240, 0.15),
-    rgba(154, 124, 240, 0.55),
-    rgba(124, 140, 240, 0.2)
-  );
-}
-
 .cfg-neg-logo-btn-importar {
   display: inline-flex;
   align-items: center;
@@ -810,9 +1141,29 @@ async function guardarNegocio(): Promise<void> {
 
 .cfg-neg-logo-panel {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .cfg-neg-logo-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .perm-cuerpo--negocio .cfg-neg-logo-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .perm-cuerpo--negocio .cfg-neg-logo-previa {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .cfg-neg-logo-previa {
@@ -827,7 +1178,7 @@ async function guardarNegocio(): Promise<void> {
 
 .cfg-neg-logo-previa--vacia {
   border: 1px dashed var(--color-borde);
-  background: rgba(7, 11, 20, 0.35);
+  background: var(--color-fondo);
 }
 
 .cfg-neg-logo-previa--con-logo {
@@ -890,5 +1241,3 @@ async function guardarNegocio(): Promise<void> {
   color: var(--color-peligro);
 }
 </style>
-
-<style src="../../estilos/formularioConfiguracion.css"></style>

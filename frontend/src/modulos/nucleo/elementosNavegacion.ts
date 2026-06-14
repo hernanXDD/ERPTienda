@@ -96,6 +96,7 @@ export const elementosMenuPrincipal: ElementoMenuPrincipal[] = [
     subelementos: [
       subenlace('compras-proveedores', 'Proveedores'),
       subenlace('compras-registro', 'Registro de compras'),
+      subenlace('compras-cuentas-corrientes-proveedor', 'Cuentas corrientes'),
     ],
   },
   {

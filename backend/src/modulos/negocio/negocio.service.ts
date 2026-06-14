@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ID_NEGOCIO } from '../../comunes/constantes/id-negocio';
+import { TEMA_CLARO_POR_DEFECTO } from '../../comunes/constantes/tema-claro-por-defecto';
+import {
+  normalizarColorHex,
+} from '../../comunes/utilidades/color-hex';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActualizarNegocioDto } from './dto/actualizar-negocio.dto';
 import { LogoNegocioService } from './logo-negocio.service';
@@ -20,6 +24,12 @@ export interface NegocioApi {
   mostrarTwitter: boolean;
   tiktok: string;
   mostrarTiktok: boolean;
+  temaClaroColorAcento: string;
+  temaClaroColorFondo: string;
+  temaClaroColorSuperficie: string;
+  temaClaroColorCabecera: string;
+  temaClaroColorTexto: string;
+  temaClaroColorBorde: string;
   tieneLogo: boolean;
   logoVersion: number | null;
   nombreArchivoLogo: string | null;
@@ -50,9 +60,15 @@ export class NegocioService {
     mostrarInstagram: boolean;
     twitter: string;
     mostrarTwitter: boolean;
-    tiktok: string;
-    mostrarTiktok: boolean;
-  }): Omit<NegocioApi, 'tieneLogo' | 'logoVersion' | 'nombreArchivoLogo'> {
+  tiktok: string;
+  mostrarTiktok: boolean;
+  temaClaroColorAcento: string;
+  temaClaroColorFondo: string;
+  temaClaroColorSuperficie: string;
+  temaClaroColorCabecera: string;
+  temaClaroColorTexto: string;
+  temaClaroColorBorde: string;
+}): Omit<NegocioApi, 'tieneLogo' | 'logoVersion' | 'nombreArchivoLogo'> {
     return {
       id: registro.id,
       nombre: registro.nombre,
@@ -69,6 +85,12 @@ export class NegocioService {
       mostrarTwitter: registro.mostrarTwitter,
       tiktok: registro.tiktok,
       mostrarTiktok: registro.mostrarTiktok,
+      temaClaroColorAcento: registro.temaClaroColorAcento,
+      temaClaroColorFondo: registro.temaClaroColorFondo,
+      temaClaroColorSuperficie: registro.temaClaroColorSuperficie,
+      temaClaroColorCabecera: registro.temaClaroColorCabecera,
+      temaClaroColorTexto: registro.temaClaroColorTexto,
+      temaClaroColorBorde: registro.temaClaroColorBorde,
     };
   }
 
@@ -100,6 +122,30 @@ export class NegocioService {
         mostrarTwitter: datos.mostrarTwitter ?? false,
         tiktok: normalizarRedSocial(datos.tiktok),
         mostrarTiktok: datos.mostrarTiktok ?? false,
+        temaClaroColorAcento: normalizarColorHex(
+          datos.temaClaroColorAcento,
+          TEMA_CLARO_POR_DEFECTO.colorAcento,
+        ),
+        temaClaroColorFondo: normalizarColorHex(
+          datos.temaClaroColorFondo,
+          TEMA_CLARO_POR_DEFECTO.colorFondo,
+        ),
+        temaClaroColorSuperficie: normalizarColorHex(
+          datos.temaClaroColorSuperficie,
+          TEMA_CLARO_POR_DEFECTO.colorSuperficie,
+        ),
+        temaClaroColorCabecera: normalizarColorHex(
+          datos.temaClaroColorCabecera,
+          TEMA_CLARO_POR_DEFECTO.colorCabecera,
+        ),
+        temaClaroColorTexto: normalizarColorHex(
+          datos.temaClaroColorTexto,
+          TEMA_CLARO_POR_DEFECTO.colorTexto,
+        ),
+        temaClaroColorBorde: normalizarColorHex(
+          datos.temaClaroColorBorde,
+          TEMA_CLARO_POR_DEFECTO.colorBorde,
+        ),
       },
     });
     return this.combinarConLogo(this.mapear(actualizado));

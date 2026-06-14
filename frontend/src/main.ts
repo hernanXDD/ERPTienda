@@ -4,6 +4,7 @@ import App from './App.vue';
 import router from './router';
 import { registrarManejadorRespuesta401 } from './servicios/http';
 import { useSesionStore } from './stores/sesion';
+import { useTemaStore } from './stores/tema';
 import './estilos/tema.css';
 import './estilos/paginaGestion.css';
 import './estilos/desplazamientoPantalla.css';
@@ -12,7 +13,14 @@ import './estilos/mobile.css';
 const app = createApp(App);
 const pinia = createPinia();
 app.use(pinia);
+
+useTemaStore().iniciarObservadorTema();
+
 app.use(router);
+
+router.beforeResolve((to) => {
+  useTemaStore().sincronizarTema(to.name);
+});
 
 registrarManejadorRespuesta401(() => {
   const sesion = useSesionStore();

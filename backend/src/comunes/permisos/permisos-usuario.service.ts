@@ -3,8 +3,7 @@ import { RolUsuario } from '@prisma/client';
 import { filtroNoBorrado } from '../utilidades/borrado-logico';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
-  menusVisiblesResueltos,
-  permisosPorDefectoSegunRol,
+  permisosOperativosResueltos,
   type ClaveMenuPrincipal,
   type PermisosOperativosUsuario,
 } from '../tipos/permisos-usuario';
@@ -25,13 +24,7 @@ export class PermisosUsuarioService {
     }
 
     const almacenados = (usuario.permisosJson ?? {}) as Partial<PermisosOperativosUsuario>;
-    const base = permisosPorDefectoSegunRol(usuario.rol);
-
-    return {
-      ...base,
-      ...almacenados,
-      menusVisibles: menusVisiblesResueltos(almacenados.menusVisibles),
-    };
+    return permisosOperativosResueltos(usuario.rol, almacenados);
   }
 
   async tienePermiso(idUsuario: string, clave: ClavePermisoOperativo): Promise<boolean> {

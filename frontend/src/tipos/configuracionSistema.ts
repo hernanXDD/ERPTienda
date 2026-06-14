@@ -8,6 +8,8 @@ export interface ConfiguracionSistema {
   diasDeudaCuentaCorriente: number;
   /** Existencias iguales o por debajo generan alerta de stock bajo o crítico. */
   stockMinimoAlerta: number;
+  /** Habilita entradas manuales de stock (además del permiso por usuario). */
+  movimientoManualStockHabilitado: boolean;
 }
 
 export interface ConfiguracionSistemaRegistro extends ConfiguracionSistema {
@@ -21,6 +23,7 @@ export const configuracionSistemaPorDefecto = (): ConfiguracionSistemaEditable =
   porcentajeGananciaSugerida: 35,
   diasDeudaCuentaCorriente: 30,
   stockMinimoAlerta: 5,
+  movimientoManualStockHabilitado: true,
 });
 
 export type DatosConfiguracionSistemaEditable = ConfiguracionSistemaEditable;

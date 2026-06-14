@@ -917,8 +917,8 @@ void onToggleHabilitadoSesion;
 }
 
 .ua-retro--exito {
-  border-color: rgba(74, 222, 128, 0.35);
-  background: rgba(74, 222, 128, 0.08);
+  border-color: var(--color-exito-borde);
+  background: var(--color-exito-suave);
   color: var(--color-exito);
 }
 
@@ -930,15 +930,15 @@ void onToggleHabilitadoSesion;
   font-size: 0.84rem;
   color: var(--color-texto-apagado);
   line-height: 1.45;
-  background: rgba(124, 140, 240, 0.04);
+  background: var(--color-acento-suave);
 }
 
 .ua-aviso-politica-dueno {
   margin: 0;
   padding: 0.62rem 0.9rem;
   border-radius: var(--radio-control);
-  border: 1px solid rgba(234, 179, 8, 0.35);
-  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid var(--color-advertencia-borde);
+  background: var(--color-advertencia-suave);
   font-size: 0.82rem;
   line-height: 1.5;
   color: var(--color-texto-suave);
@@ -972,15 +972,8 @@ void onToggleHabilitadoSesion;
   overflow-x: clip;
   border-radius: 12px;
   border: 1px solid var(--color-borde);
-  background: linear-gradient(
-    165deg,
-    rgba(19, 26, 40, 0.98) 0%,
-    rgba(26, 33, 50, 0.92) 38%,
-    rgba(26, 33, 50, 0.88) 100%
-  );
-  box-shadow:
-    0 0 0 1px rgba(124, 140, 240, 0.07),
-    0 12px 28px rgba(0, 0, 0, 0.32);
+  background: var(--color-fondo-elevado);
+  box-shadow: var(--sombra-suave);
   transition:
     border-color 0.18s ease,
     box-shadow 0.2s ease,
@@ -989,10 +982,8 @@ void onToggleHabilitadoSesion;
 
 @media (hover: hover) and (pointer: fine) {
   .ua-card:hover {
-    border-color: rgba(124, 140, 240, 0.35);
-    box-shadow:
-      0 0 0 1px rgba(124, 140, 240, 0.12),
-      0 16px 40px rgba(0, 0, 0, 0.38);
+    border-color: var(--color-acento-borde);
+    box-shadow: var(--sombra-suave);
     transform: translateY(-1px);
   }
 }
@@ -1013,8 +1004,8 @@ void onToggleHabilitadoSesion;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(124, 140, 240, 0.55),
-    rgba(154, 124, 240, 0.45),
+    var(--color-acento-borde),
+    var(--color-acento),
     transparent
   );
 }
@@ -1090,7 +1081,7 @@ void onToggleHabilitadoSesion;
   justify-content: space-between;
   gap: 0.45rem;
   padding-bottom: 0.05rem;
-  border-bottom: 1px solid rgba(42, 58, 84, 0.55);
+  border-bottom: 1px solid var(--color-borde);
 }
 
 .ua-card-nom {
@@ -1114,8 +1105,8 @@ void onToggleHabilitadoSesion;
   letter-spacing: 0.07em;
   padding: 0.2rem 0.42rem;
   border-radius: 6px;
-  background: rgba(251, 113, 133, 0.16);
-  border: 1px solid rgba(251, 113, 133, 0.35);
+  background: var(--color-peligro-suave);
+  border: 1px solid var(--color-peligro-borde);
   color: var(--color-peligro);
 }
 
@@ -1128,7 +1119,7 @@ void onToggleHabilitadoSesion;
   gap: 0.45rem 0.65rem;
   margin-top: auto;
   padding-top: 0.48rem;
-  border-top: 1px solid rgba(42, 58, 84, 0.55);
+  border-top: 1px solid var(--color-borde);
 }
 
 @media (max-width: 420px) {
@@ -1172,14 +1163,14 @@ void onToggleHabilitadoSesion;
     background 0.15s ease,
     color 0.15s ease;
   border: 1px solid var(--color-borde);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-fondo);
   color: var(--color-texto-suave);
 }
 
 .ua-btn-detalle:hover:not(:disabled) {
-  border-color: rgba(124, 140, 240, 0.35);
+  border-color: var(--color-acento-borde);
   color: var(--color-texto);
-  background: rgba(124, 140, 240, 0.08);
+  background: var(--color-acento-suave);
 }
 
 .ua-btn-detalle:focus-visible {
@@ -1194,12 +1185,12 @@ void onToggleHabilitadoSesion;
 
 .ua-btn-detalle--pel {
   color: var(--color-peligro);
-  border-color: rgba(251, 113, 133, 0.45);
-  background: rgba(251, 113, 133, 0.06);
+  border-color: var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
 }
 
 .ua-btn-detalle--pel:hover:not(:disabled) {
-  background: rgba(251, 113, 133, 0.12);
+  background: var(--color-peligro-suave);
 }
 
 .ua-sw {
@@ -1235,12 +1226,12 @@ void onToggleHabilitadoSesion;
   width: 2.5rem;
   height: 1.45rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-hover-neutro);
   border: 1px solid var(--color-borde);
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 2px var(--color-fondo-sutil);
 }
 
 .ua-sw-ui::after {
@@ -1256,7 +1247,7 @@ void onToggleHabilitadoSesion;
   transition:
     transform 0.18s ease,
     background 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--sombra-suave);
   pointer-events: none;
 }
 
@@ -1266,8 +1257,8 @@ void onToggleHabilitadoSesion;
 }
 
 .ua-sw-input:checked + .ua-sw-ui {
-  background: rgba(124, 140, 240, 0.35);
-  border-color: rgba(124, 140, 240, 0.55);
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
 }
 
 .ua-sw-input:checked + .ua-sw-ui::after {
@@ -1313,20 +1304,20 @@ void onToggleHabilitadoSesion;
 }
 
 .ua-rol-pill--admin {
-  background: rgba(124, 140, 240, 0.22);
-  border-color: rgba(124, 140, 240, 0.42);
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
   color: var(--color-acento-hover);
 }
 
 .ua-rol-pill--dueno {
-  background: rgba(234, 179, 8, 0.14);
-  border-color: rgba(234, 179, 8, 0.42);
-  color: #fbbf24;
+  background: var(--color-advertencia-suave);
+  border-color: var(--color-advertencia-borde);
+  color: var(--color-advertencia);
 }
 
 .ua-rol-pill--empleado {
-  background: rgba(148, 163, 184, 0.12);
-  border-color: rgba(148, 163, 184, 0.28);
+  background: var(--color-fondo-sutil);
+  border-color: var(--color-borde);
   color: var(--color-texto-suave);
 }
 
@@ -1342,20 +1333,20 @@ void onToggleHabilitadoSesion;
 }
 
 .ua-chip--sesion-si {
-  background: rgba(124, 140, 240, 0.22);
-  border-color: rgba(124, 140, 240, 0.35);
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
   color: var(--color-acento-hover);
 }
 
 .ua-chip--sesion-no {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-hover-neutro);
   border-color: var(--color-borde);
   color: var(--color-texto-apagado);
 }
 
 .ua-chip--adv {
-  background: rgba(220, 180, 70, 0.2);
-  color: #e8c96a;
+  background: var(--color-advertencia-suave);
+  color: var(--color-advertencia);
   border-radius: 6px;
 }
 
@@ -1421,13 +1412,11 @@ void onToggleHabilitadoSesion;
   border-radius: 16px;
   background: var(--color-fondo-elevado);
   color: var(--color-texto);
-  box-shadow:
-    0 0 0 1px rgba(124, 140, 240, 0.08),
-    0 28px 64px rgba(0, 0, 0, 0.58);
+  box-shadow: var(--color-sombra-elevada);
 }
 
 .ua-modal::backdrop {
-  background: rgba(7, 11, 20, 0.76);
+  background: var(--color-scrim);
   backdrop-filter: blur(3px);
 }
 
@@ -1453,18 +1442,7 @@ void onToggleHabilitadoSesion;
   min-height: min(28rem, calc(100dvh - 2.5rem));
   max-height: calc(100dvh - 1.25rem);
   overflow: hidden;
-  background:
-    radial-gradient(
-      ellipse 140% 90% at 100% -30%,
-      rgba(124, 140, 240, 0.11),
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse 80% 60% at 0% 100%,
-      rgba(124, 140, 240, 0.05),
-      transparent 50%
-    ),
-    var(--color-fondo-elevado);
+  background: var(--color-fondo-elevado);
 }
 
 .ua-ed-cab {
@@ -1501,13 +1479,13 @@ void onToggleHabilitadoSesion;
   gap: 0.55rem;
   padding: 0.38rem 0.62rem;
   border-radius: 999px;
-  border: 1px solid rgba(42, 58, 84, 0.75);
-  background: rgba(21, 29, 46, 0.55);
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo);
 }
 
 .ua-ed-hab:has(.ua-sw-input:checked) {
-  border-color: rgba(124, 140, 240, 0.38);
-  background: rgba(124, 140, 240, 0.1);
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
 }
 
 .ua-ed-hab-lbl {
@@ -1536,7 +1514,7 @@ void onToggleHabilitadoSesion;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.11em;
-  color: rgba(139, 156, 179, 0.95);
+  color: var(--color-texto-apagado);
 }
 
 .ua-ed-tit {
@@ -1578,8 +1556,8 @@ void onToggleHabilitadoSesion;
   align-items: center;
   padding: 0.22rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid rgba(124, 140, 240, 0.28);
-  background: rgba(124, 140, 240, 0.1);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-acento-hover);
@@ -1590,9 +1568,9 @@ void onToggleHabilitadoSesion;
   flex-shrink: 0;
   background: linear-gradient(
     90deg,
-    rgba(124, 140, 240, 0.12),
-    rgba(154, 124, 240, 0.62),
-    rgba(124, 140, 240, 0.18)
+    var(--color-acento-suave),
+    var(--color-acento-intenso),
+    var(--color-acento-suave)
   );
 }
 
@@ -1671,9 +1649,8 @@ void onToggleHabilitadoSesion;
 .ua-ed-bloque {
   flex-shrink: 0;
   border-radius: 14px;
-  border: 1px solid rgba(42, 58, 84, 0.8);
-  background: rgba(7, 11, 20, 0.32);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
   overflow: hidden;
 }
 
@@ -1682,8 +1659,8 @@ void onToggleHabilitadoSesion;
   align-items: flex-start;
   gap: 0.72rem;
   padding: 0.85rem 1.1rem 0.75rem;
-  border-bottom: 1px solid rgba(42, 58, 84, 0.65);
-  background: rgba(21, 29, 46, 0.48);
+  border-bottom: 1px solid var(--color-borde);
+  background: var(--color-fondo-cabecera);
 }
 
 .ua-ed-bloque-ico {
@@ -1765,7 +1742,7 @@ void onToggleHabilitadoSesion;
   padding: 0.62rem 0.78rem;
   border: 1px solid var(--color-borde);
   border-radius: 10px;
-  background: var(--color-fondo-cabecera);
+  background: var(--color-fondo-elevado);
   color: var(--color-texto);
   font: inherit;
   font-size: 0.9375rem;
@@ -1776,21 +1753,21 @@ void onToggleHabilitadoSesion;
 }
 
 .ua-ed-inp:hover:not(:disabled) {
-  border-color: rgba(124, 140, 240, 0.32);
+  border-color: var(--color-acento-borde);
 }
 
 .ua-ed-inp:focus {
   outline: none;
   border-color: var(--color-acento);
-  box-shadow: 0 0 0 3px rgba(124, 140, 240, 0.2);
+  box-shadow: 0 0 0 3px var(--color-acento-suave);
 }
 
 .ua-ed-form--solo-lectura .ua-ed-inp:disabled {
   opacity: 1;
   cursor: default;
-  color: var(--color-texto-suave);
-  background: rgba(7, 11, 20, 0.38);
-  border-color: rgba(42, 58, 84, 0.55);
+  color: var(--color-texto);
+  background: var(--color-fondo);
+  border-color: var(--color-borde);
   box-shadow: none;
 }
 
@@ -1808,8 +1785,8 @@ void onToggleHabilitadoSesion;
   margin: 0;
   font-weight: 600;
   color: var(--color-texto);
-  background: rgba(7, 11, 20, 0.38);
-  border-color: rgba(42, 58, 84, 0.55);
+  background: var(--color-fondo);
+  border-color: var(--color-borde);
   cursor: default;
 }
 
@@ -1841,8 +1818,8 @@ void onToggleHabilitadoSesion;
   font-weight: 600;
   line-height: 1.35;
   color: var(--color-peligro);
-  background: rgba(251, 113, 133, 0.1);
-  border: 1px solid rgba(251, 113, 133, 0.35);
+  background: var(--color-peligro-suave);
+  border: 1px solid var(--color-peligro-borde);
 }
 
 .ua-ed-pie {
@@ -1852,9 +1829,8 @@ void onToggleHabilitadoSesion;
   justify-content: flex-end;
   gap: 0.65rem;
   padding: 1rem clamp(1.35rem, 3.5vw, 2rem) 1.25rem;
-  border-top: 1px solid rgba(42, 58, 84, 0.85);
-  background: rgba(21, 29, 46, 0.72);
-  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
 }
 
 .ua-modal-x {
@@ -1876,7 +1852,7 @@ void onToggleHabilitadoSesion;
 
 .ua-modal-x:hover {
   color: var(--color-texto);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-hover-neutro);
 }
 
 .ua-btn-sec {

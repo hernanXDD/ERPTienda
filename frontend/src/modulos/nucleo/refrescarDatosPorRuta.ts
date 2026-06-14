@@ -2,6 +2,7 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import { useCatalogoStore } from '../../stores/catalogo';
 import { useClientesStore } from '../../stores/clientes';
 import { useCuentaCorrienteStore } from '../../stores/cuentaCorriente';
+import { useCuentaCorrienteProveedorStore } from '../../stores/cuentaCorrienteProveedor';
 import { useGestionUsuariosStore } from '../../stores/gestionUsuarios';
 import { useProveedoresStore } from '../../stores/proveedores';
 import { useRegistroComprasStore } from '../../stores/registroCompras';
@@ -36,7 +37,11 @@ export function refrescarDatosPorRuta(
       void useVentasStore().cargarVentas({ forzar: true });
       break;
     case 'compras-proveedores':
+    case 'compras-cuentas-corrientes-proveedor':
       void useProveedoresStore().cargar({ forzar: true });
+      if (nombre === 'compras-cuentas-corrientes-proveedor') {
+        void recargarCuentasCorrientesProveedor();
+      }
       break;
     case 'compras-registro':
       void useProveedoresStore().cargar({ forzar: true });
@@ -81,5 +86,18 @@ async function recargarCuentasCorrientes(): Promise<void> {
   await Promise.all([
     cuentaCorrienteStore.cargarSaldos(idsCc),
     cuentaCorrienteStore.cargarMovimientosTodos(idsCc),
+  ]);
+}
+
+async function recargarCuentasCorrientesProveedor(): Promise<void> {
+  const proveedoresStore = useProveedoresStore();
+  await proveedoresStore.cargar({ forzar: true });
+  const idsCc = proveedoresStore.proveedores
+    .filter((p) => p.habilitado && p.comprasCreditoHabilitadas)
+    .map((p) => p.id);
+  const cuentaCorrienteProveedorStore = useCuentaCorrienteProveedorStore();
+  await Promise.all([
+    cuentaCorrienteProveedorStore.cargarSaldos(idsCc),
+    cuentaCorrienteProveedorStore.cargarMovimientosTodos(idsCc),
   ]);
 }

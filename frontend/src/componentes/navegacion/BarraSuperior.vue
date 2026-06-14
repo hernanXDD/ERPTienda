@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { ChevronDown, LogOut, User } from 'lucide-vue-next';
+import { ChevronDown, LogOut, Moon, User } from 'lucide-vue-next';
 import { onClickOutside, onKeyStroke } from '@vueuse/core';
 import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
+import { useApariencia } from '../../composables/useApariencia';
 import { useLogoNegocio } from '../../composables/useLogoNegocio';
 import { inicialesNombreNegocio } from '../../modulos/negocio/inicialesNombreNegocio';
 import { useNegocioStore } from '../../stores/negocio';
 import { useSesionStore } from '../../stores/sesion';
+import { useTemaStore } from '../../stores/tema';
+import '../../estilos/panelGestionPermisos.css';
 
 const sesion = useSesionStore();
 const negocioStore = useNegocioStore();
@@ -21,6 +24,17 @@ const envoltorioMenu = ref<HTMLElement | null>(null);
 
 const inicialesNegocio = computed(() => inicialesNombreNegocio(nombreNegocio.value));
 const { urlLogo, cargarLogo } = useLogoNegocio();
+useApariencia();
+const temaStore = useTemaStore();
+const { modoOscuroHabilitado } = storeToRefs(temaStore);
+const cambiandoTema = ref(false);
+
+const interruptorModoOscuro = computed({
+  get: () => modoOscuroHabilitado.value,
+  set: (valor: boolean) => {
+    void aplicarModoOscuro(valor);
+  },
+});
 
 onMounted(async () => {
   await negocioStore.asegurarCargado();
@@ -51,6 +65,16 @@ async function manejarCerrarSesion() {
   menuAbierto.value = false;
   await sesion.cerrarSesion();
   await router.push({ name: 'inicio-sesion' });
+}
+
+async function aplicarModoOscuro(habilitado: boolean): Promise<void> {
+  if (cambiandoTema.value || habilitado === modoOscuroHabilitado.value) return;
+  cambiandoTema.value = true;
+  try {
+    await temaStore.establecerModoOscuro(habilitado);
+  } finally {
+    cambiandoTema.value = false;
+  }
 }
 </script>
 
@@ -106,6 +130,21 @@ async function manejarCerrarSesion() {
           <p class="rol">{{ usuario.rol }}</p>
         </div>
         <div class="separador" role="separator" />
+        <div class="item-menu-tema" role="none">
+          <Moon :size="18" stroke-width="1.75" aria-hidden="true" class="icono-item" />
+          <span id="lbl-modo-oscuro-menu" class="item-menu-tema-etiq">Modo oscuro</span>
+          <label class="perm-sw item-menu-tema-sw">
+            <input
+              v-model="interruptorModoOscuro"
+              type="checkbox"
+              class="perm-sw-input"
+              role="switch"
+              aria-labelledby="lbl-modo-oscuro-menu"
+              :disabled="cambiandoTema"
+            />
+            <span class="perm-sw-ui" aria-hidden="true" />
+          </label>
+        </div>
         <button
           type="button"
           role="menuitem"
@@ -143,7 +182,7 @@ async function manejarCerrarSesion() {
   min-height: 3.5rem;
   padding: 0 0.85rem 0 1rem;
   gap: 0.85rem;
-  background: linear-gradient(180deg, #0a101c 0%, var(--color-fondo-cabecera) 100%);
+  background: var(--color-fondo-cabecera);
   border-bottom: 1px solid var(--color-borde);
   box-shadow: var(--sombra-suave);
   overflow: visible;
@@ -184,10 +223,10 @@ async function manejarCerrarSesion() {
   letter-spacing: 0.04em;
   color: var(--color-texto-sobre-acento);
   background: linear-gradient(145deg, var(--color-acento-hover), var(--color-acento-intenso));
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--color-acento-borde);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 4px 14px rgba(91, 110, 230, 0.28);
+    0 1px 0 var(--color-hover-neutro) inset,
+    var(--color-sombra-elevada);
 }
 
 .envoltorio-menu {
@@ -207,7 +246,7 @@ async function manejarCerrarSesion() {
   padding: 0 0.6rem 0 0.35rem;
   border: 1px solid var(--color-borde);
   border-radius: 999px;
-  background: rgba(21, 29, 46, 0.85);
+  background: var(--color-fondo-elevado);
   color: var(--color-texto-suave);
 }
 
@@ -276,7 +315,7 @@ async function manejarCerrarSesion() {
   right: 0;
   top: calc(100% + 0.45rem);
   z-index: 200;
-  min-width: 12.5rem;
+  min-width: 14.5rem;
   padding: 0.35rem 0;
   background: var(--color-fondo-elevado);
   border: 1px solid var(--color-borde);
@@ -311,6 +350,23 @@ async function manejarCerrarSesion() {
   border: none;
 }
 
+.item-menu-tema {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+}
+
+.item-menu-tema-etiq {
+  font-size: 0.875rem;
+  color: var(--color-texto-suave);
+}
+
+.item-menu-tema-sw {
+  flex-shrink: 0;
+}
+
 .item-cerrar-sesion {
   display: flex;
   align-items: center;
@@ -325,7 +381,7 @@ async function manejarCerrarSesion() {
 }
 
 .item-cerrar-sesion:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover-neutro);
   color: var(--color-texto);
 }
 

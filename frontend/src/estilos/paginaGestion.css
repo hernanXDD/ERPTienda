@@ -4,6 +4,9 @@
  * Mantener el orden DOM: cabecera → KPIs (opc.) → barra filtros → resumen → contenido/tabla.
  */
 
+@import './modalEdicionMaestro.css';
+@import './modalCuentaCorriente.css';
+
 /* —— Contenedor —— */
 .pg-wrap {
   width: 100%;
@@ -20,9 +23,7 @@
   border-radius: 14px;
   border: 1px solid var(--color-borde);
   background: var(--color-fondo-elevado);
-  box-shadow:
-    0 4px 28px rgba(0, 0, 0, 0.32),
-    0 0 1px rgba(124, 140, 240, 0.15);
+  box-shadow: var(--sombra-suave);
   overflow: hidden;
   min-height: 0;
 }
@@ -35,12 +36,7 @@
   padding: 1.25rem clamp(1rem, 3vw, 1.65rem);
   padding-top: 1.35rem;
   border-bottom: 1px solid var(--color-borde);
-  background: linear-gradient(
-    165deg,
-    rgba(7, 11, 20, 0.98) 0%,
-    rgba(21, 29, 46, 0.92) 45%,
-    rgba(21, 29, 46, 0.55) 100%
-  );
+  background: var(--color-fondo-cabecera);
 }
 
 @media (width >= 900px) {
@@ -97,6 +93,13 @@
   max-width: 38rem;
 }
 
+/* Separación mínima entre cabecera del marco y el primer bloque (barra, formulario, aviso). */
+.pg-marco > .pg-cab + .pg-barra,
+.pg-marco > .pg-cab + form,
+.pg-marco > .pg-cab + .perm-aviso-dueno {
+  margin-top: 3px;
+}
+
 /* —— KPIs —— */
 .pg-kpis {
   display: grid;
@@ -148,11 +151,7 @@
 
 .pg-kpi--acento {
   border-color: var(--color-acento-borde);
-  background: linear-gradient(
-    155deg,
-    rgba(91, 110, 230, 0.18),
-    rgba(124, 140, 240, 0.08)
-  );
+  background: var(--color-acento-suave);
 }
 
 .pg-kpi--acento .pg-kpi-etiq {
@@ -164,12 +163,8 @@
 }
 
 .pg-kpi--peligro {
-  border-color: rgba(251, 113, 133, 0.28);
-  background: linear-gradient(
-    158deg,
-    rgba(251, 113, 133, 0.1),
-    rgba(251, 113, 133, 0.03)
-  );
+  border-color: var(--color-peligro-borde);
+  background: var(--color-peligro-suave);
 }
 
 .pg-kpi--peligro .pg-kpi-etiq {
@@ -366,7 +361,7 @@
 /* —— Cuerpo genérico (grillas, formularios) —— */
 .pg-cuerpo {
   padding: clamp(0.95rem, 2.5vw, 1.2rem) clamp(1rem, 3vw, 1.65rem) clamp(1.15rem, 3vw, 1.5rem);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, transparent 56%);
+  background: transparent;
   min-height: 0;
 }
 
@@ -396,7 +391,7 @@
   flex-direction: column;
   min-height: 0;
   padding: 0.65rem 0 0;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, transparent 56%);
+  background: transparent;
 }
 
 .pg-grilla-viewport {
@@ -459,7 +454,7 @@
   color: var(--color-texto-apagado);
   border-radius: 12px;
   border: 1px dashed var(--color-borde);
-  background: rgba(15, 23, 42, 0.25);
+  background: var(--color-fondo-cabecera);
 }
 
 .pg-vacio--grilla-tit {
@@ -476,7 +471,7 @@
   flex-direction: column;
   min-height: 0;
   padding: clamp(0.95rem, 2.5vw, 1.2rem) clamp(1rem, 3vw, 1.65rem) clamp(1.15rem, 3vw, 1.5rem);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, transparent 56%);
+  background: transparent;
 }
 
 .pg-tabla-cab {
@@ -564,16 +559,16 @@
 
 .pg-tabla--estado td {
   padding: 0.62rem clamp(0.65rem, 1.8vw, 1rem);
-  border-bottom: 1px solid rgba(42, 58, 84, 0.55);
+  border-bottom: 1px solid var(--color-borde);
   vertical-align: middle;
 }
 
 .pg-tabla--estado tbody tr:nth-child(even) {
-  background: rgba(124, 140, 240, 0.03);
+  background: var(--color-fila-alterna);
 }
 
 .pg-tabla--estado tbody tr:hover {
-  background: rgba(124, 140, 240, 0.07);
+  background: var(--color-fila-hover);
 }
 
 .pg-vacio {

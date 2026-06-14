@@ -4,6 +4,7 @@ import type { MenusVisiblesUsuario } from '../tipos/usuarioGestion';
 import { useCatalogoStore } from './catalogo';
 import { useClientesStore } from './clientes';
 import { useCuentaCorrienteStore } from './cuentaCorriente';
+import { useCuentaCorrienteProveedorStore } from './cuentaCorrienteProveedor';
 import { useGestionUsuariosStore } from './gestionUsuarios';
 import { useNegocioStore } from './negocio';
 import { useConfiguracionSistemaStore } from './configuracionSistema';
@@ -29,6 +30,7 @@ const ETIQUETAS_CARGA: Record<string, string> = {
   negocio: 'datos del negocio',
   configuracionSistema: 'configuración del sistema',
   cuentaCorriente: 'cuentas corrientes',
+  cuentaCorrienteProveedor: 'cuentas corrientes proveedores',
 };
 
 async function cargarConRegistro(clave: keyof typeof ETIQUETAS_CARGA, promesa: Promise<unknown>): Promise<void> {
@@ -78,7 +80,7 @@ export async function cargarDatosMaestros(): Promise<void> {
     const proveedores = useProveedoresStore();
     const compras = useRegistroComprasStore();
     const usuarios = useGestionUsuariosStore();
-    const cuentaCorriente = useCuentaCorrienteStore();
+    const cuentaCorrienteProveedor = useCuentaCorrienteProveedorStore();
     const negocio = useNegocioStore();
     const configuracionSistema = useConfiguracionSistemaStore();
 
@@ -123,9 +125,23 @@ export async function cargarDatosMaestros(): Promise<void> {
       const idsCc = clientes.clientes
         .filter((c) => c.habilitado && c.cuentaCorrienteHabilitada)
         .map((c) => c.id);
+      const cuentaCorriente = useCuentaCorrienteStore();
       await Promise.all([
         cargarConRegistro('cuentaCorriente', cuentaCorriente.cargarSaldos(idsCc)),
         cargarConRegistro('cuentaCorriente', cuentaCorriente.cargarMovimientosTodos(idsCc)),
+      ]);
+    }
+
+    if (requiereAlgunoMenu(menus, ['compras', 'reportes'])) {
+      const idsCcProv = proveedores.proveedores
+        .filter((p) => p.habilitado && p.comprasCreditoHabilitadas)
+        .map((p) => p.id);
+      await Promise.all([
+        cargarConRegistro('cuentaCorrienteProveedor', cuentaCorrienteProveedor.cargarSaldos(idsCcProv)),
+        cargarConRegistro(
+          'cuentaCorrienteProveedor',
+          cuentaCorrienteProveedor.cargarMovimientosTodos(idsCcProv),
+        ),
       ]);
     }
 

@@ -384,8 +384,8 @@ onMounted(() => {
   margin: 0 0 1rem;
   padding: 0.65rem 0.82rem;
   border-radius: 10px;
-  border: 1px solid rgba(124, 140, 240, 0.28);
-  background: rgba(124, 140, 240, 0.06);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
   font-size: 0.84rem;
   line-height: 1.45;
   color: var(--color-texto-suave);
@@ -420,14 +420,14 @@ onMounted(() => {
 
 .cat-gest-aviso--ok {
   color: var(--color-exito);
-  background: rgba(52, 211, 153, 0.1);
-  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: var(--color-exito-suave);
+  border: 1px solid var(--color-exito-borde);
 }
 
 .cat-gest-aviso--error {
   color: var(--color-peligro);
-  background: rgba(251, 113, 133, 0.1);
-  border: 1px solid rgba(251, 113, 133, 0.32);
+  background: var(--color-peligro-suave);
+  border: 1px solid var(--color-peligro-borde);
 }
 
 .cat-gest-cel-nombre {
@@ -455,8 +455,8 @@ onMounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-texto-apagado);
-  background: rgba(124, 140, 240, 0.08);
-  border: 1px solid rgba(124, 140, 240, 0.18);
+  background: var(--color-acento-suave);
+  border: 1px solid var(--color-acento-borde);
 }
 
 .cat-gest-cel-desc {
@@ -489,13 +489,13 @@ onMounted(() => {
 }
 
 .cat-gest-btn-peligro {
-  border-color: rgba(251, 113, 133, 0.45);
+  border-color: var(--color-peligro-borde);
   color: var(--color-peligro);
 }
 
 .cat-gest-btn-peligro:hover:not(:disabled) {
-  background: rgba(251, 113, 133, 0.1);
-  border-color: rgba(251, 113, 133, 0.55);
+  background: var(--color-peligro-suave);
+  border-color: var(--color-peligro-borde);
 }
 
 .cat-gest-btn-peligro:disabled {
@@ -526,13 +526,11 @@ onMounted(() => {
   border-radius: 14px;
   background: var(--color-fondo-elevado);
   color: var(--color-texto);
-  box-shadow:
-    0 4px 28px rgba(0, 0, 0, 0.32),
-    0 0 1px rgba(124, 140, 240, 0.15);
+  box-shadow: var(--sombra-suave);
 }
 
 .cat-gest-modal::backdrop {
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-scrim);
 }
 
 .cat-gest-modal-panel {
@@ -548,11 +546,7 @@ onMounted(() => {
   gap: 0.75rem;
   padding: 1.15rem clamp(1rem, 3vw, 1.35rem) 0.85rem;
   border-bottom: 1px solid var(--color-borde);
-  background: linear-gradient(
-    165deg,
-    rgba(7, 11, 20, 0.35) 0%,
-    rgba(21, 29, 46, 0.15) 100%
-  );
+  background: var(--color-fondo-cabecera);
 }
 
 .cat-gest-modal-titulo {

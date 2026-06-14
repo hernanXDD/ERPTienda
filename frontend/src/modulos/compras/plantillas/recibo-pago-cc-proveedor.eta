@@ -1,0 +1,92 @@
+<style><%~ it.estilos %></style>
+<article class="rv-doc">
+  <header class="rv-cab">
+    <div class="rv-cab-emisor">
+      <% if (it.tieneLogoImagen) { %>
+      <img class="rv-cab-logo-img" src="<%~ it.negocioLogoDataUrl %>" alt="" />
+      <% } else { %>
+      <span class="rv-cab-logo" aria-hidden="true"><%= it.negocioIniciales %></span>
+      <% } %>
+      <div class="rv-cab-datos">
+        <p class="rv-cab-marca"><%= it.negocioNombre %></p>
+        <% if (it.tieneCuit) { %><p class="rv-cab-cuit">CUIT <%= it.negocioCuit %></p><% } %>
+        <% if (it.tieneDireccion || it.tieneLocalidad) { %>
+        <p class="rv-cab-ubicacion">
+          <% if (it.tieneDireccion) { %><%= it.negocioDireccion %><% } %>
+          <% if (it.tieneDireccion && it.tieneLocalidad) { %> · <% } %>
+          <% if (it.tieneLocalidad) { %><%= it.negocioLocalidad %><% } %>
+        </p>
+        <% } %>
+        <% if (it.tieneTelefono || it.tieneCorreo) { %>
+        <p class="rv-cab-contacto">
+          <% if (it.tieneTelefono) { %>Tel. <%= it.negocioTelefono %><% } %>
+          <% if (it.tieneTelefono && it.tieneCorreo) { %> · <% } %>
+          <% if (it.tieneCorreo) { %><%= it.negocioCorreo %><% } %>
+        </p>
+        <% } %>
+      </div>
+    </div>
+    <div class="rv-cab-doc">
+      <p class="rv-cab-doc-etiq"><%= it.tituloDocumento %></p>
+      <p class="rv-cab-gracias">Comprobante interno de pago</p>
+    </div>
+  </header>
+
+  <section class="rv-id" aria-label="Identificación del comprobante">
+    <div class="rv-id-item">
+      <span class="rv-etiq">Código</span>
+      <strong class="rv-num"><%= it.codigoRecibo %></strong>
+    </div>
+    <div class="rv-id-item rv-id-item--fecha">
+      <span class="rv-etiq">Fecha del pago</span>
+      <p class="rv-fecha"><%= it.fechaPago %></p>
+    </div>
+  </section>
+
+  <section class="rv-resumen" aria-label="Datos del pago">
+    <div class="rv-resumen-fila">
+      <span class="rv-etiq">Proveedor</span>
+      <p class="rv-valor"><%= it.proveedorNombre %></p>
+    </div>
+    <div class="rv-resumen-fila">
+      <span class="rv-etiq">Documento</span>
+      <p class="rv-valor"><%= it.proveedorDocumento %></p>
+    </div>
+    <div class="rv-resumen-fila">
+      <span class="rv-etiq">Importe pagado</span>
+      <p class="rv-valor rv-valor--pago"><%= it.importe %></p>
+    </div>
+    <div class="rv-resumen-fila">
+      <span class="rv-etiq">Forma de pago</span>
+      <p class="rv-valor"><%= it.formaPago %></p>
+    </div>
+    <div class="rv-resumen-fila">
+      <span class="rv-etiq">Concepto</span>
+      <p class="rv-valor"><%= it.concepto %></p>
+    </div>
+    <% if (it.tieneReferenciaPago) { %>
+    <div class="rv-resumen-fila">
+      <span class="rv-etiq">Referencia / comprobante</span>
+      <p class="rv-valor"><%= it.referenciaPago %></p>
+    </div>
+    <% } %>
+  </section>
+
+  <% if (it.tieneAuditoria) { %>
+  <section class="rv-obs" aria-label="Registro en sistema">
+    <span class="rv-etiq">Registro en sistema</span>
+    <p class="rv-obs-txt">Registrado: <%= it.registradoEl %> · Operador: <%= it.operador %> · Canal: <%= it.canal %></p>
+  </section>
+  <% } else if (it.tieneNotaSinAuditoria) { %>
+  <section class="rv-obs" aria-label="Aviso">
+    <p class="rv-obs-txt"><%= it.notaSinAuditoria %></p>
+  </section>
+  <% } %>
+
+  <footer class="rv-pie">
+    <p class="rv-pie-legal">
+      Este documento acredita el registro de un pago a proveedor en cuenta corriente. No reemplaza factura ni comprobante fiscal.
+    </p>
+    <p class="rv-pie-emision">Emitido el <%= it.generadoEl %></p>
+  </footer>
+</article>

@@ -1,7 +1,7 @@
 import { Eta } from 'eta/core';
 import { useNegocioStore } from '../../stores/negocio';
 import { obtenerEmisorNegocioReporte } from './emisorNegocioReporte';
-import { estilosBaseReporteCss } from './estilosReporteCss';
+import { generarEstilosReporteNegocio } from './estilosReporteCss';
 import { armarDatosPiePaginaReporte } from './piePaginaReporte';
 import plantillaEmisorReporte from './plantillas/emisor-reporte.eta?raw';
 import plantillaPieReporte from './plantillas/pie-reporte.eta?raw';
@@ -45,7 +45,8 @@ function insertarPieEnPlantilla(plantilla: string, datosCompletos: Record<string
 
 /** Renderiza plantilla en memoria (no usar `render`: interpreta el string como nombre de archivo). */
 export function renderizarPlantillaReporte(plantilla: string, datos: object): string {
-  return renderizarPlantillaConEstilos(plantilla, datos, estilosBaseReporteCss);
+  const negocio = useNegocioStore().negocio;
+  return renderizarPlantillaConEstilos(plantilla, datos, generarEstilosReporteNegocio(negocio));
 }
 
 export function renderizarPlantillaConEstilos(

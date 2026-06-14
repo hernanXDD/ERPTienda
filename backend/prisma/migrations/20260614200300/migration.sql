@@ -1,0 +1,2 @@
+-- RenameForeignKey
+ALTER TABLE "movimiento_cuenta_corriente_proveedor" RENAME CONSTRAINT "movimiento_cuenta_corriente_proveedor_registrado_por_usuario_id" TO "movimiento_cuenta_corriente_proveedor_registrado_por_usuar_fkey";

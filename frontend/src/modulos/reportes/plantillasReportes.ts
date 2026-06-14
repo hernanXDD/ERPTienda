@@ -1,6 +1,7 @@
 import plantillaCambioConteo from './plantillas/cambio-conteo.eta?raw';
 import plantillaComprasProveedor from './plantillas/compras-proveedor.eta?raw';
 import plantillaCuentasCorrientes from './plantillas/cuentas-corrientes.eta?raw';
+import plantillaCuentasCorrientesProveedor from './plantillas/cuentas-corrientes-proveedor.eta?raw';
 import plantillaMovimientosStock from './plantillas/movimientos-stock.eta?raw';
 import plantillaProductosMasVendidos from './plantillas/productos-mas-vendidos.eta?raw';
 import plantillaStockCritico from './plantillas/stock-critico.eta?raw';
@@ -14,6 +15,7 @@ export const plantillasReportes = {
   'stock-valorizado': plantillaStockValorizado,
   'movimientos-stock': plantillaMovimientosStock,
   'cuentas-corrientes': plantillaCuentasCorrientes,
+  'cuentas-corrientes-proveedor': plantillaCuentasCorrientesProveedor,
   'compras-proveedor': plantillaComprasProveedor,
   'productos-mas-vendidos': plantillaProductosMasVendidos,
   'ventas-por-categoria': plantillaVentasPorCategoria,

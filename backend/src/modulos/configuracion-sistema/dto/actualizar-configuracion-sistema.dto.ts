@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNumber, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, Max, Min } from 'class-validator';
 
 export class ActualizarConfiguracionSistemaDto {
   @Type(() => Number)
@@ -25,4 +25,7 @@ export class ActualizarConfiguracionSistemaDto {
   @Min(0)
   @Max(9999)
   stockMinimoAlerta!: number;
+
+  @IsBoolean()
+  movimientoManualStockHabilitado!: boolean;
 }

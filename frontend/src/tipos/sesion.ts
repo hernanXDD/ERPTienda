@@ -8,6 +8,7 @@ export interface UsuarioSesion {
   rol: RolUsuario;
   permisos: PermisosOperativosUsuario;
   debeCambiarContrasena: boolean;
+  modoOscuroHabilitado: boolean;
 }
 
 export interface CredencialesInicioSesion {

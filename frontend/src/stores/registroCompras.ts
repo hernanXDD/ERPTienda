@@ -6,6 +6,7 @@ import {
   type DatosRegistrarCompraApi,
 } from '../servicios/compras.servicio';
 import { useStockStore } from './stock';
+import { useCuentaCorrienteProveedorStore } from './cuentaCorrienteProveedor';
 import type { CompraRegistrada } from '../tipos/compraRegistrada';
 import { crearRegistroOperadorDesdeSesion } from '../utilidades/registroOperadorSesion';
 import {
@@ -58,7 +59,12 @@ export const useRegistroComprasStore = defineStore('registroCompras', () => {
     sincronizado = true;
 
     const stockStore = useStockStore();
+    const cuentaCorrienteProveedorStore = useCuentaCorrienteProveedorStore();
     await Promise.all([stockStore.cargar({ forzar: true }), stockStore.cargarAuditorias(undefined, { forzar: true })]);
+
+    if (registrada.condicionCompra === 'CUENTA_PROVEEDOR') {
+      await cuentaCorrienteProveedorStore.cargarMovimientosProveedor(registrada.proveedorId);
+    }
 
     return conOperador;
   }

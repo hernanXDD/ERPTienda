@@ -1,0 +1,114 @@
+/**
+ * Modal de edición maestro (clientes, proveedores, usuarios).
+ * Complementa estilos scoped de cada página con variables de tema.
+ */
+
+:is(.prv-ed-panel, .lc-ed-panel, .ua-ed-panel) {
+  background: var(--color-fondo-elevado);
+}
+
+:is(.prv-ed-bloque, .lc-ed-bloque, .ua-ed-bloque) {
+  border-color: var(--color-borde);
+  background: var(--color-fondo-elevado);
+  box-shadow: none;
+}
+
+:is(.prv-ed-bloque--finanza, .lc-ed-bloque--finanza) {
+  border-color: var(--color-acento-borde);
+  background: linear-gradient(
+    160deg,
+    var(--color-acento-suave) 0%,
+    var(--color-fondo-elevado) 55%,
+    var(--color-fondo-elevado) 100%
+  );
+}
+
+:is(.prv-ed-bloque-cab, .lc-ed-bloque-cab, .ua-ed-bloque-cab) {
+  border-bottom-color: var(--color-borde);
+  background: var(--color-fondo-cabecera);
+}
+
+:is(.prv-ed-bloque-cab--finanza, .lc-ed-bloque-cab--finanza) {
+  background: var(--color-acento-suave);
+  border-bottom-color: var(--color-acento-borde);
+}
+
+:is(.prv-ed-fila--direccion, .lc-ed-fila--direccion) {
+  border-top-color: var(--color-borde);
+}
+
+:is(.prv-ed-hab, .lc-ed-hab, .ua-ed-hab) {
+  border-color: var(--color-borde);
+  background: var(--color-fondo);
+}
+
+.prv-ed-hab:has(.prv-sw-input:checked),
+.lc-ed-hab:has(.lc-sw-input:checked),
+.ua-ed-hab:has(.ua-sw-input:checked) {
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
+}
+
+:is(.prv-ed-inp, .lc-ed-inp, .ua-ed-inp) {
+  background: var(--color-fondo-elevado);
+  border-color: var(--color-borde);
+}
+
+:is(.prv-ed-inp, .lc-ed-inp, .ua-ed-inp):focus {
+  box-shadow: 0 0 0 3px var(--color-acento-suave);
+}
+
+:is(.prv-ed-form--solo-lectura .prv-ed-inp:disabled, .lc-ed-form--solo-lectura .lc-ed-inp:disabled, .ua-ed-form--solo-lectura .ua-ed-inp:disabled) {
+  color: var(--color-texto);
+  background: var(--color-fondo);
+  border-color: var(--color-borde);
+}
+
+:is(.prv-ed-campo--limite, .lc-ed-campo--limite) {
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
+}
+
+:is(.prv-ed-form--solo-lectura .prv-ed-campo--limite, .lc-ed-form--solo-lectura .lc-ed-campo--limite) {
+  background: var(--color-fondo);
+}
+
+:is(.prv-ed-check, .lc-ed-check) {
+  border-color: var(--color-borde);
+  background: var(--color-fondo);
+}
+
+:is(.prv-ed-check, .lc-ed-check):has(input:checked) {
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
+}
+
+:is(.prv-ed-nota, .lc-ed-nota, .ua-ed-nota) {
+  border-top-color: var(--color-borde);
+}
+
+:is(.prv-ed-pie, .lc-ed-pie, .ua-ed-pie) {
+  border-top-color: var(--color-borde);
+  background: var(--color-fondo-elevado);
+  box-shadow: none;
+}
+
+:is(.prv-ed-eyebrow, .lc-ed-eyebrow, .ua-ed-eyebrow) {
+  color: var(--color-texto-apagado);
+}
+
+[data-tema='claro'] :is(.prv-modal, .lc-modal, .ua-modal)[open] {
+  box-shadow: var(--sombra-suave);
+}
+
+[data-tema='claro'] :is(.prv-modal, .lc-modal, .ua-modal)::backdrop {
+  background: var(--color-scrim);
+}
+
+[data-tema='claro'] :is(.prv-ed-inp, .lc-ed-inp, .ua-ed-inp) {
+  background: var(--color-fondo-elevado);
+}
+
+[data-tema='claro'] :is(.prv-ed-form--solo-lectura .prv-ed-inp:disabled, .lc-ed-form--solo-lectura .lc-ed-inp:disabled, .ua-ed-form--solo-lectura .ua-ed-inp:disabled) {
+  background: var(--color-fondo);
+}
