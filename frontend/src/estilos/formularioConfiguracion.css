@@ -170,11 +170,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  color-scheme: light;
-}
-
-.perm-bloque--apariencia {
-  color-scheme: light;
 }
 
 .cfg-tema-acciones {
@@ -319,7 +314,6 @@
   border-radius: 9px;
   border: 1px solid var(--color-borde);
   background: var(--color-fondo-cabecera);
-  color-scheme: light;
 }
 
 .cfg-tema-color-muestra {
@@ -368,7 +362,6 @@
   font-size: 0.84rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color-scheme: light;
 }
 
 .cfg-tema-color-hex:focus {
