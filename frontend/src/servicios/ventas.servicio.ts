@@ -16,6 +16,9 @@ export interface VentaRegistradaApi {
   documentoClienteMostrar: string;
   condicionIvaCliente: string;
   formaPago: string;
+  subtotal?: number;
+  ajusteMonto?: number;
+  ajustePorcentaje?: number | null;
   total: number;
   facturacion: string;
   estadoFacturacion: EstadoFacturacionVenta;
@@ -29,6 +32,8 @@ export interface DatosRegistrarVentaApi {
   documentoClienteMostrar?: string;
   formaPago: IdFormaPago;
   total: number;
+  ajusteMonto?: number;
+  ajustePorcentaje?: number | null;
   lineas: LineaVentaRegistro[];
   observaciones: string;
 }
@@ -45,6 +50,8 @@ export async function registrarVentaApi(datos: DatosRegistrarVentaApi): Promise<
     documentoClienteMostrar: datos.documentoClienteMostrar?.trim() || undefined,
     formaPago: datos.formaPago,
     total: datos.total,
+    ajusteMonto: datos.ajusteMonto ?? 0,
+    ajustePorcentaje: datos.ajustePorcentaje ?? null,
     lineas: datos.lineas,
     observaciones: datos.observaciones.trim(),
   });

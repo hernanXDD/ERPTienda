@@ -78,6 +78,16 @@
       </tbody>
       <tfoot>
         <tr>
+          <td colspan="3">Subtotal</td>
+          <td class="der rv-tabla-sub"><%= it.subtotalLineas %></td>
+        </tr>
+        <% if (it.tieneAjuste) { %>
+        <tr class="rv-tabla-ajuste">
+          <td colspan="3"><%= it.etiquetaAjuste %></td>
+          <td class="der rv-tabla-sub"><%= it.ajusteEsDescuento ? '−' : '+' %><%= it.montoAjuste %></td>
+        </tr>
+        <% } %>
+        <tr>
           <td colspan="3">Total abonado</td>
           <td class="der rv-tabla-total"><%= it.totalPagado %></td>
         </tr>

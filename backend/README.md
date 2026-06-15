@@ -65,33 +65,39 @@ Cambiar la contraseña del administrador antes de cualquier prueba en red compar
 | **Sesión con permisos** | Login y `sesion-actual` devuelven `permisos` completos del operador. |
 | **Variables de entorno** | Validación al arrancar (`validar-entorno.ts`): `DATABASE_URL`, `JWT_SECRETO`, `CORS_ORIGENES` en prod. |
 
-Guía paso a paso del primer despliegue: [DESPLIEGUE-PRIMERA-PRUEBA.md](../DESPLIEGUE-PRIMERA-PRUEBA.md) (raíz del repo).
+Guía paso a paso del despliegue: [DESPLIEGUE.md](../DESPLIEGUE.md) (raíz del repo).
 
-### Producción — Vercel (frontend) + VPS DonWeb
+### Producción — Cloudflare Pages (frontend) + 2 VPS DonWeb (2 clientes)
 
-- **PostgreSQL:** Docker (`docker-compose.prod.yml`), puerto `127.0.0.1:5432`.
-- **API:** Git + Node 20 + PM2 (`deploy/instalar-api.sh`, `deploy/ecosystem.config.cjs`).
-- **nginx:** HTTPS → `127.0.0.1:3000`.
+Cada **VPS = un cliente** con stack completo (**API + PostgreSQL**). El frontend va en **Cloudflare Pages** (un proyecto por cliente).
 
-**VPS (`backend/.env`):**
+- **VPS Cliente 1:** Easypanel + NestJS + PostgreSQL. SSH: `erp-vps` (`200.58.99.253`, host `vps-6055529-x`). UFW y fail2ban ya activos.
+- **VPS Cliente 2:** mismo stack. SSH: `erp-vps-cliente2` (configurar cuando Cliente 1 esté listo).
+- **Frontend:** dos proyectos en Cloudflare Pages; cada uno con `VITE_API_BASE_URL` apuntando a **su** VPS.
+
+Ver [DESPLIEGUE.md](../DESPLIEGUE.md) (arquitectura, SSH, fail2ban, Easypanel).
+
+**Variables en cada VPS (`backend/.env` o Easypanel):**
 
 ```env
 NODE_ENV=production
-HOST=127.0.0.1
+HOST=0.0.0.0
 TRUST_PROXY=true
-JWT_SECRETO=<secreto-aleatorio-32+-chars>
-CORS_ORIGENES=https://erp-tienda.vercel.app
-DATABASE_URL=postgresql://usuario:pass@127.0.0.1:5432/ERPTienda?schema=public
+JWT_SECRETO=<secreto-aleatorio-distinto-por-cliente>
+CORS_ORIGENES=https://frontend-cliente.pages.dev
+DATABASE_URL=postgresql://usuario:pass@erp-postgres:5432/ERPTienda?schema=public
 ```
 
-VPS: `200.58.99.253` — `vps-6055529-x.dattaweb.com`
+`DATABASE_URL` usa el **servicio Postgres del mismo VPS** (red Docker de Easypanel), no otro servidor.
 
-Migraciones: `npm run db:migrate` (o `./deploy/actualizar-api.sh` tras `git pull`).
-
-**Vercel (`frontend/.env`):**
+**Cloudflare Pages (`frontend`) — un proyecto por cliente:**
 
 ```env
+# Cliente 1
 VITE_API_BASE_URL=https://vps-6055529-x.dattaweb.com/api
+
+# Cliente 2
+VITE_API_BASE_URL=https://host-vps-cliente-2/api
 ```
 
 ### Producción (`NODE_ENV=production`)

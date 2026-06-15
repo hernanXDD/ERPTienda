@@ -20,6 +20,7 @@ describe('validar-totales-comprobante', () => {
       );
 
       expect(resultado.totalCalculado).toBe(3001);
+      expect(resultado.subtotalLineas).toBe(3001);
       expect(resultado.lineasNormalizadas).toEqual([
         { cantidad: 2, precioUnitario: 1500.5, subtotal: 3001 },
       ]);
@@ -46,6 +47,27 @@ describe('validar-totales-comprobante', () => {
           150,
         ),
       ).toThrow(/total no coincide/);
+    });
+
+    it('acepta descuento sobre el subtotal de líneas', () => {
+      const resultado = validarLineasYTotalComprobante(
+        [{ cantidad: 1, precioUnitario: 1000, subtotal: 1000 }],
+        900,
+        'precio unitario',
+        -100,
+      );
+      expect(resultado.subtotalLineas).toBe(1000);
+      expect(resultado.totalCalculado).toBe(900);
+    });
+
+    it('acepta recargo sobre el subtotal de líneas', () => {
+      const resultado = validarLineasYTotalComprobante(
+        [{ cantidad: 2, precioUnitario: 500, subtotal: 1000 }],
+        1050,
+        'precio unitario',
+        50,
+      );
+      expect(resultado.totalCalculado).toBe(1050);
     });
 
     it('tolera diferencias menores a un centavo', () => {

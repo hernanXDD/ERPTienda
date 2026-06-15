@@ -29,14 +29,24 @@ export interface DatosRegistrarVenta {
   documentoClienteMostrar?: string;
   formaPago: IdFormaPago;
   total: number;
+  ajusteMonto?: number;
+  ajustePorcentaje?: number | null;
   lineas: LineaVentaRegistro[];
   observaciones: string;
+}
+
+function subtotalDesdeLineas(lineas: LineaVentaRegistro[]): number {
+  return lineas.reduce((acc, ln) => acc + ln.subtotal, 0);
 }
 
 function mapearVentaApi(
   venta: VentaRegistradaApi,
   registradoPor?: RegistroOperador,
 ): VentaRegistrada {
+  const subtotalLineas = subtotalDesdeLineas(venta.lineas);
+  const subtotal = venta.subtotal ?? subtotalLineas;
+  const ajusteMonto = venta.ajusteMonto ?? venta.total - subtotal;
+  const ajustePorcentaje = venta.ajustePorcentaje ?? null;
   return {
     id: venta.id,
     numero: venta.numero,
@@ -46,6 +56,9 @@ function mapearVentaApi(
     documentoClienteMostrar: venta.documentoClienteMostrar ?? '',
     condicionIvaCliente: (venta.condicionIvaCliente as IdCondicionIva) ?? CONDICION_IVA_POR_DEFECTO,
     formaPago: venta.formaPago as IdFormaPago,
+    subtotal,
+    ajusteMonto,
+    ajustePorcentaje,
     total: venta.total,
     facturacion: venta.facturacion ?? '',
     estadoFacturacion: venta.estadoFacturacion ?? ESTADO_FACTURACION_PENDIENTE,

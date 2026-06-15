@@ -17,7 +17,7 @@ export const DESCRIPCIONES_PAGINA: Record<string, string> = {
   'compras-cuentas-corrientes-proveedor':
     'Saldos y movimientos con proveedores. Abrí el detalle para filtrar períodos y registrar pagos.',
   'productos-catalogo':
-    'Artículos del negocio con variantes por talle y color. El stock y las ventas operan sobre cada variante; el precio de referencia aplica a todo el producto.',
+    'Artículos del negocio con variantes por talle. El color o modelo va en el nombre del producto; el stock y las ventas operan sobre cada talle.',
   'productos-categorias':
     'Clasificación de productos por rubro. Cada artículo del catálogo debe tener una categoría asignada. No se puede eliminar una categoría con productos asociados.',
   'stock-actual':

@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
   ValidateNested,
@@ -49,6 +50,16 @@ export class RegistrarVentaDto {
 
   @IsEnum(FormaPagoVenta)
   formaPago!: FormaPagoVenta;
+
+  @IsOptional()
+  @IsNumber()
+  ajusteMonto?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  ajustePorcentaje?: number | null;
 
   @IsNumber()
   @Min(0)

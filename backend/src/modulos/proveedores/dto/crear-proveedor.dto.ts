@@ -7,6 +7,7 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class CrearProveedorDto {
@@ -21,6 +22,7 @@ export class CrearProveedorDto {
   documento!: string;
 
   @IsOptional()
+  @ValidateIf((_, valor) => typeof valor === 'string' && valor.trim() !== '')
   @IsEmail()
   @MaxLength(255)
   correoElectronico?: string;

@@ -6,6 +6,7 @@ import { usarCentroVentasContexto } from './centroVentasContexto';
 const {
   refInputLector,
   refInputNombre,
+  esMovil,
   modoProducto,
   codigoLector,
   busquedaNombre,
@@ -36,7 +37,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   <section class="cv-ingreso" aria-labelledby="cv-titulo-ingreso">
     <h2 id="cv-titulo-ingreso" class="cv-seccion-tit">Agregar productos</h2>
 
-    <div class="cv-modo" role="radiogroup" aria-label="Modo de ingreso">
+    <div v-if="!esMovil" class="cv-modo" role="radiogroup" aria-label="Modo de ingreso">
       <button
         type="button"
         role="radio"
@@ -61,7 +62,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
       </button>
     </div>
 
-    <div v-show="modoProducto === 'LECTOR'" class="cv-panel">
+    <div v-show="!esMovil && modoProducto === 'LECTOR'" class="cv-panel">
       <label class="cv-campo" for="cv-inp-lector">
         <span class="cv-campo-etiq">Código de barras</span>
         <input
@@ -82,7 +83,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
       </p>
     </div>
 
-    <div v-show="modoProducto === 'NOMBRE'" class="cv-panel">
+    <div v-show="esMovil || modoProducto === 'NOMBRE'" class="cv-panel">
       <label class="cv-campo" for="cv-inp-buscar">
         <span class="cv-campo-etiq">Buscar artículo</span>
         <div class="cv-busq-wrap">

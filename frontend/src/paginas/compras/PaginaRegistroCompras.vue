@@ -569,8 +569,8 @@ function alCerrarDialogoRegistrar() {
   margin: auto;
   padding: 0;
   max-width: calc(100vw - 2rem);
-  width: min(36rem, 100%);
-  max-height: min(92dvh, 44rem);
+  width: min(54rem, 100%);
+  max-height: min(94dvh, 56rem);
   border: 1px solid var(--color-borde);
   border-radius: 16px;
   background: var(--color-fondo-elevado);
@@ -585,7 +585,7 @@ function alCerrarDialogoRegistrar() {
 }
 
 .rcp-dlg-caja {
-  max-height: min(92dvh, 44rem);
+  max-height: min(94dvh, 56rem);
   overflow: auto;
 }
 

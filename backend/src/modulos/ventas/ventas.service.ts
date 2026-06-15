@@ -12,6 +12,7 @@ import {
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { siguienteNumeroComprobante } from '../../comunes/utilidades/numero-comprobante';
 import {
+  redondearMoneda,
   validarLineasYTotalComprobante,
 } from '../../comunes/utilidades/validar-totales-comprobante';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
@@ -46,6 +47,9 @@ export interface VentaRegistradaApi {
   documentoClienteMostrar: string;
   condicionIvaCliente: string;
   formaPago: string;
+  subtotal: number;
+  ajusteMonto: number;
+  ajustePorcentaje: number | null;
   total: number;
   facturacion: string;
   estadoFacturacion: EstadoFacturacionApi;
@@ -135,13 +139,16 @@ export class VentasService {
   }
 
   async registrar(datos: RegistrarVentaDto, operador: UsuarioSesion): Promise<VentaRegistradaApi> {
-    const { lineasNormalizadas, totalCalculado } = validarLineasYTotalComprobante(
+    const ajusteMonto = datos.ajusteMonto ?? 0;
+    const { lineasNormalizadas, subtotalLineas, totalCalculado } = validarLineasYTotalComprobante(
       datos.lineas.map((ln) => ({
         cantidad: ln.cantidad,
         precioUnitario: ln.precioUnitario,
         subtotal: ln.subtotal,
       })),
       datos.total,
+      'precio unitario',
+      ajusteMonto,
     );
 
     let documentoClienteMostrar = datos.documentoClienteMostrar?.trim() ?? '';
@@ -220,6 +227,12 @@ export class VentasService {
           documentoClienteMostrar,
           condicionIvaCliente,
           formaPago: datos.formaPago,
+          subtotal: new Prisma.Decimal(subtotalLineas),
+          ajusteMonto: new Prisma.Decimal(redondearMoneda(ajusteMonto)),
+          ajustePorcentaje:
+            datos.ajustePorcentaje != null
+              ? new Prisma.Decimal(datos.ajustePorcentaje)
+              : null,
           total: new Prisma.Decimal(totalCalculado),
           observaciones: datos.observaciones?.trim() ?? '',
           estadoFacturacionId: ID_ESTADO_FACTURACION_PENDIENTE,
@@ -277,6 +290,9 @@ export class VentasService {
       documentoClienteMostrar: venta.documentoClienteMostrar,
       condicionIvaCliente: venta.condicionIvaCliente,
       formaPago: venta.formaPago,
+      subtotal: decimalANumero(venta.subtotal),
+      ajusteMonto: decimalANumero(venta.ajusteMonto),
+      ajustePorcentaje: venta.ajustePorcentaje != null ? decimalANumero(venta.ajustePorcentaje) : null,
       total: decimalANumero(venta.total),
       facturacion: venta.facturacion,
       estadoFacturacion: {

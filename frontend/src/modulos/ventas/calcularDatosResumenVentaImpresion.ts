@@ -26,6 +26,11 @@ export interface DatosResumenVentaImpresion extends EmisorNegocioReporte {
   hora: string;
   cliente: string;
   lineas: LineaResumenVentaImpresion[];
+  subtotalLineas: string;
+  tieneAjuste: boolean;
+  etiquetaAjuste: string;
+  montoAjuste: string;
+  ajusteEsDescuento: boolean;
   totalPagado: string;
   metodoPago: string;
   cantidadArticulos: string;
@@ -50,6 +55,22 @@ export function calcularDatosResumenVentaImpresion(
   const lineas = venta.lineas.length;
   const obs = venta.observaciones.trim();
   const atendido = etiquetaAtendidoPor(venta.registradoPor.etiquetaUsuario);
+  const subtotal =
+    venta.subtotal ?? venta.lineas.reduce((acc, ln) => acc + ln.subtotal, 0);
+  const ajusteMonto = venta.ajusteMonto ?? venta.total - subtotal;
+  const tieneAjuste = Math.abs(ajusteMonto) >= 0.5;
+  const ajusteEsDescuento = ajusteMonto < 0;
+  const porcentaje =
+    venta.ajustePorcentaje ??
+    (subtotal > 0 ? Math.round((Math.abs(ajusteMonto) / subtotal) * 1000) / 10 : null);
+  const etiquetaAjuste =
+    porcentaje != null && porcentaje > 0
+      ? ajusteEsDescuento
+        ? `Descuento ${porcentaje}%`
+        : `Recargo ${porcentaje}%`
+      : ajusteEsDescuento
+        ? 'Descuento'
+        : 'Recargo';
 
   return {
     ...obtenerEmisorNegocioReporte(),
@@ -63,6 +84,11 @@ export function calcularDatosResumenVentaImpresion(
       precioUnitario: formatoMoneda.format(ln.precioUnitario),
       importe: formatoMoneda.format(ln.subtotal),
     })),
+    subtotalLineas: formatoMoneda.format(subtotal),
+    tieneAjuste,
+    etiquetaAjuste,
+    montoAjuste: formatoMoneda.format(Math.abs(ajusteMonto)),
+    ajusteEsDescuento,
     totalPagado: formatoMoneda.format(venta.total),
     metodoPago: etiquetaFormaPago(venta.formaPago),
     cantidadArticulos: `${unidades} ${unidades === 1 ? 'unidad' : 'unidades'}`,

@@ -7,6 +7,10 @@ import {
   type ErroresFormatoCliente,
 } from '../../modulos/clientes/validadoresCliente';
 import { formatearDocumentoClienteAlEscribir } from '../../modulos/clientes/formateadorDocumentoCliente';
+import {
+  formatearTelefonoClienteAlPerderFoco,
+  normalizarCorreoClienteAlPerderFoco,
+} from '../../modulos/clientes/formateadorEntradaCliente';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useProveedoresStore } from '../../stores/proveedores';
 import type { Proveedor } from '../../tipos/proveedor';
@@ -206,7 +210,9 @@ async function guardarProveedor() {
   const datos: Omit<Proveedor, 'id'> = {
     ...rest,
     documento: rest.documento.trim(),
-    correoElectronico: rest.correoElectronico.trim(),
+    correoElectronico: normalizarCorreoClienteAlPerderFoco(rest.correoElectronico),
+    telefonoPrincipal: formatearTelefonoClienteAlPerderFoco(rest.telefonoPrincipal),
+    telefonoAlternativo: formatearTelefonoClienteAlPerderFoco(rest.telefonoAlternativo),
     limiteCreditoCompras: rest.comprasCreditoHabilitadas
       ? Math.max(0, rest.limiteCreditoCompras)
       : 0,
@@ -517,14 +523,14 @@ function alCerrarDialogo() {
                 </header>
                 <div class="prv-ed-fila prv-ed-fila--contacto">
                   <div class="prv-ed-campo">
-                    <label class="prv-ed-etiq" for="ed-tel-p">Teléfono principal</label>
+                    <label class="prv-ed-etiq" for="ed-tel-p">Teléfono principal (opcional)</label>
                     <input
                       id="ed-tel-p"
                       v-model="borrador.telefonoPrincipal"
                       type="tel"
                       class="prv-ed-inp prv-ed-inp-mono"
                       autocomplete="tel"
-                      placeholder="11 2345-6789"
+                      placeholder="Opcional"
                       :class="{ 'prv-ed-inp--error': erroresValidacionProveedor.telefonoPrincipal }"
                       :aria-invalid="erroresValidacionProveedor.telefonoPrincipal ? true : undefined"
                       :disabled="!formularioProveedorEditable"
@@ -559,15 +565,15 @@ function alCerrarDialogo() {
                     </p>
                   </div>
                   <div class="prv-ed-campo">
-                    <label class="prv-ed-etiq" for="ed-correo">Correo electrónico</label>
+                    <label class="prv-ed-etiq" for="ed-correo">Correo electrónico (opcional)</label>
                     <input
                       id="ed-correo"
                       v-model="borrador.correoElectronico"
-                      type="email"
+                      type="text"
                       class="prv-ed-inp"
                       autocomplete="email"
                       inputmode="email"
-                      placeholder="contacto@proveedor.com"
+                      placeholder="Opcional"
                       :class="{ 'prv-ed-inp--error': erroresValidacionProveedor.correoElectronico }"
                       :aria-invalid="erroresValidacionProveedor.correoElectronico ? true : undefined"
                       :aria-describedby="

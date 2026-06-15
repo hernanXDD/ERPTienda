@@ -168,9 +168,11 @@ export class CatalogoService {
 
   async crearVariante(datos: CrearVarianteDto): Promise<VarianteApi> {
     await this.obtenerProductoOError(datos.productoId);
-    if (await this.existeCombinacionVariante(datos.productoId, datos.talle, datos.color)) {
-      throw new ConflictException('Ya existe una variante con ese talle y color para el producto.');
+    if (await this.existeCombinacionVariante(datos.productoId, datos.talle, datos.color ?? '')) {
+      throw new ConflictException('Ya existe una variante con ese talle para el producto.');
     }
+
+    const color = datos.color?.trim() ?? '';
 
     const variante = await this.prisma.$transaction(async (tx) => {
       const idVariante = await this.idSecuencia.siguienteVariante(tx);
@@ -179,7 +181,7 @@ export class CatalogoService {
           id: idVariante,
           productoId: datos.productoId,
           talle: datos.talle.trim(),
-          color: datos.color.trim(),
+          color,
           codigoBarras: datos.codigoBarras?.trim() ?? '',
           activa: datos.activa ?? true,
         },
@@ -204,19 +206,21 @@ export class CatalogoService {
       await this.existeCombinacionVariante(
         datos.productoId,
         datos.talle,
-        datos.color,
+        datos.color ?? '',
         id,
       )
     ) {
-      throw new ConflictException('Ya existe otra variante con ese talle y color.');
+      throw new ConflictException('Ya existe otra variante con ese talle.');
     }
+
+    const color = datos.color?.trim() ?? '';
 
     const actualizada = await this.prisma.variante.update({
       where: { id },
       data: {
         productoId: datos.productoId,
         talle: datos.talle.trim(),
-        color: datos.color.trim(),
+        color,
         codigoBarras: datos.codigoBarras?.trim() ?? '',
         activa: datos.activa ?? anterior.activa,
       },

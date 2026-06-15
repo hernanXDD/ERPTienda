@@ -79,6 +79,6 @@ cd frontend && npm run test:watch   # modo watch
 
 Los tests no requieren PostgreSQL en ejecución (el e2e de salud usa Prisma simulado).
 
-## Documentación API
+## Documentación API y despliegue
 
-[backend/README.md](backend/README.md) · [backend/API.md](backend/API.md)
+[backend/README.md](backend/README.md) · [backend/API.md](backend/API.md) · [DESPLIEGUE.md](DESPLIEGUE.md) · [DESPLIEGUE.pdf](DESPLIEGUE.pdf)

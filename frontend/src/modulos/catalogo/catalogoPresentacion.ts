@@ -1,19 +1,22 @@
 import type { Producto, Variante } from '../../tipos/catalogo';
 
-/** Etiqueta corta de talle y color (ej. «M / Negro»). */
-export function etiquetaTalleColor(talle: string, color: string): string {
+/** Etiqueta del talle (ej. «M»). El color/descripción va en el nombre del producto. */
+export function etiquetaTalle(talle: string): string {
   const t = talle.trim();
-  const c = color.trim();
-  if (t && c) return `${t} / ${c}`;
-  return t || c || '—';
+  return t || '—';
+}
+
+/** @deprecated Usar etiquetaTalle; mantiene firma por compatibilidad. */
+export function etiquetaTalleColor(talle: string, _color?: string): string {
+  return etiquetaTalle(talle);
 }
 
 export function armarNombreLineaComercial(producto: Producto, variante: Variante): string {
-  const detalle = etiquetaTalleColor(variante.talle, variante.color);
-  if (detalle === '—') return producto.nombre;
-  return `${producto.nombre} — ${detalle}`;
+  const talle = etiquetaTalle(variante.talle);
+  if (talle === '—') return producto.nombre;
+  return `${producto.nombre} — ${talle}`;
 }
 
-export function claveUnicaVariante(talle: string, color: string): string {
-  return `${talle.trim().toLowerCase()}|${color.trim().toLowerCase()}`;
+export function claveUnicaVariante(talle: string, _color?: string): string {
+  return talle.trim().toLowerCase();
 }

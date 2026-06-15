@@ -34,6 +34,9 @@ export interface VentaRegistrada {
   /** Condición IVA al momento de la venta (snapshot). */
   condicionIvaCliente: IdCondicionIva;
   formaPago: IdFormaPago;
+  subtotal: number;
+  ajusteMonto: number;
+  ajustePorcentaje: number | null;
   total: number;
   /** Número de comprobante fiscal asociado. */
   facturacion: string;

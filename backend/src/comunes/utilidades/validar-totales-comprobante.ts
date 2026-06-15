@@ -23,7 +23,12 @@ export function validarLineasYTotalComprobante(
   lineas: LineaComprobanteValidable[],
   totalInformado: number,
   etiquetaPrecio = 'precio unitario',
-): { lineasNormalizadas: LineaComprobanteNormalizada[]; totalCalculado: number } {
+  ajusteMonto = 0,
+): {
+  lineasNormalizadas: LineaComprobanteNormalizada[];
+  subtotalLineas: number;
+  totalCalculado: number;
+} {
   if (lineas.length === 0) {
     throw new BadRequestException('El comprobante debe incluir al menos una línea.');
   }
@@ -42,13 +47,19 @@ export function validarLineasYTotalComprobante(
     };
   });
 
-  const totalCalculado = redondearMoneda(
+  const subtotalLineas = redondearMoneda(
     lineasNormalizadas.reduce((acum, ln) => acum + ln.subtotal, 0),
   );
+  const ajusteRedondeado = redondearMoneda(ajusteMonto);
+  const totalCalculado = redondearMoneda(subtotalLineas + ajusteRedondeado);
 
-  if (Math.abs(totalInformado - totalCalculado) > TOLERANCIA_MONEDA) {
-    throw new BadRequestException('El total no coincide con la suma de las líneas del comprobante.');
+  if (totalCalculado < -TOLERANCIA_MONEDA) {
+    throw new BadRequestException('El total del comprobante no puede ser negativo.');
   }
 
-  return { lineasNormalizadas, totalCalculado };
+  if (Math.abs(totalInformado - totalCalculado) > TOLERANCIA_MONEDA) {
+    throw new BadRequestException('El total no coincide con las líneas y el ajuste del comprobante.');
+  }
+
+  return { lineasNormalizadas, subtotalLineas, totalCalculado };
 }

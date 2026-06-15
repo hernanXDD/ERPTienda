@@ -9,7 +9,13 @@ import type { Cliente } from '../tipos/cliente';
 import type { IdFormaPago, VentaRegistrada } from '../tipos/venta';
 import { formatearDocumentoClienteAlEscribir } from '../modulos/clientes/formateadorDocumentoCliente';
 import { exportarComprobanteVentaPdf } from '../modulos/ventas/impresionResumenVenta';
+import {
+  calcularAjusteTicketDesdePorcentaje,
+  etiquetaAjustePorcentaje,
+  type TipoAjusteTicket,
+} from '../modulos/ventas/ajusteTicketVentas';
 import { usePermisosOperador } from './usePermisosOperador';
+import { useEsMovil } from './useEsMovil';
 import { notificarError } from '../utilidades/notificacion';
 import { mensajeErrorHttp } from '../servicios/apiUtil';
 import { useCuentaCorrienteStore } from '../stores/cuentaCorriente';
@@ -39,6 +45,7 @@ export function useCentroVentas() {
   const stockStore = useStockStore();
   const cuentaCorrienteStore = useCuentaCorrienteStore();
   const { tienePermiso } = usePermisosOperador();
+  const esMovil = useEsMovil();
   const { variantes } = storeToRefs(catalogo);
   const { clientes } = storeToRefs(clientesStore);
 
@@ -57,6 +64,8 @@ export function useCentroVentas() {
   const consumidorFinalDocumento = ref('');
   const consumidorFinalNombreApellido = ref('');
   const formaPago = ref<IdFormaPago>('EFECTIVO');
+  const tipoAjusteTicket = ref<TipoAjusteTicket>('NINGUNO');
+  const porcentajeAjusteTexto = ref('');
   const observaciones = ref('');
   const mensajeToast = ref('');
   const ventaConfirmada = ref<VentaRegistrada | null>(null);
@@ -160,9 +169,31 @@ export function useCentroVentas() {
       .slice(0, 12);
   });
 
-  const totalTicket = computed(() =>
+  const subtotalTicket = computed(() =>
     lineas.value.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0),
   );
+
+  const ajusteTicketCalculado = computed(() =>
+    calcularAjusteTicketDesdePorcentaje(
+      subtotalTicket.value,
+      tipoAjusteTicket.value,
+      porcentajeAjusteTexto.value,
+    ),
+  );
+
+  const ajusteMontoTicket = computed(() => ajusteTicketCalculado.value.ajusteMonto);
+
+  const porcentajeAjusteTicket = computed(() => ajusteTicketCalculado.value.porcentaje);
+
+  const totalTicket = computed(() => Math.max(0, subtotalTicket.value + ajusteMontoTicket.value));
+
+  const etiquetaAjusteTicketActivo = computed(() =>
+    etiquetaAjustePorcentaje(tipoAjusteTicket.value, porcentajeAjusteTicket.value),
+  );
+
+  const montoAjusteTicketAbsoluto = computed(() => Math.abs(ajusteMontoTicket.value));
+
+  const hayAjusteTicketActivo = computed(() => ajusteMontoTicket.value !== 0);
 
   const cantidadArticulos = computed(() =>
     lineas.value.reduce((acc, l) => acc + l.cantidad, 0),
@@ -303,13 +334,23 @@ export function useCentroVentas() {
     varianteSeleccionadaId.value = null;
   });
 
+  function modoProductoPorDefecto(): ModoIngresoCentroVentas {
+    return esMovil.value ? 'NOMBRE' : 'LECTOR';
+  }
+
+  watch(esMovil, (movil) => {
+    if (movil && modoProducto.value === 'LECTOR') {
+      modoProducto.value = 'NOMBRE';
+    }
+  });
+
   watch(modoProducto, () => {
     nextTick(() => enfocarModoActual());
   });
 
   function enfocarModoActual() {
     nextTick(() => {
-      if (modoProducto.value === 'LECTOR') {
+      if (!esMovil.value && modoProducto.value === 'LECTOR') {
         refInputLector.value?.focus();
         refInputLector.value?.select?.();
       } else {
@@ -333,7 +374,7 @@ export function useCentroVentas() {
     codigoLector.value = '';
     busquedaNombre.value = '';
     varianteSeleccionadaId.value = null;
-    modoProducto.value = 'LECTOR';
+    modoProducto.value = modoProductoPorDefecto();
     textoBusquedaCliente.value = '';
     desplegableClienteAbierto.value = false;
     lineas.value = [];
@@ -342,6 +383,8 @@ export function useCentroVentas() {
     consumidorFinalDocumento.value = '';
     consumidorFinalNombreApellido.value = '';
     formaPago.value = 'EFECTIVO';
+    tipoAjusteTicket.value = 'NINGUNO';
+    porcentajeAjusteTexto.value = '';
     observaciones.value = '';
   }
 
@@ -402,6 +445,7 @@ export function useCentroVentas() {
   }
 
   function setModoProducto(m: ModoIngresoCentroVentas) {
+    if (esMovil.value && m === 'LECTOR') return;
     modoProducto.value = m;
   }
 
@@ -487,6 +531,8 @@ export function useCentroVentas() {
           : consumidorFinalDocumento.value.trim(),
         formaPago: formaPago.value,
         total: totalTicket.value,
+        ajusteMonto: ajusteMontoTicket.value,
+        ajustePorcentaje: porcentajeAjusteTicket.value,
         lineas: lineasRegistro,
         observaciones: observaciones.value,
       });
@@ -532,6 +578,7 @@ export function useCentroVentas() {
   return {
     refInputLector,
     refInputNombre,
+    esMovil,
     modoProducto,
     codigoLector,
     busquedaNombre,
@@ -544,6 +591,8 @@ export function useCentroVentas() {
     consumidorFinalDocumento,
     consumidorFinalNombreApellido,
     formaPago,
+    tipoAjusteTicket,
+    porcentajeAjusteTexto,
     observaciones,
     mensajeToast,
     ventaConfirmada,
@@ -552,6 +601,12 @@ export function useCentroVentas() {
     esConsumidorFinal,
     mostrarOpcionConsumidorFinal,
     clientesSugeridos,
+    subtotalTicket,
+    ajusteMontoTicket,
+    porcentajeAjusteTicket,
+    montoAjusteTicketAbsoluto,
+    etiquetaAjusteTicketActivo,
+    hayAjusteTicketActivo,
     totalTicket,
     cantidadArticulos,
     nombreClienteMostrar,

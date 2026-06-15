@@ -37,5 +37,5 @@ ENV CARPETA_LOGO=/app/logo
 
 EXPOSE 3000
 
-# Migraciones al arrancar; la semilla se ejecuta una sola vez aparte (ver guía de despliegue).
+# Migraciones al arrancar; la semilla se ejecuta una sola vez aparte (ver DESPLIEGUE.md).
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

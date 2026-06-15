@@ -10,10 +10,10 @@ export class CrearVarianteDto {
   @MaxLength(32)
   talle!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(64)
-  color!: string;
+  color?: string;
 
   @IsOptional()
   @IsString()

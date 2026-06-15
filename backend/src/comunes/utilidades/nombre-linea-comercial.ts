@@ -1,16 +1,19 @@
-export function etiquetaTalleColor(talle: string, color: string): string {
+export function etiquetaTalle(talle: string): string {
   const t = talle.trim();
-  const c = color.trim();
-  if (t && c) return `${t} / ${c}`;
-  return t || c || '—';
+  return t || '—';
+}
+
+/** @deprecated Usar etiquetaTalle; mantiene firma por compatibilidad. */
+export function etiquetaTalleColor(talle: string, _color?: string): string {
+  return etiquetaTalle(talle);
 }
 
 export function armarNombreLineaComercial(
   nombreProducto: string,
   talle: string,
-  color: string,
+  _color?: string,
 ): string {
-  const detalle = etiquetaTalleColor(talle, color);
+  const detalle = etiquetaTalle(talle);
   if (detalle === '—') return nombreProducto;
   return `${nombreProducto} — ${detalle}`;
 }

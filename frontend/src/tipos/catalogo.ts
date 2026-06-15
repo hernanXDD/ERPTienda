@@ -19,13 +19,14 @@ export interface Producto {
 }
 
 /**
- * SKU vendible: combinación talle + color de un producto.
+ * SKU vendible por talle. El detalle de color/modelo va en el nombre del producto.
  * Stock, ventas y compras operan sobre variante, no sobre producto.
  */
 export interface Variante {
   id: string;
   productoId: string;
   talle: string;
+  /** Legacy; nuevos registros usan cadena vacía. */
   color: string;
   codigoBarras: string;
   activa: boolean;
