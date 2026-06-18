@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Layers, Package, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-vue-next';
+import { Layers, Package, Plus, RefreshCw } from 'lucide-vue-next';
 import { computed, onMounted, ref, useTemplateRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import ModalFormularioProducto from '../../componentes/catalogo/ModalFormularioProducto.vue';
@@ -117,7 +117,7 @@ onMounted(() => {
 
 <template>
   <section class="pg-wrap" aria-labelledby="titulo-prod">
-    <div class="pg-marco pg-marco--catalogo">
+    <div class="pg-marco pg-marco--catalogo pg-marco--tarjetas">
       <header class="pg-cab">
         <div class="pg-cab-txt">
           <div class="pg-cab-izq">
@@ -222,12 +222,11 @@ onMounted(() => {
         </span>
       </p>
 
-      <section class="pg-tabla-cuerpo" role="region" aria-label="Listado de productos">
-        <div class="pg-tabla-cab">
-          <h2 class="pg-tabla-h2">Productos registrados</h2>
-          <span class="pg-tabla-meta pg-mono">{{ productosFiltrados.length }} filas</span>
-        </div>
-
+      <section
+        class="cat-prod-movil pg-tabla-cuerpo"
+        role="region"
+        aria-label="Listado de productos"
+      >
         <ul
           v-if="productosFiltrados.length > 0"
           class="cat-prod-lista"
@@ -309,90 +308,59 @@ onMounted(() => {
             </button>
           </template>
         </p>
+      </section>
 
-        <div class="pg-tabla-scroll cat-tabla-scroll cat-catalogo-scroll cat-tabla-scroll--escritorio">
-          <table class="pg-tabla pg-tabla--estado cat-tabla-catalogo">
-            <thead>
-              <tr>
-                <th scope="col" class="cat-col-producto">Producto</th>
-                <th scope="col" class="cat-col-categoria">Categoría</th>
-                <th scope="col" class="cat-col-desc cat-col-oculta-movil">Descripción</th>
-                <th scope="col" class="pg-der cat-col-variantes cat-col-oculta-movil">Variantes</th>
-                <th scope="col" class="pg-der cat-col-precio">
-                  <span class="cat-col-precio-etiq">Precio ref.</span>
-                  <span class="cat-col-precio-etiq-movil">Precio</span>
-                </th>
-                <th v-if="puedeGestionarCatalogo" scope="col" class="pg-acc cat-col-acciones">
-                  <span class="cat-col-acciones-etiq">Acciones</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="p in productosFiltrados" :key="p.id">
-                <td class="cat-col-producto">
-                  <div class="cat-prod-cel-nombre">
-                    <span class="cat-prod-nombre">{{ p.nombre }}</span>
-                    <span class="cat-prod-marca">{{ p.marca }}</span>
+      <section
+        class="pg-cuerpo pg-cuerpo--grilla cat-prod-escritorio"
+        aria-label="Listado de productos"
+      >
+        <div v-if="productosFiltrados.length > 0" class="pg-grilla-viewport">
+          <div class="pg-grilla-wrap">
+            <article v-for="p in productosFiltrados" :key="p.id" class="pg-card">
+              <div class="pg-card-afilado" aria-hidden="true" />
+              <div class="pg-card-cuerpo pg-card-cuerpo--resumida">
+                <header class="pg-card-cab">
+                  <h2 class="pg-card-nom">{{ p.nombre }}</h2>
+                  <span class="pg-card-precio">{{ formatoPeso.format(p.precioVenta) }}</span>
+                </header>
+                <p v-if="p.marca.trim()" class="pg-card-sub">{{ p.marca }}</p>
+                <div class="pg-card-estados">
+                  <div class="pg-card-fila-estado" :aria-label="`Categoría: ${catalogo.nombreCategoria(p.categoriaId)}`">
+                    <span class="pg-card-etiq">Cat.</span>
+                    <span class="pg-chip pg-chip--info">
+                      <Layers :size="11" aria-hidden="true" />
+                      {{ catalogo.nombreCategoria(p.categoriaId) }}
+                    </span>
                   </div>
-                </td>
-                <td class="cat-col-categoria">
-                  <span class="cat-prod-chip">
-                    <Layers :size="12" aria-hidden="true" />
-                    {{ catalogo.nombreCategoria(p.categoriaId) }}
-                  </span>
-                </td>
-                <td
-                  class="cat-prod-cel-desc cat-col-desc cat-col-oculta-movil"
-                  :title="p.descripcion.trim() || undefined"
-                >
-                  {{ resumenDescripcion(p.descripcion) }}
-                </td>
-                <td class="pg-der pg-mono cat-col-variantes cat-col-oculta-movil">
-                  {{ cantidadVariantesProducto(p.id) }}
-                </td>
-                <td class="pg-der pg-mono cat-col-precio">{{ formatoPeso.format(p.precioVenta) }}</td>
-                <td v-if="puedeGestionarCatalogo" class="pg-acc cat-col-acciones">
-                  <div class="cat-prod-acciones">
-                    <button
-                      type="button"
-                      class="pg-btn cat-prod-btn-accion"
-                      aria-label="Editar producto"
-                      title="Editar producto"
-                      @click="abrirModificar(p)"
-                    >
-                      <Pencil :size="18" stroke-width="1.85" aria-hidden="true" />
-                      <span class="cat-prod-btn-texto">Editar</span>
+                  <div class="pg-card-fila-estado" :aria-label="`${cantidadVariantesProducto(p.id)} variantes`">
+                    <span class="pg-card-etiq">Var.</span>
+                    <span class="pg-chip pg-chip--info pg-mono">{{ cantidadVariantesProducto(p.id) }}</span>
+                  </div>
+                </div>
+                <footer v-if="puedeGestionarCatalogo" class="pg-card-pie">
+                  <div class="pg-card-acciones">
+                    <button type="button" class="pg-btn-card" @click="abrirModificar(p)">
+                      Editar
                     </button>
-                    <button
-                      type="button"
-                      class="pg-btn cat-prod-btn-peligro cat-prod-btn-accion"
-                      aria-label="Borrar producto"
-                      title="Borrar producto"
-                      @click="borrar(p)"
-                    >
-                      <Trash2 :size="18" stroke-width="1.85" aria-hidden="true" />
-                      <span class="cat-prod-btn-texto">Borrar</span>
+                    <button type="button" class="pg-btn-card pg-btn-card--peligro" @click="borrar(p)">
+                      Borrar
                     </button>
                   </div>
-                </td>
-              </tr>
-              <tr v-if="productosFiltrados.length === 0">
-                <td colspan="6" class="pg-vacio">
-                  <template v-if="productos.length === 0">
-                    No hay productos cargados. Usá <strong>Nuevo producto</strong> para agregar el
-                    primero.
-                  </template>
-                  <template v-else>
-                    Ningún producto coincide con los filtros.
-                    <button type="button" class="cat-prod-link-vacio" @click="limpiarFiltros">
-                      Limpiar filtros
-                    </button>
-                  </template>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </footer>
+              </div>
+            </article>
+          </div>
         </div>
+        <div v-else-if="productos.length === 0" class="pg-vacio--grilla" role="status">
+          <span class="pg-vacio--grilla-tit">No hay productos</span>
+          <span>Usá <strong>Nuevo producto</strong> para agregar el primero.</span>
+        </div>
+        <p v-else class="pg-vacio--grilla" role="status">
+          Ningún producto coincide con los filtros.
+          <button type="button" class="cat-prod-link-vacio" @click="limpiarFiltros">
+            Limpiar filtros
+          </button>
+        </p>
       </section>
     </div>
 
@@ -401,24 +369,29 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.cat-tabla-scroll {
-  --pg-cap-de-filas: 8;
-  --pg-altura-cap-fila: 3.15rem;
-}
-
 .cat-prod-banner-lectura,
 .cat-gest-banner-lectura {
-  margin: 0 0 1rem;
-  padding: 0.65rem 0.82rem;
+  margin: 0 clamp(1rem, 3vw, 1.65rem) 0.85rem;
+  padding: 0.72rem 0.9rem;
   border-radius: 10px;
   border: 1px solid var(--color-acento-borde);
   background: var(--color-acento-suave);
   font-size: 0.84rem;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--color-texto-suave);
 }
+
 .pg-marco--catalogo {
-  --pg-reserva-vertical-vista: clamp(14rem, 28dvh, 21rem);
+  --pg-reserva-vertical-vista: clamp(14rem, 28dvh, 20rem);
+  --pg-grilla-altura-fila: 9.4rem;
+}
+
+.cat-prod-movil {
+  display: none;
+}
+
+.cat-prod-escritorio {
+  display: flex;
 }
 
 .cat-prod-btn-nuevo {
@@ -427,24 +400,6 @@ onMounted(() => {
   gap: 0.4rem;
   width: 100%;
   justify-content: center;
-}
-
-@media (max-width: 900px) {
-  .pg-marco--catalogo .pg-barra {
-    margin-inline: 0.45rem;
-  }
-
-  .pg-marco--catalogo .pg-resumen {
-    margin-inline: 0.45rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.2rem;
-  }
-
-  .pg-marco--catalogo .pg-tabla-cuerpo {
-    padding-inline: 0.45rem;
-    overflow-x: visible;
-  }
 }
 
 @media (min-width: 720px) {
@@ -508,43 +463,8 @@ onMounted(() => {
 }
 
 .cat-prod-cel-desc {
-  max-width: 14rem;
   color: var(--color-texto-suave);
   font-size: 0.84rem;
-}
-
-.cat-prod-acciones {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  justify-content: flex-end;
-}
-
-.cat-prod-btn-accion {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-}
-
-.cat-col-precio-etiq-movil {
-  display: none;
-}
-
-@media (min-width: 901px) {
-  .cat-prod-btn-accion svg {
-    display: none;
-  }
-}
-
-.cat-prod-btn-peligro {
-  border-color: var(--color-peligro-borde);
-  color: var(--color-peligro);
-}
-
-.cat-prod-btn-peligro:hover {
-  background: var(--color-peligro-suave);
-  border-color: var(--color-peligro-borde);
 }
 
 .cat-prod-link-vacio {
@@ -636,7 +556,6 @@ onMounted(() => {
 }
 
 .cat-prod-vacio {
-  display: none;
   margin: 0;
   padding: 2rem 1rem;
   text-align: center;
@@ -646,12 +565,28 @@ onMounted(() => {
 }
 
 @media (max-width: 900px) {
-  .cat-tabla-scroll--escritorio {
+  .pg-marco--catalogo .pg-barra {
+    margin-inline: 0.45rem;
+  }
+
+  .pg-marco--catalogo .pg-resumen {
+    margin-inline: 0.45rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .cat-prod-movil.pg-tabla-cuerpo {
+    display: flex;
+    padding-inline: 0.45rem;
+    overflow-x: visible;
+  }
+
+  .cat-prod-escritorio {
     display: none;
   }
 
-  .cat-prod-lista,
-  .cat-prod-vacio {
+  .cat-prod-lista {
     display: flex;
   }
 }

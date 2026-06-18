@@ -464,6 +464,239 @@
   color: var(--color-texto-suave);
 }
 
+/* —— Tarjeta maestro (clientes, proveedores, catálogo) —— */
+.pg-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--pg-grilla-altura-fila, 9.75rem);
+  align-self: stretch;
+  overflow-x: clip;
+  border-radius: 12px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+  box-shadow: var(--sombra-suave);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.2s ease,
+    transform 0.18s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pg-card:hover {
+    border-color: var(--color-acento-borde);
+    box-shadow: var(--sombra-suave);
+    transform: translateY(-1px);
+  }
+}
+
+.pg-card-afilado {
+  height: 3px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-acento-borde),
+    var(--color-acento),
+    transparent
+  );
+}
+
+.pg-card-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 0.65rem 0.82rem 0.55rem;
+  overflow: visible;
+}
+
+.pg-card-cuerpo--resumida {
+  gap: 0.42rem;
+  padding: 0.58rem 0.72rem 0.52rem;
+}
+
+.pg-card-cab {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.45rem;
+  padding-bottom: 0.05rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.pg-card-nom {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: -0.025em;
+  color: var(--color-texto);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.pg-card-precio {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-acento-hover);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.pg-card-sub {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--color-texto-apagado);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-card-nota {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-texto-suave);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.pg-card-estados {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  flex-shrink: 0;
+}
+
+.pg-card-fila-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.pg-card-etiq {
+  font-size: 0.54rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-texto-apagado);
+}
+
+.pg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0.17rem 0.48rem;
+  border-radius: 999px;
+  font-size: 0.6275rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  border: 1px solid transparent;
+}
+
+.pg-chip--info {
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento-borde);
+  color: var(--color-acento-hover);
+}
+
+.pg-card-pie {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  margin-top: auto;
+  padding-top: 0.48rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.pg-card-acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.pg-btn-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.36rem 0.72rem;
+  font-size: 0.7375rem;
+  font-weight: 600;
+  border-radius: 8px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+  color: var(--color-texto-suave);
+}
+
+.pg-btn-card:hover:not(:disabled) {
+  border-color: var(--color-acento-borde);
+  color: var(--color-texto);
+  background: var(--color-acento-suave);
+}
+
+.pg-btn-card:focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
+.pg-btn-card--peligro {
+  border-color: var(--color-peligro-borde);
+  color: var(--color-peligro);
+}
+
+.pg-btn-card--peligro:hover:not(:disabled) {
+  background: var(--color-peligro-suave);
+  border-color: var(--color-peligro-borde);
+  color: var(--color-peligro);
+}
+
+.pg-btn-card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 420px) {
+  .pg-card-pie {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pg-card-acciones {
+    width: 100%;
+    margin-left: 0;
+    justify-content: stretch;
+  }
+
+  .pg-card-acciones .pg-btn-card {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
 /* —— Tabla —— */
 .pg-tabla-cuerpo {
   flex: 0 1 auto;

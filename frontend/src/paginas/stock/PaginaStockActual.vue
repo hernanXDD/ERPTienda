@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   ClipboardList,
   FileDown,
   Info,
@@ -37,6 +39,11 @@ interface FilaStock {
   variante: Variante;
   producto: Producto;
   existencia: number;
+}
+
+interface GrupoStockProducto {
+  producto: Producto;
+  filas: FilaStock[];
 }
 
 const catalogoStore = useCatalogoStore();
@@ -78,11 +85,12 @@ const textoBannerRestricciones = computed(() => {
   return `Podés consultar existencias y filtros. ${partes.join(' ')} El stock también se actualiza al registrar compras.`;
 });
 
-const columnasTablaStock = computed(() => 6 + (puedeEntradaManual.value ? 1 : 0));
+const columnasTablaStock = 6;
 const busqueda = ref('');
 const categoriaSeleccionada = ref<string>('');
 const soloStockCritico = ref(false);
 const soloStockBajo = ref(false);
+const productosConVariantesVisibles = ref<Set<string>>(new Set());
 const mensajeToast = ref('');
 const tipoMensajeToast = ref<'error' | 'ok'>('ok');
 let idToast: ReturnType<typeof setTimeout> | null = null;
@@ -160,6 +168,21 @@ const filasFiltradas = computed((): FilaStock[] => {
     });
 });
 
+const gruposFiltrados = computed((): GrupoStockProducto[] => {
+  const mapa = new Map<string, GrupoStockProducto>();
+  for (const fila of filasFiltradas.value) {
+    const existente = mapa.get(fila.producto.id);
+    if (existente) {
+      existente.filas.push(fila);
+      continue;
+    }
+    mapa.set(fila.producto.id, { producto: fila.producto, filas: [fila] });
+  }
+  return [...mapa.values()].sort((a, b) =>
+    a.producto.nombre.localeCompare(b.producto.nombre, 'es', { sensitivity: 'base' }),
+  );
+});
+
 const filasParaConteoFisico = computed((): FilaStock[] => {
   return variantes.value
     .filter((v) => v.activa)
@@ -200,6 +223,38 @@ watch(soloStockCritico, (marca) => {
 watch(soloStockBajo, (marca) => {
   if (marca) soloStockCritico.value = false;
 });
+
+watch([busqueda, categoriaSeleccionada, soloStockCritico, soloStockBajo], () => {
+  productosConVariantesVisibles.value = new Set();
+});
+
+function estaProductoExpandido(productoId: string): boolean {
+  return productosConVariantesVisibles.value.has(productoId);
+}
+
+function alternarVariantesProducto(productoId: string): void {
+  const siguiente = new Set(productosConVariantesVisibles.value);
+  if (siguiente.has(productoId)) siguiente.delete(productoId);
+  else siguiente.add(productoId);
+  productosConVariantesVisibles.value = siguiente;
+}
+
+function existenciaTotalGrupo(grupo: GrupoStockProducto): number {
+  return grupo.filas.reduce((suma, fila) => suma + fila.existencia, 0);
+}
+
+function claseEstadoGrupo(grupo: GrupoStockProducto): string {
+  if (grupo.filas.some((fila) => fila.existencia === 0)) return claseEstadoCantidad(0);
+  const minimo = Math.min(...grupo.filas.map((fila) => fila.existencia));
+  return claseEstadoCantidad(minimo);
+}
+
+function textoEstadoGrupo(grupo: GrupoStockProducto): string {
+  if (grupo.filas.some((fila) => fila.existencia === 0)) return 'Con faltantes';
+  const minimo = Math.min(...grupo.filas.map((fila) => fila.existencia));
+  if (minimo <= umbralStockBajo.value) return 'Stock bajo';
+  return 'En rango normal';
+}
 
 const opcionesCategoriaParaFiltro = computed(() =>
   categorias.value.map((c) => ({ etiqueta: c.nombre, valor: c.id }))
@@ -456,13 +511,16 @@ function guardarModalEntrada(): void {
         <div class="stk-cab-textos">
           <h1 id="tit-stock-actual" class="pg-titulo">Stock actual</h1>
           <p class="pg-sub">{{ descripcionPagina }}</p>
-          <p v-if="textoBannerRestricciones" class="stk-banner-lectura">
-            <Info class="stk-banner-ico" :size="16" aria-hidden="true" />
-            {{ textoBannerRestricciones }}
-          </p>
         </div>
       </div>
     </header>
+
+    <p v-if="textoBannerRestricciones" class="stk-banner-lectura" role="status">
+      <span class="stk-banner-ico" aria-hidden="true">
+        <Info :size="16" stroke-width="2" />
+      </span>
+      <span class="stk-banner-texto">{{ textoBannerRestricciones }}</span>
+    </p>
 
     <div class="pg-barra">
       <div class="pg-barra-col pg-barra-col--busq">
@@ -557,73 +615,86 @@ function guardarModalEntrada(): void {
 
     <div class="pg-tabla-cuerpo" role="region" aria-label="Existencias por producto">
       <ul
-        v-if="filasFiltradas.length > 0"
+        v-if="gruposFiltrados.length > 0"
         class="stk-fila-lista"
         role="list"
-        aria-label="Existencias filtradas"
+        aria-label="Productos con stock"
       >
-        <li v-for="fila in filasFiltradas" :key="fila.variante.id" role="listitem">
-          <button
-            v-if="puedeEntradaManual"
-            type="button"
-            class="stk-fila-tarjeta"
-            @click="abrirModalEntrada(fila)"
-          >
-            <div class="stk-fila-tarjeta-cab">
-              <p class="stk-fila-tarjeta-nombre">{{ fila.producto.nombre }}</p>
-              <span :class="claseEstadoCantidad(fila.existencia)">
-                {{ textoEstadoCantidad(fila.existencia) }}
-              </span>
+        <li v-for="grupo in gruposFiltrados" :key="grupo.producto.id" role="listitem">
+          <article class="stk-prod-tarjeta">
+            <div class="stk-prod-tarjeta-cab">
+              <div class="stk-prod-tarjeta-info">
+                <p class="stk-fila-tarjeta-nombre">{{ grupo.producto.nombre }}</p>
+                <p v-if="grupo.producto.marca.trim()" class="stk-prod-tarjeta-marca">
+                  {{ grupo.producto.marca }}
+                </p>
+              </div>
+              <span :class="claseEstadoGrupo(grupo)">{{ textoEstadoGrupo(grupo) }}</span>
             </div>
-            <p class="stk-fila-tarjeta-variante">
-              {{ fila.producto.marca }}
-              <span class="stk-mono-mini">
-                · {{ etiquetaTalleColor(fila.variante.talle, fila.variante.color) }}
-              </span>
-            </p>
             <div class="stk-fila-tarjeta-chips">
               <span class="stk-fila-chip">
-                {{ catalogoStore.nombreCategoria(fila.producto.categoriaId) }}
+                {{ catalogoStore.nombreCategoria(grupo.producto.categoriaId) }}
               </span>
-              <span v-if="fila.variante.codigoBarras?.trim()" class="stk-fila-chip stk-fila-chip--cod stk-mono">
-                {{ fila.variante.codigoBarras?.trim() }}
+              <span class="stk-fila-chip">
+                {{ grupo.filas.length }}
+                {{ grupo.filas.length === 1 ? 'variante' : 'variantes' }}
               </span>
             </div>
             <div class="stk-fila-tarjeta-total">
-              <span class="stk-fila-tarjeta-total-etiq">Cantidad</span>
-              <strong class="stk-mono stk-cant">{{ fila.existencia }}</strong>
+              <span class="stk-fila-tarjeta-total-etiq">Total unidades</span>
+              <strong class="stk-mono stk-cant">{{ existenciaTotalGrupo(grupo) }}</strong>
             </div>
-          </button>
-          <article v-else class="stk-fila-tarjeta stk-fila-tarjeta--lectura">
-            <div class="stk-fila-tarjeta-cab">
-              <p class="stk-fila-tarjeta-nombre">{{ fila.producto.nombre }}</p>
-              <span :class="claseEstadoCantidad(fila.existencia)">
-                {{ textoEstadoCantidad(fila.existencia) }}
-              </span>
-            </div>
-            <p class="stk-fila-tarjeta-variante">
-              {{ fila.producto.marca }}
-              <span class="stk-mono-mini">
-                · {{ etiquetaTalleColor(fila.variante.talle, fila.variante.color) }}
-              </span>
-            </p>
-            <div class="stk-fila-tarjeta-chips">
-              <span class="stk-fila-chip">
-                {{ catalogoStore.nombreCategoria(fila.producto.categoriaId) }}
-              </span>
-              <span v-if="fila.variante.codigoBarras?.trim()" class="stk-fila-chip stk-fila-chip--cod stk-mono">
-                {{ fila.variante.codigoBarras?.trim() }}
-              </span>
-            </div>
-            <div class="stk-fila-tarjeta-total">
-              <span class="stk-fila-tarjeta-total-etiq">Cantidad</span>
-              <strong class="stk-mono stk-cant">{{ fila.existencia }}</strong>
-            </div>
+            <button
+              type="button"
+              class="stk-btn-variantes"
+              :aria-expanded="estaProductoExpandido(grupo.producto.id)"
+              :aria-controls="`stk-variantes-${grupo.producto.id}`"
+              @click="alternarVariantesProducto(grupo.producto.id)"
+            >
+              <ChevronUp v-if="estaProductoExpandido(grupo.producto.id)" :size="16" aria-hidden="true" />
+              <ChevronDown v-else :size="16" aria-hidden="true" />
+              {{ estaProductoExpandido(grupo.producto.id) ? 'Ocultar variantes' : 'Ver variantes' }}
+            </button>
+            <ul
+              v-if="estaProductoExpandido(grupo.producto.id)"
+              :id="`stk-variantes-${grupo.producto.id}`"
+              class="stk-variantes-lista"
+              role="list"
+              :aria-label="`Variantes de ${grupo.producto.nombre}`"
+            >
+              <li v-for="fila in grupo.filas" :key="fila.variante.id" role="listitem">
+                <div class="stk-variante-item">
+                  <div class="stk-variante-item-cab">
+                    <span class="stk-variante-talle stk-mono">
+                      {{ etiquetaTalleColor(fila.variante.talle, fila.variante.color) }}
+                    </span>
+                    <span :class="claseEstadoCantidad(fila.existencia)">
+                      {{ textoEstadoCantidad(fila.existencia) }}
+                    </span>
+                  </div>
+                  <p v-if="fila.variante.codigoBarras?.trim()" class="stk-variante-cod stk-mono">
+                    {{ fila.variante.codigoBarras?.trim() }}
+                  </p>
+                  <div class="stk-variante-item-pie">
+                    <span class="stk-variante-cant stk-mono stk-cant">{{ fila.existencia }} u.</span>
+                    <button
+                      v-if="puedeEntradaManual"
+                      type="button"
+                      class="stk-ac-mini stk-ac-mini--entr"
+                      @click="abrirModalEntrada(fila)"
+                    >
+                      <PackagePlus class="stk-ac-mini-ico" :size="15" aria-hidden="true" />
+                      Entrada
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ul>
           </article>
         </li>
       </ul>
       <p v-else class="stk-fila-vacio" role="status">
-        No encontramos líneas para las condiciones marcadas en los filtros.
+        No encontramos productos para las condiciones marcadas en los filtros.
       </p>
 
       <div class="pg-tabla-scroll stk-tabla-scroll stk-tabla-scroll--escritorio">
@@ -631,39 +702,75 @@ function guardarModalEntrada(): void {
         <thead>
           <tr>
             <th scope="col">Producto</th>
-            <th scope="col">Marca / tipo</th>
+            <th scope="col">Marca</th>
             <th scope="col" class="stk-col-corta">Categoría</th>
-            <th scope="col" class="stk-col-corta">Código</th>
-            <th scope="col" class="stk-der stk-col-stock">Cantidad</th>
-            <th scope="col">Estado</th>
-            <th v-if="puedeEntradaManual" scope="col" class="stk-col-acc stk-acc-h stk-der">Entrada</th>
+            <th scope="col" class="stk-der stk-col-stock">Total</th>
+            <th scope="col" class="stk-col-estado">Estado</th>
+            <th scope="col" class="stk-col-variantes">Variantes</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="fila in filasFiltradas" :key="fila.variante.id">
-            <td class="stk-nombre">{{ fila.producto.nombre }}</td>
-            <td>
-              {{ fila.producto.marca }}
-              <span class="stk-mute stk-mono-mini">
-                · {{ etiquetaTalleColor(fila.variante.talle, fila.variante.color) }}
-              </span>
-            </td>
-            <td class="stk-mute stk-col-corta">{{ catalogoStore.nombreCategoria(fila.producto.categoriaId) }}</td>
-            <td class="stk-mono stk-col-corta">{{ fila.variante.codigoBarras?.trim() || '—' }}</td>
-            <td class="stk-der stk-mono stk-cant">{{ fila.existencia }}</td>
-            <td>
-              <span :class="claseEstadoCantidad(fila.existencia)">{{ textoEstadoCantidad(fila.existencia) }}</span>
-            </td>
-            <td v-if="puedeEntradaManual" class="stk-acc-cel stk-der stk-acc-h">
-              <button type="button" class="stk-ac-mini stk-ac-mini--entr" title="Entrada tipo compra manual" @click="abrirModalEntrada(fila)">
-                <PackagePlus class="stk-ac-mini-ico" :size="17" aria-hidden="true" />
-                Entrada
-              </button>
-            </td>
-          </tr>
-          <tr v-if="filasFiltradas.length === 0">
+          <template v-for="grupo in gruposFiltrados" :key="grupo.producto.id">
+            <tr class="stk-fila-producto">
+              <td class="stk-nombre">{{ grupo.producto.nombre }}</td>
+              <td>{{ grupo.producto.marca || '—' }}</td>
+              <td class="stk-mute stk-col-corta">
+                {{ catalogoStore.nombreCategoria(grupo.producto.categoriaId) }}
+              </td>
+              <td class="stk-der stk-mono stk-cant">{{ existenciaTotalGrupo(grupo) }}</td>
+              <td class="stk-cel-estado">
+                <span :class="claseEstadoGrupo(grupo)">{{ textoEstadoGrupo(grupo) }}</span>
+              </td>
+              <td class="stk-cel-variantes">
+                <button
+                  type="button"
+                  class="stk-btn-variantes stk-btn-variantes--tabla"
+                  :aria-expanded="estaProductoExpandido(grupo.producto.id)"
+                  @click="alternarVariantesProducto(grupo.producto.id)"
+                >
+                  <ChevronUp v-if="estaProductoExpandido(grupo.producto.id)" :size="15" aria-hidden="true" />
+                  <ChevronDown v-else :size="15" aria-hidden="true" />
+                  {{ estaProductoExpandido(grupo.producto.id) ? 'Ocultar' : 'Ver variantes' }}
+                </button>
+              </td>
+            </tr>
+            <tr
+              v-for="fila in grupo.filas"
+              v-show="estaProductoExpandido(grupo.producto.id)"
+              :key="fila.variante.id"
+              class="stk-fila-variante"
+            >
+              <td colspan="3" class="stk-cel-variante">
+                <span class="stk-variante-talle stk-mono">
+                  Talle {{ etiquetaTalleColor(fila.variante.talle, fila.variante.color) }}
+                </span>
+                <span v-if="fila.variante.codigoBarras?.trim()" class="stk-variante-cod-tabla stk-mono">
+                  · {{ fila.variante.codigoBarras?.trim() }}
+                </span>
+              </td>
+              <td class="stk-der stk-mono stk-cant">{{ fila.existencia }}</td>
+              <td class="stk-cel-estado">
+                <span :class="claseEstadoCantidad(fila.existencia)">
+                  {{ textoEstadoCantidad(fila.existencia) }}
+                </span>
+              </td>
+              <td class="stk-cel-variantes">
+                <button
+                  v-if="puedeEntradaManual"
+                  type="button"
+                  class="stk-ac-mini stk-ac-mini--entr"
+                  title="Entrada tipo compra manual"
+                  @click="abrirModalEntrada(fila)"
+                >
+                  <PackagePlus class="stk-ac-mini-ico" :size="17" aria-hidden="true" />
+                  Entrada
+                </button>
+              </td>
+            </tr>
+          </template>
+          <tr v-if="gruposFiltrados.length === 0">
             <td :colspan="columnasTablaStock" class="stk-vacio">
-              No encontramos líneas para las condiciones marcadas en los filtros.
+              No encontramos productos para las condiciones marcadas en los filtros.
             </td>
           </tr>
         </tbody>
@@ -966,23 +1073,34 @@ function guardarModalEntrada(): void {
 
 .stk-banner-lectura {
   display: flex;
-  gap: 0.5rem;
-  align-items: flex-start;
-  margin: 0.75rem 0 0;
-  max-width: 58rem;
-  padding: 0.65rem 0.82rem;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 clamp(1rem, 3vw, 1.65rem) 0.85rem;
+  width: auto;
+  max-width: none;
+  padding: 0.72rem 0.9rem;
   border-radius: 10px;
   border: 1px solid var(--color-acento-borde);
   background: var(--color-acento-suave);
   color: var(--color-texto-suave);
   font-size: 0.81rem;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .stk-banner-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  margin-top: 0.1rem;
+  width: 1.5rem;
+  height: 1.5rem;
   color: var(--color-acento);
+}
+
+.stk-banner-texto {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
 }
 
 .stk-barra {
@@ -1251,6 +1369,8 @@ function guardarModalEntrada(): void {
 }
 
 .stk-col-stock {
+  width: 5rem;
+  min-width: 5rem;
   white-space: nowrap;
 }
 
@@ -1649,8 +1769,7 @@ function guardarModalEntrada(): void {
   list-style: none;
 }
 
-.stk-fila-tarjeta {
-  width: 100%;
+.stk-prod-tarjeta {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -1658,29 +1777,161 @@ function guardarModalEntrada(): void {
   border-radius: 12px;
   border: 1px solid var(--color-borde);
   background: var(--color-fondo-elevado);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease;
 }
 
-.stk-fila-tarjeta:hover,
-.stk-fila-tarjeta:focus-visible {
-  border-color: var(--color-acento-borde);
-  background: var(--color-fila-hover);
-  outline: none;
-}
-
-.stk-fila-tarjeta--lectura {
-  cursor: default;
-}
-
-.stk-fila-tarjeta-cab {
+.stk-prod-tarjeta-cab {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
+}
+
+.stk-prod-tarjeta-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.stk-prod-tarjeta-marca {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-texto-apagado);
+}
+
+.stk-btn-variantes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  margin-top: 0.15rem;
+  padding: 0.48rem 0.75rem;
+  border-radius: 9px;
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
+  color: var(--color-acento-hover);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stk-btn-variantes:hover {
+  filter: brightness(1.05);
+}
+
+.stk-btn-variantes--tabla {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: auto;
+  max-width: 100%;
+  margin-top: 0;
+  padding: 0.32rem 0.55rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.stk-variantes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stk-variante-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-cabecera);
+}
+
+.stk-variante-item-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.stk-variante-talle {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.stk-variante-cod {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--color-texto-apagado);
+}
+
+.stk-variante-item-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.stk-variante-cant {
+  font-size: 0.9rem;
+}
+
+.stk-fila-producto {
+  background: var(--color-fondo-elevado);
+}
+
+.stk-fila-variante {
+  background: var(--color-fondo-cabecera);
+}
+
+.stk-fila-variante td {
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.stk-cel-variante {
+  padding-left: 1.75rem !important;
+  font-size: 0.84rem;
+  color: var(--color-texto-suave);
+}
+
+.stk-col-estado,
+.stk-cel-estado {
+  width: 8.75rem;
+  min-width: 8.75rem;
+  max-width: 8.75rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.stk-cel-estado .stk-chip {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.stk-col-variantes,
+.stk-cel-variantes {
+  width: 10.25rem;
+  min-width: 10.25rem;
+  max-width: 10.25rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.stk-cel-variantes .stk-btn-variantes--tabla,
+.stk-cel-variantes .stk-ac-mini {
+  margin-inline: auto;
+}
+
+.stk-variante-cod-tabla {
+  font-size: 0.78rem;
+  color: var(--color-texto-apagado);
 }
 
 .stk-fila-tarjeta-nombre {
@@ -1689,16 +1940,6 @@ function guardarModalEntrada(): void {
   font-weight: 600;
   line-height: 1.35;
   color: var(--color-texto);
-  word-break: break-word;
-  flex: 1;
-  min-width: 0;
-}
-
-.stk-fila-tarjeta-variante {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--color-texto-apagado);
-  line-height: 1.35;
   word-break: break-word;
 }
 
@@ -1717,14 +1958,6 @@ function guardarModalEntrada(): void {
   color: var(--color-texto-suave);
   background: var(--color-acento-suave);
   border: 1px solid var(--color-borde);
-}
-
-.stk-fila-chip--cod {
-  font-size: 0.68rem;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .stk-fila-tarjeta-total {

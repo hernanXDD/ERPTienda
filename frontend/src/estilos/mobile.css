@@ -76,16 +76,21 @@
     display: none;
   }
 
-  .shell--contexto-movil .pg-marco .pg-cab:not(:has(.pg-kpis)):not(:has(.pg-cab-acciones)):not(:has(.rep-volver)):not(:has(.stk-banner-lectura)) {
+  .shell--contexto-movil .pg-marco .pg-cab:not(:has(.pg-kpis)):not(:has(.pg-cab-acciones)):not(:has(.rep-volver)) {
     display: none;
   }
 
   .shell--contexto-movil .pg-marco .pg-cab:has(.pg-kpis),
   .shell--contexto-movil .pg-marco .pg-cab:has(.pg-cab-acciones),
-  .shell--contexto-movil .pg-marco .pg-cab:has(.rep-volver),
-  .shell--contexto-movil .pg-marco .pg-cab:has(.stk-banner-lectura) {
+  .shell--contexto-movil .pg-marco .pg-cab:has(.rep-volver) {
     gap: 0.5rem;
     padding: 0.55rem 0.75rem 0.65rem;
+  }
+
+  .shell--contexto-movil .pg-marco .stk-banner-lectura {
+    margin: 0.55rem 0.75rem 0.65rem;
+    padding: 0.65rem 0.75rem;
+    gap: 0.6rem;
   }
 
   .shell--contexto-movil .pg-marco .pg-cab:has(.pg-kpis) .pg-kpis {

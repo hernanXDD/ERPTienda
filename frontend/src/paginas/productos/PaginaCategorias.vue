@@ -153,7 +153,7 @@ onMounted(() => {
 
 <template>
   <section class="pg-wrap" aria-labelledby="titulo-cat">
-    <div class="pg-marco pg-marco--categorias">
+    <div class="pg-marco pg-marco--categorias pg-marco--tarjetas">
       <header class="pg-cab">
         <div class="pg-cab-txt">
           <div class="pg-cab-izq">
@@ -245,12 +245,11 @@ onMounted(() => {
         </span>
       </p>
 
-      <section class="pg-tabla-cuerpo" role="region" aria-label="Listado de categorías">
-        <div class="pg-tabla-cab">
-          <h2 class="pg-tabla-h2">Categorías registradas</h2>
-          <span class="pg-tabla-meta pg-mono">{{ categoriasFiltradas.length }} filas</span>
-        </div>
-
+      <section
+        class="cat-gest-movil pg-tabla-cuerpo"
+        role="region"
+        aria-label="Listado de categorías"
+      >
         <ul
           v-if="categoriasFiltradas.length > 0"
           class="cat-gest-lista"
@@ -328,48 +327,50 @@ onMounted(() => {
             </button>
           </template>
         </p>
+      </section>
 
-        <div class="pg-tabla-scroll cat-gest-tabla-scroll--escritorio">
-          <table class="pg-tabla pg-tabla--estado">
-            <thead>
-              <tr>
-                <th scope="col">Nombre</th>
-                <th scope="col">Descripción</th>
-                <th scope="col" class="pg-der">Productos</th>
-                <th v-if="puedeGestionarCatalogo" scope="col" class="pg-acc">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="c in categoriasFiltradas" :key="c.id">
-                <td>
-                  <div class="cat-gest-cel-nombre">
-                    <span class="cat-gest-nombre">{{ c.nombre }}</span>
-                    <span class="cat-gest-chip">
-                      <FolderTree :size="12" aria-hidden="true" />
-                      Tipo de producto
+      <section
+        class="pg-cuerpo pg-cuerpo--grilla cat-gest-escritorio"
+        aria-label="Listado de categorías"
+      >
+        <div v-if="categoriasFiltradas.length > 0" class="pg-grilla-viewport">
+          <div class="pg-grilla-wrap">
+            <article v-for="c in categoriasFiltradas" :key="c.id" class="pg-card">
+              <div class="pg-card-afilado" aria-hidden="true" />
+              <div class="pg-card-cuerpo pg-card-cuerpo--resumida">
+                <header class="pg-card-cab">
+                  <h2 class="pg-card-nom">{{ c.nombre }}</h2>
+                </header>
+                <p
+                  v-if="c.descripcion.trim()"
+                  class="pg-card-nota"
+                  :title="c.descripcion.trim()"
+                >
+                  {{ resumenDescripcion(c.descripcion) }}
+                </p>
+                <div class="pg-card-estados">
+                  <div
+                    class="pg-card-fila-estado"
+                    :aria-label="`${cantidadProductosEnCategoria(c.id)} productos`"
+                  >
+                    <span class="pg-card-etiq">Prod.</span>
+                    <span
+                      class="pg-chip pg-chip--info"
+                      :class="{ 'cat-gest-chip--vacio': cantidadProductosEnCategoria(c.id) === 0 }"
+                    >
+                      <Package :size="11" aria-hidden="true" />
+                      <span class="pg-mono">{{ cantidadProductosEnCategoria(c.id) }}</span>
                     </span>
                   </div>
-                </td>
-                <td class="cat-gest-cel-desc" :title="c.descripcion.trim() || undefined">
-                  {{ resumenDescripcion(c.descripcion) }}
-                </td>
-                <td class="pg-der">
-                  <span
-                    class="cat-gest-contador"
-                    :class="{ 'cat-gest-contador--vacio': cantidadProductosEnCategoria(c.id) === 0 }"
-                  >
-                    <Package :size="13" aria-hidden="true" />
-                    <span class="pg-mono">{{ cantidadProductosEnCategoria(c.id) }}</span>
-                  </span>
-                </td>
-                <td v-if="puedeGestionarCatalogo" class="pg-acc">
-                  <div class="cat-gest-acciones">
-                    <button type="button" class="pg-btn" @click="abrirModificar(c)">
+                </div>
+                <footer v-if="puedeGestionarCatalogo" class="pg-card-pie">
+                  <div class="pg-card-acciones">
+                    <button type="button" class="pg-btn-card" @click="abrirModificar(c)">
                       Editar
                     </button>
                     <button
                       type="button"
-                      class="pg-btn cat-gest-btn-peligro"
+                      class="pg-btn-card pg-btn-card--peligro"
                       :disabled="cantidadProductosEnCategoria(c.id) > 0"
                       :title="
                         cantidadProductosEnCategoria(c.id) > 0
@@ -381,25 +382,21 @@ onMounted(() => {
                       Borrar
                     </button>
                   </div>
-                </td>
-              </tr>
-              <tr v-if="categoriasFiltradas.length === 0">
-                <td colspan="4" class="pg-vacio">
-                  <template v-if="categorias.length === 0">
-                    No hay categorías cargadas. Usá <strong>Nueva categoría</strong> para agregar la
-                    primera.
-                  </template>
-                  <template v-else>
-                    Ninguna categoría coincide con la búsqueda.
-                    <button type="button" class="cat-gest-link-vacio" @click="limpiarFiltros">
-                      Limpiar filtros
-                    </button>
-                  </template>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </footer>
+              </div>
+            </article>
+          </div>
         </div>
+        <div v-else-if="categorias.length === 0" class="pg-vacio--grilla" role="status">
+          <span class="pg-vacio--grilla-tit">No hay categorías</span>
+          <span>Usá <strong>Nueva categoría</strong> para agregar la primera.</span>
+        </div>
+        <p v-else class="pg-vacio--grilla" role="status">
+          Ninguna categoría coincide con la búsqueda.
+          <button type="button" class="cat-gest-link-vacio" @click="limpiarFiltros">
+            Limpiar filtros
+          </button>
+        </p>
       </section>
     </div>
 
@@ -460,17 +457,27 @@ onMounted(() => {
 
 <style scoped>
 .cat-gest-banner-lectura {
-  margin: 0 0 1rem;
-  padding: 0.65rem 0.82rem;
+  margin: 0 clamp(1rem, 3vw, 1.65rem) 0.85rem;
+  padding: 0.72rem 0.9rem;
   border-radius: 10px;
   border: 1px solid var(--color-acento-borde);
   background: var(--color-acento-suave);
   font-size: 0.84rem;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--color-texto-suave);
 }
+
 .pg-marco--categorias {
-  --pg-reserva-vertical-vista: clamp(13rem, 26dvh, 19rem);
+  --pg-reserva-vertical-vista: clamp(14rem, 28dvh, 20rem);
+  --pg-grilla-altura-fila: 9.4rem;
+}
+
+.cat-gest-movil {
+  display: none;
+}
+
+.cat-gest-escritorio {
+  display: flex;
 }
 
 .cat-gest-btn-nuevo {
@@ -539,10 +546,13 @@ onMounted(() => {
 }
 
 .cat-gest-cel-desc {
-  max-width: 22rem;
   color: var(--color-texto-suave);
   font-size: 0.84rem;
   line-height: 1.45;
+}
+
+.cat-gest-chip--vacio {
+  opacity: 0.65;
 }
 
 .cat-gest-contador {
@@ -558,28 +568,6 @@ onMounted(() => {
 .cat-gest-contador--vacio {
   color: var(--color-texto-apagado);
   font-weight: 500;
-}
-
-.cat-gest-acciones {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  justify-content: flex-end;
-}
-
-.cat-gest-btn-peligro {
-  border-color: var(--color-peligro-borde);
-  color: var(--color-peligro);
-}
-
-.cat-gest-btn-peligro:hover:not(:disabled) {
-  background: var(--color-peligro-suave);
-  border-color: var(--color-peligro-borde);
-}
-
-.cat-gest-btn-peligro:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .cat-gest-link-vacio {
@@ -774,7 +762,6 @@ onMounted(() => {
 }
 
 .cat-gest-vacio {
-  display: none;
   margin: 0;
   padding: 2rem 1rem;
   text-align: center;
@@ -784,16 +771,17 @@ onMounted(() => {
 }
 
 @media (max-width: 900px) {
-  .pg-marco--categorias .pg-tabla-cuerpo {
+  .cat-gest-movil.pg-tabla-cuerpo {
+    display: flex;
+    padding-inline: 0.45rem;
     overflow-x: visible;
   }
 
-  .cat-gest-tabla-scroll--escritorio {
+  .cat-gest-escritorio {
     display: none;
   }
 
-  .cat-gest-lista,
-  .cat-gest-vacio {
+  .cat-gest-lista {
     display: flex;
   }
 }
