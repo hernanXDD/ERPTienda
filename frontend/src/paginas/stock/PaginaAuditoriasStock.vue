@@ -7,7 +7,11 @@ import { etiquetaMotivoMovimientoStock } from '../../modulos/inventario/etiqueta
 import { etiquetaRegistradoMovimientoStock } from '../../modulos/inventario/usuarioMovimientoStock';
 import { useStockStore } from '../../stores/stock';
 import type { AuditoriaStockDetalle, AuditoriaStockResumen, TipoAuditoriaStock } from '../../tipos/stock';
-import { formatearFechaYHora } from '../../utilidades/formatoFechaHora';
+import {
+  formatearFechaDiaMesAnio,
+  formatearFechaYHora,
+  formatearHoraAmPm,
+} from '../../utilidades/formatoFechaHora';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 
 const descripcionPagina = obtenerDescripcionPagina('stock-auditorias');
@@ -174,7 +178,52 @@ function alCerrarDetalleAuditoria(): void {
       </p>
 
       <div class="pg-tabla-cuerpo" role="region" aria-label="Listado de auditorías de stock">
-        <div class="pg-tabla-scroll aud-tabla-scroll">
+        <ul
+          v-if="auditorias.length > 0"
+          class="aud-lista"
+          role="list"
+          aria-label="Auditorías filtradas"
+        >
+          <li v-for="auditoria in auditorias" :key="auditoria.id" role="listitem">
+            <button
+              type="button"
+              class="aud-tarjeta"
+              :disabled="cargandoDetalle"
+              @click="abrirDetalleAuditoria(auditoria)"
+            >
+              <div class="aud-tarjeta-cab">
+                <span :class="claseTipoAuditoria(auditoria.tipo)">
+                  {{ etiquetaTipoAuditoriaStock(auditoria.tipo) }}
+                </span>
+                <time class="aud-tarjeta-fecha aud-mono" :datetime="auditoria.fecha">
+                  <span>{{ formatearFechaDiaMesAnio(auditoria.fecha) }}</span>
+                  <span>{{ formatearHoraAmPm(auditoria.fecha) }}</span>
+                </time>
+              </div>
+              <p class="aud-tarjeta-titulo">{{ auditoria.titulo }}</p>
+              <p v-if="auditoria.nota" class="aud-tarjeta-nota">{{ auditoria.nota }}</p>
+              <p class="aud-tarjeta-usuario aud-mute">{{ etiquetaRegistradoAuditoria(auditoria) }}</p>
+              <div class="aud-tarjeta-total">
+                <span class="aud-tarjeta-metrica">
+                  <span class="aud-tarjeta-metrica-etiq">Movimientos</span>
+                  <strong class="aud-mono">{{ auditoria.cantidadMovimientos }}</strong>
+                </span>
+                <span class="aud-tarjeta-metrica">
+                  <span class="aud-tarjeta-metrica-etiq">Variación neta</span>
+                  <strong class="aud-mono" :class="claseVariacion(auditoria.variacionNeta)">
+                    {{ textoVariacion(auditoria.variacionNeta) }}
+                  </strong>
+                </span>
+              </div>
+            </button>
+          </li>
+        </ul>
+        <p v-else-if="!cargandoAuditorias" class="aud-lista-vacio" role="status">
+          No hay auditorías para los filtros elegidos.
+        </p>
+        <p v-else class="aud-lista-vacio" role="status">Cargando auditorías…</p>
+
+        <div class="pg-tabla-scroll aud-tabla-scroll aud-tabla-scroll--escritorio">
           <table class="pg-tabla pg-tabla--estado">
             <thead>
               <tr>
@@ -271,7 +320,34 @@ function alCerrarDetalleAuditoria(): void {
             </span>
           </div>
 
-          <div class="aud-dlg-tabla-wrap" role="region" aria-label="Movimientos de la auditoría">
+          <ul
+            v-if="auditoriaDetalle.movimientos.length > 0"
+            class="aud-mov-lista"
+            role="list"
+            aria-label="Movimientos de la auditoría"
+          >
+            <li v-for="m in auditoriaDetalle.movimientos" :key="m.id" role="listitem">
+              <article class="aud-mov-tarjeta">
+                <p class="aud-mov-tarjeta-producto">{{ m.nombreVariante }}</p>
+                <p class="aud-mov-tarjeta-motivo aud-mute">{{ etiquetaMotivoMovimientoStock(m) }}</p>
+                <p class="aud-mov-tarjeta-usuario aud-mute">{{ etiquetaRegistradoMovimientoStock(m) }}</p>
+                <div class="aud-mov-tarjeta-montos">
+                  <div class="aud-mov-tarjeta-monto">
+                    <span class="aud-mov-tarjeta-monto-etiq">Variación</span>
+                    <strong class="aud-mono" :class="claseVariacion(m.cantidadVariacion)">
+                      {{ textoVariacion(m.cantidadVariacion) }}
+                    </strong>
+                  </div>
+                  <div class="aud-mov-tarjeta-monto">
+                    <span class="aud-mov-tarjeta-monto-etiq">Stock final</span>
+                    <strong class="aud-mono">{{ m.stockResultante }}</strong>
+                  </div>
+                </div>
+              </article>
+            </li>
+          </ul>
+
+          <div class="aud-dlg-tabla-wrap aud-dlg-tabla-wrap--escritorio" role="region" aria-label="Movimientos de la auditoría">
             <table class="aud-dlg-tabla">
               <thead>
                 <tr>
@@ -578,5 +654,220 @@ function alCerrarDetalleAuditoria(): void {
   border: 1px solid var(--color-borde);
   background: transparent;
   color: var(--color-texto);
+}
+
+.aud-lista {
+  display: none;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aud-tarjeta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.aud-tarjeta:hover:not(:disabled),
+.aud-tarjeta:focus-visible {
+  border-color: var(--color-acento-borde);
+  background: var(--color-fila-hover);
+  outline: none;
+}
+
+.aud-tarjeta:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.aud-tarjeta-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.aud-tarjeta-fecha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.08rem;
+  font-size: 0.75rem;
+  color: var(--color-texto-apagado);
+}
+
+.aud-tarjeta-titulo {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-texto);
+  word-break: break-word;
+}
+
+.aud-tarjeta-nota {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-texto-suave);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.aud-tarjeta-usuario {
+  margin: 0;
+  font-size: 0.76rem;
+}
+
+.aud-tarjeta-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.aud-tarjeta-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.aud-tarjeta-metrica-etiq {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-apagado);
+}
+
+.aud-tarjeta-metrica strong {
+  font-size: 0.95rem;
+}
+
+.aud-lista-vacio {
+  display: none;
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-texto-apagado);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.aud-mov-lista {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.aud-mov-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-cabecera);
+}
+
+.aud-mov-tarjeta-producto {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-texto);
+  word-break: break-word;
+}
+
+.aud-mov-tarjeta-motivo,
+.aud-mov-tarjeta-usuario {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.aud-mov-tarjeta-montos {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.aud-mov-tarjeta-monto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.aud-mov-tarjeta-monto-etiq {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-apagado);
+}
+
+.aud-mov-tarjeta-monto strong {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .pg-tabla-cuerpo {
+    overflow-x: visible;
+  }
+
+  .aud-tabla-scroll--escritorio {
+    display: none;
+  }
+
+  .aud-lista,
+  .aud-lista-vacio {
+    display: flex;
+  }
+
+  .aud-dlg {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .aud-dlg-panel {
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .aud-dlg-tabla-wrap--escritorio {
+    display: none;
+  }
+
+  .aud-mov-lista {
+    display: flex;
+  }
 }
 </style>

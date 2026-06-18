@@ -6,7 +6,11 @@ import { usePermisosOperador } from '../../composables/usePermisosOperador';
 import { etiquetaCondicionCompra } from '../../datos/condicionesCompra';
 import { useRegistroComprasStore } from '../../stores/registroCompras';
 import type { CompraRegistrada } from '../../tipos/compraRegistrada';
-import { formatearFechaYHora } from '../../utilidades/formatoFechaHora';
+import {
+  formatearFechaDiaMesAnio,
+  formatearFechaYHora,
+  formatearHoraAmPm,
+} from '../../utilidades/formatoFechaHora';
 import FormularioNuevaCompra from './FormularioNuevaCompra.vue';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 
@@ -150,35 +154,67 @@ function alCerrarDialogoRegistrar() {
     </div>
 
     <div class="pg-tabla-cuerpo" role="region" aria-label="Historial de compras">
-      <table class="pg-tabla pg-tabla--estado">
-        <thead>
-          <tr>
-            <th scope="col">Fecha / hora</th>
-            <th scope="col">Número</th>
-            <th scope="col">Proveedor</th>
-            <th scope="col">Condición</th>
-            <th scope="col" class="rcp-der">Total</th>
-            <th scope="col" class="rcp-col-acc" />
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="compra in comprasFiltradas" :key="compra.id">
-            <td class="rcp-mono">{{ formatearFechaYHora(compra.fecha) }}</td>
-            <td class="rcp-mono">{{ compra.numero }}</td>
-            <td>{{ compra.nombreProveedorMostrar }}</td>
-            <td>{{ etiquetaCondicionCompra(compra.condicionCompra) }}</td>
-            <td class="rcp-der rcp-mono">{{ formatoPeso.format(compra.total) }}</td>
-            <td class="rcp-col-acc">
-              <button type="button" class="rcp-det" @click="abrirDetalleCompra(compra)">
-                Ver detalle
-              </button>
-            </td>
-          </tr>
-          <tr v-if="comprasFiltradas.length === 0">
-            <td colspan="6" class="rcp-vacio">No hay compras que coincidan con los filtros.</td>
-          </tr>
-        </tbody>
-      </table>
+      <ul
+        v-if="comprasFiltradas.length > 0"
+        class="rcp-compra-lista"
+        role="list"
+        aria-label="Compras filtradas"
+      >
+        <li v-for="compra in comprasFiltradas" :key="compra.id" role="listitem">
+          <button type="button" class="rcp-compra-tarjeta" @click="abrirDetalleCompra(compra)">
+            <div class="rcp-compra-tarjeta-cab">
+              <span class="rcp-compra-num rcp-mono">{{ compra.numero }}</span>
+              <time class="rcp-compra-fecha" :datetime="compra.fecha">
+                <span class="rcp-compra-fecha-dia">{{ formatearFechaDiaMesAnio(compra.fecha) }}</span>
+                <span class="rcp-compra-fecha-hora">{{ formatearHoraAmPm(compra.fecha) }}</span>
+              </time>
+            </div>
+            <p class="rcp-compra-proveedor">{{ compra.nombreProveedorMostrar }}</p>
+            <div class="rcp-compra-tarjeta-chips">
+              <span class="rcp-compra-chip">{{ etiquetaCondicionCompra(compra.condicionCompra) }}</span>
+            </div>
+            <div class="rcp-compra-tarjeta-total">
+              <span class="rcp-compra-tarjeta-total-etiq">Total</span>
+              <strong class="rcp-mono">{{ formatoPeso.format(compra.total) }}</strong>
+            </div>
+          </button>
+        </li>
+      </ul>
+      <p v-else class="rcp-compra-vacio" role="status">
+        No hay compras que coincidan con los filtros.
+      </p>
+
+      <div class="rcp-tabla-scroll--escritorio">
+        <table class="pg-tabla pg-tabla--estado">
+          <thead>
+            <tr>
+              <th scope="col">Fecha / hora</th>
+              <th scope="col">Número</th>
+              <th scope="col">Proveedor</th>
+              <th scope="col">Condición</th>
+              <th scope="col" class="rcp-der">Total</th>
+              <th scope="col" class="rcp-col-acc" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="compra in comprasFiltradas" :key="compra.id">
+              <td class="rcp-mono">{{ formatearFechaYHora(compra.fecha) }}</td>
+              <td class="rcp-mono">{{ compra.numero }}</td>
+              <td>{{ compra.nombreProveedorMostrar }}</td>
+              <td>{{ etiquetaCondicionCompra(compra.condicionCompra) }}</td>
+              <td class="rcp-der rcp-mono">{{ formatoPeso.format(compra.total) }}</td>
+              <td class="rcp-col-acc">
+                <button type="button" class="rcp-det" @click="abrirDetalleCompra(compra)">
+                  Ver detalle
+                </button>
+              </td>
+            </tr>
+            <tr v-if="comprasFiltradas.length === 0">
+              <td colspan="6" class="rcp-vacio">No hay compras que coincidan con los filtros.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     </div>
@@ -413,6 +449,9 @@ function alCerrarDialogoRegistrar() {
 }
 
 .rcp-det {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.35rem 0.65rem;
   font-size: 0.8rem;
   font-weight: 600;
@@ -593,6 +632,135 @@ function alCerrarDialogoRegistrar() {
   .rcp-dlg-overlay {
     width: calc(100vw - 1rem);
     max-height: 95dvh;
+  }
+}
+
+.rcp-compra-lista {
+  display: none;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rcp-compra-tarjeta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.rcp-compra-tarjeta:hover,
+.rcp-compra-tarjeta:focus-visible {
+  border-color: var(--color-acento-borde);
+  background: var(--color-fila-hover);
+  outline: none;
+}
+
+.rcp-compra-tarjeta-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.rcp-compra-num {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-acento-hover);
+}
+
+.rcp-compra-fecha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.08rem;
+  font-size: 0.75rem;
+  color: var(--color-texto-apagado);
+}
+
+.rcp-compra-proveedor {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-texto);
+  word-break: break-word;
+}
+
+.rcp-compra-tarjeta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.rcp-compra-chip {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--color-acento-suave);
+  color: var(--color-texto-suave);
+  border: 1px solid var(--color-borde);
+}
+
+.rcp-compra-tarjeta-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.rcp-compra-tarjeta-total-etiq {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-apagado);
+}
+
+.rcp-compra-tarjeta-total strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-acento-hover);
+}
+
+.rcp-compra-vacio {
+  display: none;
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-texto-apagado);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .pg-tabla-cuerpo {
+    overflow-x: visible;
+  }
+
+  .rcp-tabla-scroll--escritorio {
+    display: none;
+  }
+
+  .rcp-compra-lista,
+  .rcp-compra-vacio {
+    display: flex;
   }
 }
 </style>

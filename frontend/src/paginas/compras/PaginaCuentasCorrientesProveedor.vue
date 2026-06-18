@@ -11,7 +11,12 @@ import { notificarError } from '../../utilidades/notificacion';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
 import { opcionesFormaPagoRegistroCuentaCorriente } from '../../modulos/clientes/formasPagoRegistroCuentaCorriente';
 import type { Proveedor } from '../../tipos/proveedor';
-import { formatearFechaYHora, obtenerDiaComparableDesdeValor } from '../../utilidades/formatoFechaHora';
+import {
+  formatearFechaDiaMesAnio,
+  formatearFechaYHora,
+  formatearHoraAmPm,
+  obtenerDiaComparableDesdeValor,
+} from '../../utilidades/formatoFechaHora';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 
 const descripcionPagina = obtenerDescripcionPagina('compras-cuentas-corrientes-proveedor');
@@ -366,8 +371,47 @@ async function imprimirCuentaProveedor(): Promise<void> {
           </span>
         </header>
 
+        <ul
+          v-if="cuentasFiltradas.length > 0"
+          class="cc-cartera-lista"
+          role="list"
+          aria-label="Cuentas corrientes filtradas"
+        >
+          <li v-for="c in cuentasFiltradas" :key="c.id" role="listitem">
+            <button type="button" class="cc-cartera-tarjeta" @click="abrirMovimientosProveedor(c)">
+              <p class="cc-cartera-tarjeta-nombre">{{ c.nombre }}</p>
+              <p class="cc-cartera-tarjeta-doc pg-mono">{{ c.documento }}</p>
+              <dl class="cc-cartera-tarjeta-montos">
+                <div class="cc-cartera-tarjeta-monto">
+                  <dt>Límite CC</dt>
+                  <dd class="pg-mono">{{ formatoPeso.format(c.limiteCreditoCompras) }}</dd>
+                </div>
+                <div class="cc-cartera-tarjeta-monto cc-cartera-tarjeta-monto--saldo">
+                  <dt>Saldo actual</dt>
+                  <dd class="pg-mono">
+                    {{ formatoPeso.format(cuentaCorrienteProveedorStore.saldoProveedorCacheado(c.id)) }}
+                  </dd>
+                </div>
+                <div class="cc-cartera-tarjeta-monto">
+                  <dt>Disponible</dt>
+                  <dd class="pg-mono cc-cel-disponible">{{ formatoPeso.format(creditoDisponible(c)) }}</dd>
+                </div>
+              </dl>
+            </button>
+          </li>
+        </ul>
+        <p v-else class="cc-cartera-vacio" role="status">
+          <template v-if="cuentasHabilitadas.length === 0">
+            No hay proveedores con cuenta corriente habilitada y habilitados para operar.
+          </template>
+          <template v-else>
+            Ningún proveedor coincide con los filtros elegidos. Probá otro nombre o cambiá el estado de
+            deuda.
+          </template>
+        </p>
+
         <div
-          class="pg-tabla-scroll cc-cartera-scroll"
+          class="pg-tabla-scroll cc-cartera-scroll cc-cartera-scroll--escritorio"
           role="region"
           aria-label="Cuentas corrientes por proveedor"
         >
@@ -506,7 +550,79 @@ async function imprimirCuentaProveedor(): Promise<void> {
               }}</span
             >
           </header>
-          <div class="cc-modal-tabla-scroll" role="region" aria-label="Listado de movimientos">
+          <ul
+            v-if="movimientosFiltradosModal.length > 0"
+            class="cc-mov-lista"
+            role="list"
+            aria-label="Listado de movimientos"
+          >
+            <li
+              v-for="m in movimientosFiltradosModal"
+              :key="m.id"
+              class="cc-mov-tarjeta"
+              :class="
+                m.tipoMovimiento === 'cargo' ? 'cc-mov-tarjeta--cargo' : 'cc-mov-tarjeta--pago'
+              "
+            >
+              <div class="cc-mov-tarjeta-cab">
+                <time class="cc-mov-tarjeta-fecha cc-mono" :datetime="m.fecha">
+                  <span class="cc-mov-tarjeta-fecha-dia">{{ formatearFechaDiaMesAnio(m.fecha) }}</span>
+                  <span class="cc-mov-tarjeta-fecha-hora">{{ formatearHoraAmPm(m.fecha) }}</span>
+                </time>
+                <span
+                  class="cc-pill"
+                  :class="m.tipoMovimiento === 'cargo' ? 'cc-pill--cargo' : 'cc-pill--pago'"
+                >
+                  {{ etiquetaTipoMovimiento(m.tipoMovimiento) }}
+                </span>
+              </div>
+              <p class="cc-mov-tarjeta-desc">{{ m.descripcion }}</p>
+              <dl class="cc-mov-tarjeta-montos">
+                <div class="cc-mov-tarjeta-monto">
+                  <dt>Debe</dt>
+                  <dd class="cc-mono">
+                    {{ m.tipoMovimiento === 'cargo' ? formatoPeso.format(m.importe) : '—' }}
+                  </dd>
+                </div>
+                <div class="cc-mov-tarjeta-monto">
+                  <dt>Haber</dt>
+                  <dd class="cc-mono">
+                    {{
+                      m.tipoMovimiento === 'pagoRegistrado' ? formatoPeso.format(m.importe) : '—'
+                    }}
+                  </dd>
+                </div>
+                <div class="cc-mov-tarjeta-monto cc-mov-tarjeta-monto--saldo">
+                  <dt>Saldo</dt>
+                  <dd class="cc-mono">{{ formatoPeso.format(m.saldoTrasMovimiento) }}</dd>
+                </div>
+              </dl>
+              <div v-if="m.tipoMovimiento === 'pagoRegistrado'" class="cc-mov-tarjeta-recibo">
+                <span
+                  v-if="m.auditoriaPago?.codigoPublicoRecibo"
+                  class="cc-recibo-cod cc-mono"
+                  :title="m.auditoriaPago.codigoPublicoRecibo"
+                >
+                  {{ m.auditoriaPago.codigoPublicoRecibo }}
+                </span>
+                <button
+                  type="button"
+                  class="cc-btn-imprimir-recibo cc-btn-imprimir-recibo--ancho"
+                  :aria-label="`Imprimir recibo del pago del ${formatearFechaYHora(m.fecha)}`"
+                  @click="imprimirReciboPagoDesdeHistorial(m)"
+                >
+                  Imprimir recibo
+                </button>
+              </div>
+            </li>
+          </ul>
+          <p v-else class="cc-mov-vacio">No hay movimientos en el rango de fechas elegido.</p>
+
+          <div
+            class="cc-modal-tabla-scroll cc-modal-tabla-scroll--escritorio"
+            role="region"
+            aria-label="Listado de movimientos"
+          >
             <table class="cc-tabla cc-tabla-estado">
               <thead>
                 <tr>
@@ -1592,52 +1708,291 @@ async function imprimirCuentaProveedor(): Promise<void> {
   outline-offset: 2px;
 }
 
+.cc-cartera-lista {
+  display: none;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cc-cartera-tarjeta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.cc-cartera-tarjeta:hover,
+.cc-cartera-tarjeta:focus-visible {
+  border-color: var(--color-acento-borde);
+  background: var(--color-fila-hover);
+  outline: none;
+}
+
+.cc-cartera-tarjeta-nombre {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-texto);
+  word-break: break-word;
+}
+
+.cc-cartera-tarjeta-doc {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-texto-apagado);
+}
+
+.cc-cartera-tarjeta-montos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 0.65rem;
+  margin: 0.15rem 0 0;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.cc-cartera-tarjeta-monto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.cc-cartera-tarjeta-monto dt {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-apagado);
+}
+
+.cc-cartera-tarjeta-monto dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.cc-cartera-tarjeta-monto--saldo dd {
+  color: var(--color-peligro);
+}
+
+.cc-cartera-vacio {
+  display: none;
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-texto-apagado);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.cc-mov-lista {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: none;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.cc-mov-tarjeta {
+  border-radius: 12px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cc-mov-tarjeta--cargo {
+  border-left: 3px solid var(--color-peligro);
+}
+
+.cc-mov-tarjeta--pago {
+  border-left: 3px solid var(--color-exito);
+}
+
+.cc-mov-tarjeta-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cc-mov-tarjeta-fecha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  color: var(--color-texto-suave);
+}
+
+.cc-mov-tarjeta-fecha-dia {
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.cc-mov-tarjeta-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--color-texto);
+  word-break: break-word;
+}
+
+.cc-mov-tarjeta-montos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.cc-mov-tarjeta-monto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  background: var(--color-fondo-cabecera);
+}
+
+.cc-mov-tarjeta-monto dt {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-apagado);
+}
+
+.cc-mov-tarjeta-monto dd {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.cc-mov-tarjeta-monto--saldo dd {
+  color: var(--color-acento-hover);
+}
+
+.cc-mov-tarjeta-recibo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.15rem;
+}
+
+.cc-btn-imprimir-recibo--ancho {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.75rem;
+}
+
+.cc-mov-vacio {
+  flex: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: 0;
+  padding: 2rem 1rem;
+  color: var(--color-texto-apagado);
+  font-size: 0.9rem;
+}
+
 @media (max-width: 900px) {
-  .cc-cartera-scroll::after {
+  .cc-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .cc-modal-cab-bloque {
+    padding-right: 2.75rem;
+  }
+
+  .cc-modal-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-modal-barra {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cc-modal-filtros {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .cc-modal-filtros > .cc-modal-seclab {
+    grid-column: 1 / -1;
+    margin-right: 0;
+    margin-bottom: 0.1rem;
+  }
+
+  .cc-fecha-inp {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .cc-modal-toolbar {
+    flex-direction: column;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .cc-modal-toolbar .cc-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cc-modal-tabla-scroll--escritorio {
     display: none;
   }
 
-  .cc-tabla-cartera .cc-col-oculta-movil {
+  .cc-mov-lista,
+  .cc-mov-vacio {
+    display: flex;
+  }
+
+  .pg-tabla-cuerpo {
+    overflow-x: visible;
+  }
+
+  .cc-cartera-scroll--escritorio {
     display: none;
   }
 
-  .cc-tabla-cartera .cc-col-cliente {
-    min-width: 0;
-    width: auto;
-  }
-
-  .cc-tabla-cartera .cc-col-saldo-actual {
-    min-width: 5.5rem;
-    width: 1%;
-    white-space: nowrap;
-  }
-
-  .cc-tabla-cartera .cc-col-acciones {
-    min-width: 0;
-    width: 1%;
-  }
-
-  .cc-tabla-cartera .cc-col-acciones-etiq {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .cc-btn-movimientos {
-    min-width: 2.75rem;
-    width: 2.75rem;
-    height: 2.75rem;
-    padding: 0;
-  }
-
-  .cc-btn-movimientos-texto {
-    display: none;
+  .cc-cartera-lista,
+  .cc-cartera-vacio {
+    display: flex;
   }
 }
 </style>

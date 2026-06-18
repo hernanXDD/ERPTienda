@@ -328,7 +328,53 @@ function limpiarFiltros() {
     </p>
 
     <div class="pg-tabla-cuerpo" role="region" aria-label="Listado de ventas">
-      <div class="pg-tabla-scroll lv-tabla-scroll"><table class="pg-tabla pg-tabla--estado">
+      <ul
+        v-if="ventasFiltradas.length > 0"
+        class="lv-venta-lista"
+        role="list"
+        aria-label="Ventas filtradas"
+      >
+        <li v-for="v in ventasFiltradas" :key="v.id" role="listitem">
+          <button type="button" class="lv-venta-tarjeta" @click="abrirDetalle(v)">
+            <div class="lv-venta-tarjeta-cab">
+              <span class="lv-num">{{ v.numero }}</span>
+              <time class="lv-venta-tarjeta-fecha" :datetime="v.fecha">
+                <span class="lv-fecha-dia">{{ formatearFechaDiaMesAnio(v.fecha) }}</span>
+                <span class="lv-fecha-hora">{{ formatearHoraAmPm(v.fecha) }}</span>
+              </time>
+            </div>
+            <p class="lv-venta-tarjeta-cli" :class="{ 'lv-cli--cf': !v.clienteId }">
+              {{ v.nombreClienteMostrar }}
+            </p>
+            <div class="lv-venta-tarjeta-chips">
+              <span :class="claseChipPago(v.formaPago)">
+                {{ etiquetaFormaPago(v.formaPago) }}
+              </span>
+              <span :class="claseEstadoFacturacion(v)">{{ v.estadoFacturacion.nombre }}</span>
+            </div>
+            <p v-if="v.facturacion.trim()" class="lv-venta-tarjeta-fact lv-mono">
+              {{ v.facturacion.trim() }}
+            </p>
+            <div class="lv-venta-tarjeta-total">
+              <span class="lv-venta-tarjeta-total-etiq">Total</span>
+              <strong class="lv-mono">{{ formatoPeso.format(v.total) }}</strong>
+            </div>
+          </button>
+        </li>
+      </ul>
+      <p v-else class="lv-venta-vacio">
+        <template v-if="ventas.length === 0">
+          No hay ventas registradas en el sistema todavía. Las operaciones confirmadas en el
+          centro de ventas se guardan en la base y aparecerán aquí.
+        </template>
+        <template v-else>
+          No hay ventas que coincidan con los filtros elegidos. Probá ampliar el rango de
+          fechas o limpiar la búsqueda.
+        </template>
+      </p>
+
+      <div class="pg-tabla-scroll lv-tabla-scroll lv-tabla-scroll--escritorio">
+        <table class="pg-tabla pg-tabla--estado">
         <thead>
           <tr>
             <th scope="col">Fecha</th>
@@ -1707,5 +1753,120 @@ function limpiarFiltros() {
   margin-left: 0;
   width: 100%;
   justify-content: center;
+}
+
+.lv-venta-lista {
+  display: none;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lv-venta-tarjeta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.lv-venta-tarjeta:hover,
+.lv-venta-tarjeta:focus-visible {
+  border-color: var(--color-acento-borde);
+  background: var(--color-fila-hover);
+  outline: none;
+}
+
+.lv-venta-tarjeta-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lv-venta-tarjeta-fecha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.08rem;
+  font-size: 0.75rem;
+  color: var(--color-texto-apagado);
+}
+
+.lv-venta-tarjeta-cli {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-texto);
+  word-break: break-word;
+}
+
+.lv-venta-tarjeta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.lv-venta-tarjeta-fact {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-texto-suave);
+  word-break: break-word;
+}
+
+.lv-venta-tarjeta-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.lv-venta-tarjeta-total-etiq {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-apagado);
+}
+
+.lv-venta-tarjeta-total strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-acento-hover);
+}
+
+.lv-venta-vacio {
+  display: none;
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-texto-apagado);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .lv-tabla-scroll--escritorio {
+    display: none;
+  }
+
+  .lv-venta-lista,
+  .lv-venta-vacio {
+    display: flex;
+  }
 }
 </style>

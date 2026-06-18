@@ -556,7 +556,78 @@ function guardarModalEntrada(): void {
     </p>
 
     <div class="pg-tabla-cuerpo" role="region" aria-label="Existencias por producto">
-      <div class="pg-tabla-scroll stk-tabla-scroll"><table class="pg-tabla pg-tabla--estado">
+      <ul
+        v-if="filasFiltradas.length > 0"
+        class="stk-fila-lista"
+        role="list"
+        aria-label="Existencias filtradas"
+      >
+        <li v-for="fila in filasFiltradas" :key="fila.variante.id" role="listitem">
+          <button
+            v-if="puedeEntradaManual"
+            type="button"
+            class="stk-fila-tarjeta"
+            @click="abrirModalEntrada(fila)"
+          >
+            <div class="stk-fila-tarjeta-cab">
+              <p class="stk-fila-tarjeta-nombre">{{ fila.producto.nombre }}</p>
+              <span :class="claseEstadoCantidad(fila.existencia)">
+                {{ textoEstadoCantidad(fila.existencia) }}
+              </span>
+            </div>
+            <p class="stk-fila-tarjeta-variante">
+              {{ fila.producto.marca }}
+              <span class="stk-mono-mini">
+                · {{ etiquetaTalleColor(fila.variante.talle, fila.variante.color) }}
+              </span>
+            </p>
+            <div class="stk-fila-tarjeta-chips">
+              <span class="stk-fila-chip">
+                {{ catalogoStore.nombreCategoria(fila.producto.categoriaId) }}
+              </span>
+              <span v-if="fila.variante.codigoBarras?.trim()" class="stk-fila-chip stk-fila-chip--cod stk-mono">
+                {{ fila.variante.codigoBarras?.trim() }}
+              </span>
+            </div>
+            <div class="stk-fila-tarjeta-total">
+              <span class="stk-fila-tarjeta-total-etiq">Cantidad</span>
+              <strong class="stk-mono stk-cant">{{ fila.existencia }}</strong>
+            </div>
+          </button>
+          <article v-else class="stk-fila-tarjeta stk-fila-tarjeta--lectura">
+            <div class="stk-fila-tarjeta-cab">
+              <p class="stk-fila-tarjeta-nombre">{{ fila.producto.nombre }}</p>
+              <span :class="claseEstadoCantidad(fila.existencia)">
+                {{ textoEstadoCantidad(fila.existencia) }}
+              </span>
+            </div>
+            <p class="stk-fila-tarjeta-variante">
+              {{ fila.producto.marca }}
+              <span class="stk-mono-mini">
+                · {{ etiquetaTalleColor(fila.variante.talle, fila.variante.color) }}
+              </span>
+            </p>
+            <div class="stk-fila-tarjeta-chips">
+              <span class="stk-fila-chip">
+                {{ catalogoStore.nombreCategoria(fila.producto.categoriaId) }}
+              </span>
+              <span v-if="fila.variante.codigoBarras?.trim()" class="stk-fila-chip stk-fila-chip--cod stk-mono">
+                {{ fila.variante.codigoBarras?.trim() }}
+              </span>
+            </div>
+            <div class="stk-fila-tarjeta-total">
+              <span class="stk-fila-tarjeta-total-etiq">Cantidad</span>
+              <strong class="stk-mono stk-cant">{{ fila.existencia }}</strong>
+            </div>
+          </article>
+        </li>
+      </ul>
+      <p v-else class="stk-fila-vacio" role="status">
+        No encontramos líneas para las condiciones marcadas en los filtros.
+      </p>
+
+      <div class="pg-tabla-scroll stk-tabla-scroll stk-tabla-scroll--escritorio">
+        <table class="pg-tabla pg-tabla--estado">
         <thead>
           <tr>
             <th scope="col">Producto</th>
@@ -1566,6 +1637,140 @@ function guardarModalEntrada(): void {
 
   .stk-ac-mini {
     justify-content: center;
+  }
+}
+
+.stk-fila-lista {
+  display: none;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stk-fila-tarjeta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.stk-fila-tarjeta:hover,
+.stk-fila-tarjeta:focus-visible {
+  border-color: var(--color-acento-borde);
+  background: var(--color-fila-hover);
+  outline: none;
+}
+
+.stk-fila-tarjeta--lectura {
+  cursor: default;
+}
+
+.stk-fila-tarjeta-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.stk-fila-tarjeta-nombre {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-texto);
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+.stk-fila-tarjeta-variante {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-texto-apagado);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.stk-fila-tarjeta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.stk-fila-chip {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-texto-suave);
+  background: var(--color-acento-suave);
+  border: 1px solid var(--color-borde);
+}
+
+.stk-fila-chip--cod {
+  font-size: 0.68rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stk-fila-tarjeta-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.stk-fila-tarjeta-total-etiq {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-apagado);
+}
+
+.stk-fila-tarjeta-total strong {
+  font-size: 1.1rem;
+}
+
+.stk-fila-vacio {
+  display: none;
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-texto-apagado);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .pg-tabla-cuerpo {
+    overflow-x: visible;
+  }
+
+  .stk-tabla-scroll--escritorio {
+    display: none;
+  }
+
+  .stk-fila-lista,
+  .stk-fila-vacio {
+    display: flex;
   }
 }
 </style>

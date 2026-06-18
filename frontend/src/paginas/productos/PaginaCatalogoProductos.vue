@@ -227,7 +227,90 @@ onMounted(() => {
           <h2 class="pg-tabla-h2">Productos registrados</h2>
           <span class="pg-tabla-meta pg-mono">{{ productosFiltrados.length }} filas</span>
         </div>
-        <div class="pg-tabla-scroll cat-tabla-scroll cat-catalogo-scroll">
+
+        <ul
+          v-if="productosFiltrados.length > 0"
+          class="cat-prod-lista"
+          role="list"
+          aria-label="Productos filtrados"
+        >
+          <li v-for="p in productosFiltrados" :key="p.id" role="listitem">
+            <button
+              v-if="puedeGestionarCatalogo"
+              type="button"
+              class="cat-prod-tarjeta"
+              @click="abrirModificar(p)"
+            >
+              <div class="cat-prod-tarjeta-cab">
+                <div class="cat-prod-cel-nombre">
+                  <span class="cat-prod-nombre">{{ p.nombre }}</span>
+                  <span v-if="p.marca.trim()" class="cat-prod-marca">{{ p.marca }}</span>
+                </div>
+              </div>
+              <div class="cat-prod-tarjeta-chips">
+                <span class="cat-prod-chip">
+                  <Layers :size="12" aria-hidden="true" />
+                  {{ catalogo.nombreCategoria(p.categoriaId) }}
+                </span>
+              </div>
+              <p
+                v-if="p.descripcion.trim()"
+                class="cat-prod-tarjeta-desc"
+                :title="p.descripcion.trim()"
+              >
+                {{ resumenDescripcion(p.descripcion) }}
+              </p>
+              <div class="cat-prod-tarjeta-total">
+                <span class="cat-prod-tarjeta-total-etiq">
+                  {{ cantidadVariantesProducto(p.id) }}
+                  {{ cantidadVariantesProducto(p.id) === 1 ? 'variante' : 'variantes' }}
+                </span>
+                <strong class="pg-mono">{{ formatoPeso.format(p.precioVenta) }}</strong>
+              </div>
+            </button>
+            <article v-else class="cat-prod-tarjeta cat-prod-tarjeta--lectura">
+              <div class="cat-prod-tarjeta-cab">
+                <div class="cat-prod-cel-nombre">
+                  <span class="cat-prod-nombre">{{ p.nombre }}</span>
+                  <span v-if="p.marca.trim()" class="cat-prod-marca">{{ p.marca }}</span>
+                </div>
+              </div>
+              <div class="cat-prod-tarjeta-chips">
+                <span class="cat-prod-chip">
+                  <Layers :size="12" aria-hidden="true" />
+                  {{ catalogo.nombreCategoria(p.categoriaId) }}
+                </span>
+              </div>
+              <p
+                v-if="p.descripcion.trim()"
+                class="cat-prod-tarjeta-desc"
+                :title="p.descripcion.trim()"
+              >
+                {{ resumenDescripcion(p.descripcion) }}
+              </p>
+              <div class="cat-prod-tarjeta-total">
+                <span class="cat-prod-tarjeta-total-etiq">
+                  {{ cantidadVariantesProducto(p.id) }}
+                  {{ cantidadVariantesProducto(p.id) === 1 ? 'variante' : 'variantes' }}
+                </span>
+                <strong class="pg-mono">{{ formatoPeso.format(p.precioVenta) }}</strong>
+              </div>
+            </article>
+          </li>
+        </ul>
+        <p v-else class="cat-prod-vacio" role="status">
+          <template v-if="productos.length === 0">
+            No hay productos cargados. Usá <strong>Nuevo producto</strong> para agregar el primero.
+          </template>
+          <template v-else>
+            Ningún producto coincide con los filtros.
+            <button type="button" class="cat-prod-link-vacio" @click="limpiarFiltros">
+              Limpiar filtros
+            </button>
+          </template>
+        </p>
+
+        <div class="pg-tabla-scroll cat-tabla-scroll cat-catalogo-scroll cat-tabla-scroll--escritorio">
           <table class="pg-tabla pg-tabla--estado cat-tabla-catalogo">
             <thead>
               <tr>
@@ -358,79 +441,9 @@ onMounted(() => {
     gap: 0.2rem;
   }
 
-  .pg-marco--catalogo .cat-tabla-scroll {
-    margin-inline: 0;
-  }
-
   .pg-marco--catalogo .pg-tabla-cuerpo {
     padding-inline: 0.45rem;
-  }
-
-  .cat-catalogo-scroll::after {
-    display: none;
-  }
-
-  .cat-tabla-catalogo .cat-col-oculta-movil {
-    display: none;
-  }
-
-  .cat-tabla-catalogo .cat-col-producto {
-    min-width: 0;
-  }
-
-  .cat-tabla-catalogo .cat-col-categoria {
-    min-width: 0;
-  }
-
-  .cat-tabla-catalogo .cat-col-precio {
-    min-width: 4.75rem;
-    width: 1%;
-    white-space: nowrap;
-  }
-
-  .cat-col-precio-etiq {
-    display: none;
-  }
-
-  .cat-col-precio-etiq-movil {
-    display: inline;
-  }
-
-  .cat-tabla-catalogo .cat-col-acciones {
-    min-width: 0;
-    width: 1%;
-  }
-
-  .cat-tabla-catalogo .cat-col-acciones-etiq {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .cat-prod-cel-nombre {
-    min-width: 0;
-  }
-
-  .cat-prod-acciones {
-    flex-wrap: nowrap;
-    gap: 0.25rem;
-  }
-
-  .cat-prod-btn-accion {
-    min-width: 2.5rem;
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: 0;
-  }
-
-  .cat-prod-btn-texto {
-    display: none;
+    overflow-x: visible;
   }
 }
 
@@ -546,5 +559,100 @@ onMounted(() => {
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.cat-prod-lista {
+  display: none;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cat-prod-tarjeta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.cat-prod-tarjeta:hover,
+.cat-prod-tarjeta:focus-visible {
+  border-color: var(--color-acento-borde);
+  background: var(--color-fila-hover);
+  outline: none;
+}
+
+.cat-prod-tarjeta--lectura {
+  cursor: default;
+}
+
+.cat-prod-tarjeta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.cat-prod-tarjeta-desc {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-texto-suave);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.cat-prod-tarjeta-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.cat-prod-tarjeta-total-etiq {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-apagado);
+}
+
+.cat-prod-tarjeta-total strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-acento-hover);
+}
+
+.cat-prod-vacio {
+  display: none;
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-texto-apagado);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .cat-tabla-scroll--escritorio {
+    display: none;
+  }
+
+  .cat-prod-lista,
+  .cat-prod-vacio {
+    display: flex;
+  }
 }
 </style>
