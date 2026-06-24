@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { ID_CONFIGURACION_SISTEMA } from '../../comunes/constantes/id-configuracion-sistema';
+import type { PlantillaCupon } from '../../comunes/constantes/plantilla-cupon';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActualizarConfiguracionSistemaDto } from './dto/actualizar-configuracion-sistema.dto';
@@ -10,8 +11,10 @@ export interface ConfiguracionSistemaApi {
   maximoCuentaCorriente: number;
   porcentajeGananciaSugerida: number;
   diasDeudaCuentaCorriente: number;
+  diasPlazoDevolucion: number;
   stockMinimoAlerta: number;
   movimientoManualStockHabilitado: boolean;
+  plantillaCupon: PlantillaCupon;
 }
 
 @Injectable()
@@ -23,16 +26,20 @@ export class ConfiguracionSistemaService {
     maximoCuentaCorriente: Prisma.Decimal;
     porcentajeGananciaSugerida: Prisma.Decimal;
     diasDeudaCuentaCorriente: number;
+    diasPlazoDevolucion: number;
     stockMinimoAlerta: number;
     movimientoManualStockHabilitado: boolean;
+    plantillaCupon: string;
   }): ConfiguracionSistemaApi {
     return {
       id: registro.id,
       maximoCuentaCorriente: decimalANumero(registro.maximoCuentaCorriente),
       porcentajeGananciaSugerida: decimalANumero(registro.porcentajeGananciaSugerida),
       diasDeudaCuentaCorriente: registro.diasDeudaCuentaCorriente,
+      diasPlazoDevolucion: registro.diasPlazoDevolucion,
       stockMinimoAlerta: registro.stockMinimoAlerta,
       movimientoManualStockHabilitado: registro.movimientoManualStockHabilitado,
+      plantillaCupon: registro.plantillaCupon as PlantillaCupon,
     };
   }
 
@@ -55,8 +62,10 @@ export class ConfiguracionSistemaService {
           Math.round(datos.porcentajeGananciaSugerida * 100) / 100,
         ),
         diasDeudaCuentaCorriente: datos.diasDeudaCuentaCorriente,
+        diasPlazoDevolucion: datos.diasPlazoDevolucion,
         stockMinimoAlerta: datos.stockMinimoAlerta,
         movimientoManualStockHabilitado: datos.movimientoManualStockHabilitado,
+        plantillaCupon: datos.plantillaCupon,
       },
     });
     return this.mapear(actualizado);

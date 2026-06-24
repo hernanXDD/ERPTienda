@@ -15,9 +15,12 @@ export type IdFormaPago =
   | 'CUENTA_CORRIENTE';
 
 export interface LineaVentaRegistro {
+  id?: string;
   varianteId: string;
   nombre: string;
   cantidad: number;
+  cantidadDevuelta?: number;
+  cantidadDisponibleDevolver?: number;
   precioUnitario: number;
   subtotal: number;
 }

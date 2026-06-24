@@ -1,7 +1,7 @@
 import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { TipoAuditoriaStock } from '@prisma/client';
 
-const TIPOS_AUDITORIA: TipoAuditoriaStock[] = ['venta', 'compra', 'conteo'];
+const TIPOS_AUDITORIA: TipoAuditoriaStock[] = ['venta', 'compra', 'conteo', 'devolucion'];
 
 export class ListarAuditoriasDto {
   @IsOptional()

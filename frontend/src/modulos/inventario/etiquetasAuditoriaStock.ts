@@ -6,6 +6,8 @@ export function etiquetaTipoAuditoriaStock(tipo: TipoAuditoriaStock): string {
       return 'Venta';
     case 'compra':
       return 'Compra';
+    case 'devolucion':
+      return 'Devolución';
     default:
       return 'Conteo';
   }

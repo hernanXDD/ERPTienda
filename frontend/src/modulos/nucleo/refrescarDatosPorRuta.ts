@@ -7,6 +7,9 @@ import { useGestionUsuariosStore } from '../../stores/gestionUsuarios';
 import { useProveedoresStore } from '../../stores/proveedores';
 import { useRegistroComprasStore } from '../../stores/registroCompras';
 import { useStockStore } from '../../stores/stock';
+import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema';
+import { useCuponesDescuentoStore } from '../../stores/cuponesDescuento';
+import { useDevolucionesStore } from '../../stores/devoluciones';
 import { useVentasStore } from '../../stores/ventas';
 
 /** Recarga en segundo plano los datos del módulo al entrar a una pantalla. */
@@ -32,6 +35,17 @@ export function refrescarDatosPorRuta(
       void useCatalogoStore().cargar({ forzar: true });
       void useClientesStore().cargar({ forzar: true });
       void useStockStore().cargar({ forzar: true });
+      break;
+    case 'ventas-devoluciones':
+      void useVentasStore().cargarVentas({ forzar: true });
+      void useCatalogoStore().cargar({ forzar: true });
+      void useStockStore().cargar({ forzar: true });
+      void useConfiguracionSistemaStore().cargar();
+      void useDevolucionesStore().cargar({ forzar: true });
+      void useCuponesDescuentoStore().cargar({ forzar: true });
+      break;
+    case 'ventas-cupones':
+      void useCuponesDescuentoStore().cargar({ forzar: true });
       break;
     case 'ventas-historial':
       void useVentasStore().cargarVentas({ forzar: true });

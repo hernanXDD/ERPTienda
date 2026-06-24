@@ -29,7 +29,8 @@ npm run start:dev
 | Comando | Uso |
 |---------|-----|
 | `npm run db:migrate` | Aplicar migraciones (`migrate deploy`) |
-| `npm run db:seed` | Semilla mínima (admin + datos de referencia) |
+| `npm run db:seed` | Semilla mínima de instalación (admin + referencias). **Único seed en producción.** |
+| `npm run db:seed:demo` | Datos de prueba voluminosos (**solo local**; archivos en `.gitignore`, no ejecutar en VPS) |
 | `npm run db:reset` | Borrar DB, migrar y sembrar (**solo desarrollo**) |
 | `npm run start:dev` | API con recarga (desarrollo) |
 | `npm run build` | Compilar para producción |
@@ -49,6 +50,17 @@ Antes de `start:prod` en un entorno nuevo, ejecutar `npm run db:migrate`.
 | admin | 12345678 | ADMIN |
 
 Cambiar la contraseña del administrador antes de cualquier prueba en red compartida.
+
+## Datos de prueba (solo desarrollo local)
+
+Los archivos `prisma/semilla-demo.ts` y `prisma/datos/ids-semilla-demo.ts` están en **`.gitignore`**: no se suben al repositorio ni deben ejecutarse en bases de clientes.
+
+```bash
+# Tras migrate + semilla mínima, opcional en tu máquina:
+npm run db:seed:demo
+```
+
+En **producción** usar únicamente `npm run db:migrate` y `npm run db:seed` (crea el admin `000001` y catálogos de referencia, sin ventas ni productos de ejemplo).
 
 ## Seguridad
 

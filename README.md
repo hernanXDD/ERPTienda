@@ -59,7 +59,9 @@ npm install
 npm run dev
 ```
 
-App: http://localhost:5173 — Login demo: `admin` / `12345678`
+App: http://localhost:5173 — Login inicial (semilla): `admin` / `12345678`
+
+Para cargar productos, ventas y movimientos de ejemplo **solo en tu PC**, ver `backend/README.md` (`npm run db:seed:demo`; no se versiona ni va a producción).
 
 ## Tests automáticos
 

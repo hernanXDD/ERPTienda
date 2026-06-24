@@ -4,6 +4,10 @@ export const DESCRIPCIONES_PAGINA: Record<string, string> = {
     'Panel de control con indicadores del día, alertas operativas y actividad reciente de ventas e inventario.',
   'ventas-centro':
     'Registro de operaciones en mostrador: productos, cliente, formas de pago y confirmación de la venta.',
+  'ventas-devoluciones':
+    'Elegí una venta dentro del plazo, devolvé prendas y emití un cupón o continuá al cambio.',
+  'ventas-cupones':
+    'Emití, consultá y anulá cupones de descuento. Asigná cliente, revisá el origen por devolución y la venta donde se usaron.',
   'ventas-historial':
     'Consultá ventas registradas, filtrá por cliente o rango de fechas y revisá el detalle de cada operación.',
   'clientes-alta':
@@ -21,7 +25,7 @@ export const DESCRIPCIONES_PAGINA: Record<string, string> = {
   'productos-categorias':
     'Clasificación de productos por rubro. Cada artículo del catálogo debe tener una categoría asignada. No se puede eliminar una categoría con productos asociados.',
   'stock-actual':
-    'Existencias disponibles para la venta. Las ventas del centro de ventas descuentan stock al confirmar. El conteo físico permite actualizar existencias masivamente.',
+    'Existencias por variante. Los conteos requieren permiso específico, confirmación previa y quedan auditados.',
   'stock-auditorias':
     'Historial de movimientos agrupados por auditoría: ventas, compras y conteos físicos. Para el saldo vigente consultá Stock actual.',
   'reportes-panel':
@@ -33,7 +37,7 @@ export const DESCRIPCIONES_PAGINA: Record<string, string> = {
   'configuracion-negocio':
     'Datos fiscales, domicilio y redes de la tienda. Se utilizan en reportes, comprobantes e identidad del negocio.',
   'configuracion-sistema':
-    'Límites de cuenta corriente, alertas de stock, porcentaje de ganancia sugerido y plazos de deuda.',
+    'Límites de cuenta corriente, alertas de stock, porcentaje de ganancia sugerido, plazos de deuda y devoluciones.',
   'configuracion-app':
     'Opciones avanzadas de administración reservadas al administrador principal del sistema.',
 };

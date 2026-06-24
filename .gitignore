@@ -49,6 +49,12 @@ coverage/
 *.db
 *.db-journal
 
+# Semillas demo (solo desarrollo local; producción usa npm run db:seed)
+backend/prisma/semilla-demo.ts
+backend/prisma/semilla-demo-volumen.ts
+backend/prisma/semilla-demo-volumen-cli.ts
+backend/prisma/datos/ids-semilla-demo.ts
+
 # Logo subido en runtime (solo se versionan .gitkeep y .gitignore de logo/)
 logo/*
 !logo/.gitignore

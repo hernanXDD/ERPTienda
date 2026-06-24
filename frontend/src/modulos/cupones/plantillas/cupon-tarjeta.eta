@@ -1,0 +1,28 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc rep-doc--cupon rep-doc--cupon-tarjeta">
+  <div class="cup-gift">
+    <aside class="cup-gift-marca" aria-label="Marca y beneficio">
+      <div class="cup-gift-logo-wrap">
+        <% if (it.tieneLogoImagen) { %>
+        <img class="cup-gift-logo" src="<%~ it.negocioLogoDataUrl %>" alt="" />
+        <% } else { %>
+        <span class="cup-gift-ini" aria-hidden="true"><%= it.negocioIniciales %></span>
+        <% } %>
+      </div>
+      <p class="cup-gift-nom"><%= it.negocioNombre %></p>
+      <div class="cup-gift-benef">
+        <strong class="cup-gift-val"><%= it.valorDescuento %></strong>
+        <span class="cup-gift-tipo"><%= it.tipoDescuentoLegible %></span>
+      </div>
+    </aside>
+    <section class="cup-gift-scan" aria-label="Código para escanear">
+      <div class="cup-gift-meta">
+        <span><%= it.numeroCupon %></span>
+        <span>Vence <%= it.fechaVencimiento %></span>
+      </div>
+      <p class="cup-gift-cli"><%= it.nombreCliente %></p>
+      <div class="cup-gift-barcode"><%~ it.codigoBarrasSvg %></div>
+      <code class="cup-gift-cod"><%= it.codigoCupon %></code>
+    </section>
+  </div>
+</article>

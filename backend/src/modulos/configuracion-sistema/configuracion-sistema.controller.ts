@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
-import { RequiereMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { MENUS_LECTURA_VENTAS } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
@@ -12,7 +13,7 @@ export class ConfiguracionSistemaController {
   constructor(private readonly configuracionSistemaService: ConfiguracionSistemaService) {}
 
   @Get()
-  @RequiereMenu('configuracion')
+  @RequiereAlgunoMenu('configuracion', ...MENUS_LECTURA_VENTAS)
   async obtener() {
     const datos = await this.configuracionSistemaService.obtener();
     return respuestaOk(datos, 'Configuración del sistema obtenida correctamente.');

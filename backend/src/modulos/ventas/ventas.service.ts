@@ -20,14 +20,18 @@ import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { CuentaCorrienteService } from '../cuenta-corriente/cuenta-corriente.service';
+import { CuponesDescuentoService } from '../cupones-descuento/cupones-descuento.service';
 import { StockService } from '../stock/stock.service';
 import { CargarFacturacionesDto } from './dto/cargar-facturaciones.dto';
 import { RegistrarVentaDto } from './dto/registrar-venta.dto';
 
 export interface LineaVentaApi {
+  id: string;
   varianteId: string;
   nombre: string;
   cantidad: number;
+  cantidadDevuelta: number;
+  cantidadDisponibleDevolver: number;
   precioUnitario: number;
   subtotal: number;
 }
@@ -68,6 +72,7 @@ export class VentasService {
     private readonly idSecuencia: IdSecuenciaService,
     private readonly stockService: StockService,
     private readonly cuentaCorrienteService: CuentaCorrienteService,
+    private readonly cuponesDescuentoService: CuponesDescuentoService,
   ) {}
 
   async listar(): Promise<VentaRegistradaApi[]> {
@@ -75,7 +80,8 @@ export class VentasService {
       include: { lineas: true, estadoFacturacion: true },
       orderBy: { fecha: 'desc' },
     });
-    return ventas.map((v) => this.mapearVenta(v));
+    const mapaDevuelto = await this.mapaCantidadesDevueltasPorLinea(ventas.map((v) => v.id));
+    return ventas.map((v) => this.mapearVenta(v, mapaDevuelto));
   }
 
   async obtenerPorId(id: string): Promise<VentaRegistradaApi> {
@@ -84,7 +90,8 @@ export class VentasService {
       include: { lineas: true, estadoFacturacion: true },
     });
     if (!venta) throw new NotFoundException('Venta no encontrada.');
-    return this.mapearVenta(venta);
+    const mapaDevuelto = await this.mapaCantidadesDevueltasPorLinea([venta.id]);
+    return this.mapearVenta(venta, mapaDevuelto);
   }
 
   async cargarFacturaciones(datos: CargarFacturacionesDto): Promise<VentaRegistradaApi[]> {
@@ -135,11 +142,14 @@ export class VentasService {
       return resultados;
     });
 
-    return actualizadas.map((venta) => this.mapearVenta(venta));
+    const mapaDevuelto = await this.mapaCantidadesDevueltasPorLinea(actualizadas.map((v) => v.id));
+    return actualizadas.map((venta) => this.mapearVenta(venta, mapaDevuelto));
   }
 
   async registrar(datos: RegistrarVentaDto, operador: UsuarioSesion): Promise<VentaRegistradaApi> {
     const ajusteMonto = datos.ajusteMonto ?? 0;
+    const cuponDescuentoId = datos.cuponDescuentoId?.trim() || null;
+
     const { lineasNormalizadas, subtotalLineas, totalCalculado } = validarLineasYTotalComprobante(
       datos.lineas.map((ln) => ({
         cantidad: ln.cantidad,
@@ -150,6 +160,19 @@ export class VentasService {
       'precio unitario',
       ajusteMonto,
     );
+
+    if (cuponDescuentoId) {
+      if (ajusteMonto >= 0) {
+        throw new BadRequestException('Un cupón de descuento requiere un ajuste negativo en el ticket.');
+      }
+      await this.cuponesDescuentoService.verificarAjusteEnVenta(
+        cuponDescuentoId,
+        subtotalLineas,
+        ajusteMonto,
+        datos.ajustePorcentaje,
+        datos.clienteId ?? null,
+      );
+    }
 
     let documentoClienteMostrar = datos.documentoClienteMostrar?.trim() ?? '';
     let condicionIvaCliente: CondicionIvaCliente = CondicionIvaCliente.CONSUMIDOR_FINAL;
@@ -183,20 +206,13 @@ export class VentasService {
     }
 
     const venta = await this.prisma.$transaction(async (tx) => {
-      const cantidades = new Map<string, number>();
-      for (const ln of datos.lineas) {
-        const cantidad = await this.stockService.obtenerCantidad(ln.varianteId, tx);
-        cantidades.set(ln.varianteId, cantidad);
-      }
+      const lineasStock = datos.lineas.map((ln) => ({
+        varianteId: ln.varianteId,
+        nombre: ln.nombre.trim(),
+        cantidad: ln.cantidad,
+      }));
 
-      const faltas = this.stockService.validarStockParaVenta(
-        datos.lineas.map((ln) => ({
-          varianteId: ln.varianteId,
-          nombre: ln.nombre,
-          cantidad: ln.cantidad,
-        })),
-        cantidades,
-      );
+      const faltas = await this.stockService.validarStockBloqueadoParaVenta(tx, lineasStock);
       if (faltas) {
         throw new ConflictException('Stock insuficiente para completar la venta.');
       }
@@ -236,6 +252,7 @@ export class VentasService {
           total: new Prisma.Decimal(totalCalculado),
           observaciones: datos.observaciones?.trim() ?? '',
           estadoFacturacionId: ID_ESTADO_FACTURACION_PENDIENTE,
+          cuponDescuentoId: cuponDescuentoId ?? undefined,
           lineas: {
             create: datos.lineas.map((ln, indice) => ({
               id: idsLineas[indice],
@@ -274,13 +291,37 @@ export class VentasService {
         );
       }
 
+      if (cuponDescuentoId) {
+        await this.cuponesDescuentoService.consumirEnVenta(
+          cuponDescuentoId,
+          datos.clienteId ?? null,
+          tx,
+        );
+      }
+
       return creada;
     });
 
-    return this.mapearVenta(venta);
+    return this.mapearVenta(venta, new Map());
   }
 
-  private mapearVenta(venta: VentaConRelaciones): VentaRegistradaApi {
+  private async mapaCantidadesDevueltasPorLinea(ventaIds: string[]): Promise<Map<string, number>> {
+    if (ventaIds.length === 0) return new Map();
+    const filas = await this.prisma.devolucionLinea.findMany({
+      where: { ventaLinea: { ventaId: { in: ventaIds } } },
+      select: { ventaLineaId: true, cantidad: true },
+    });
+    const mapa = new Map<string, number>();
+    for (const fila of filas) {
+      mapa.set(fila.ventaLineaId, (mapa.get(fila.ventaLineaId) ?? 0) + fila.cantidad);
+    }
+    return mapa;
+  }
+
+  private mapearVenta(
+    venta: VentaConRelaciones,
+    cantidadesDevueltas: Map<string, number>,
+  ): VentaRegistradaApi {
     return {
       id: venta.id,
       numero: venta.numero,
@@ -301,13 +342,19 @@ export class VentasService {
         nombre: venta.estadoFacturacion.nombre,
       },
       observaciones: venta.observaciones,
-      lineas: venta.lineas.map((ln) => ({
-        varianteId: ln.varianteId,
-        nombre: ln.nombre,
-        cantidad: ln.cantidad,
-        precioUnitario: decimalANumero(ln.precioUnitario),
-        subtotal: decimalANumero(ln.subtotal),
-      })),
+      lineas: venta.lineas.map((ln) => {
+        const cantidadDevuelta = cantidadesDevueltas.get(ln.id) ?? 0;
+        return {
+          id: ln.id,
+          varianteId: ln.varianteId,
+          nombre: ln.nombre,
+          cantidad: ln.cantidad,
+          cantidadDevuelta,
+          cantidadDisponibleDevolver: Math.max(0, ln.cantidad - cantidadDevuelta),
+          precioUnitario: decimalANumero(ln.precioUnitario),
+          subtotal: decimalANumero(ln.subtotal),
+        };
+      }),
     };
   }
 }

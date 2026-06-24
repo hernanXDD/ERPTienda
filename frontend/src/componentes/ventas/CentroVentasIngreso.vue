@@ -62,47 +62,63 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
       </button>
     </div>
 
-    <div v-show="!esMovil && modoProducto === 'LECTOR'" class="cv-panel">
-      <label class="cv-campo" for="cv-inp-lector">
-        <span class="cv-campo-etiq">Código de barras</span>
-        <input
-          id="cv-inp-lector"
-          :ref="enlazarLector"
-          v-model="codigoLector"
-          type="text"
-          class="cv-inp cv-inp--lector"
-          placeholder="Escanear o escribir…"
-          autocomplete="off"
-          spellcheck="false"
-          enterkeyhint="done"
-          @keydown.enter.prevent="agregarPorLector"
-        />
-      </label>
-      <p class="cv-ayuda">
+    <div v-show="!esMovil && modoProducto === 'LECTOR'" class="cv-panel cv-panel--lector">
+      <div class="cv-ingreso-fila">
+        <label class="cv-campo cv-campo--barra" for="cv-inp-lector">
+          <span class="cv-campo-etiq">Código de barras</span>
+          <input
+            id="cv-inp-lector"
+            :ref="enlazarLector"
+            v-model="codigoLector"
+            type="text"
+            class="cv-inp cv-inp--lector"
+            placeholder="Escanear o escribir…"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="done"
+            @keydown.enter.prevent="agregarPorLector"
+          />
+        </label>
+        <span class="cv-btn-agregar cv-btn-agregar--reserva" aria-hidden="true">
+          Agregar al ticket
+        </span>
+      </div>
+      <p class="cv-ayuda cv-ayuda--barra">
         El lector envía <kbd>Enter</kbd> al finalizar el código.
       </p>
     </div>
 
-    <div v-show="esMovil || modoProducto === 'NOMBRE'" class="cv-panel">
-      <label class="cv-campo" for="cv-inp-buscar">
-        <span class="cv-campo-etiq">Buscar artículo</span>
-        <div class="cv-busq-wrap">
-          <Search class="cv-busq-ico" :size="18" stroke-width="2" aria-hidden="true" />
-          <input
-            id="cv-inp-buscar"
-            :ref="enlazarBusqueda"
-            v-model="busquedaNombre"
-            type="search"
-            class="cv-inp cv-inp--busq"
-            placeholder="Nombre, marca, talle…"
-            autocomplete="off"
-            spellcheck="false"
-          />
-        </div>
-      </label>
+    <div v-show="esMovil || modoProducto === 'NOMBRE'" class="cv-panel cv-panel--buscar">
+      <div class="cv-ingreso-fila">
+        <label class="cv-campo cv-campo--barra" for="cv-inp-buscar">
+          <span class="cv-campo-etiq">Buscar artículo</span>
+          <div class="cv-busq-wrap">
+            <Search class="cv-busq-ico" :size="18" stroke-width="2" aria-hidden="true" />
+            <input
+              id="cv-inp-buscar"
+              :ref="enlazarBusqueda"
+              v-model="busquedaNombre"
+              type="search"
+              class="cv-inp cv-inp--busq"
+              placeholder="Nombre, marca, talle…"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+        </label>
 
-      <p v-if="!busquedaNombre.trim()" class="cv-ayuda">
-        Escribí para buscar; elegí una fila y tocá <strong>Agregar</strong>.
+        <button
+          type="button"
+          class="cv-btn-agregar"
+          :disabled="!varianteSeleccionadaId"
+          @click="agregarVarianteNombreSeleccionada"
+        >
+          Agregar al ticket
+        </button>
+      </div>
+
+      <p v-if="!busquedaNombre.trim()" class="cv-ayuda cv-ayuda--barra">
+        Escribí para buscar y elegí un artículo en la lista.
       </p>
 
       <ul
@@ -132,15 +148,6 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
       </ul>
 
       <p v-else class="cv-ayuda cv-ayuda--vacio">Sin coincidencias.</p>
-
-      <button
-        type="button"
-        class="cv-btn-agregar"
-        :disabled="!varianteSeleccionadaId"
-        @click="agregarVarianteNombreSeleccionada"
-      >
-        Agregar al ticket
-      </button>
     </div>
   </section>
 </template>
@@ -340,10 +347,125 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   cursor: not-allowed;
 }
 
+.cv-btn-agregar--reserva {
+  display: none;
+}
+
+.cv-ingreso-fila {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.cv-ingreso-fila .cv-campo {
+  flex: 1;
+  min-width: 0;
+}
+
+.cv-ingreso-fila .cv-btn-agregar {
+  flex-shrink: 0;
+  align-self: stretch;
+  white-space: nowrap;
+}
+
 @media (min-width: 900px) {
   .cv-ingreso {
-    border-bottom: none;
-    border-right: 1px solid var(--color-borde);
+    display: grid;
+    grid-template-columns: auto auto minmax(14rem, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 0.75rem;
+    row-gap: 0.45rem;
+    padding: 0.6rem 1rem;
+  }
+
+  .cv-seccion-tit {
+    grid-column: 1;
+    grid-row: 1;
+    white-space: nowrap;
+  }
+
+  .cv-modo {
+    display: inline-flex;
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    gap: 0.2rem;
+  }
+
+  .cv-modo-btn {
+    min-width: 5.5rem;
+    min-height: 2.05rem;
+    padding: 0 0.7rem;
+  }
+
+  .cv-panel--lector,
+  .cv-panel--buscar {
+    display: contents;
+  }
+
+  .cv-ingreso-fila {
+    display: contents;
+  }
+
+  .cv-btn-agregar--reserva {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .cv-campo--barra {
+    grid-column: 3;
+    grid-row: 1;
+    gap: 0;
+  }
+
+  .cv-campo-etiq {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .cv-panel--lector .cv-ayuda--barra,
+  .cv-panel--buscar .cv-ayuda--barra,
+  .cv-panel--buscar .cv-resultados,
+  .cv-panel--buscar .cv-ayuda--vacio {
+    grid-column: 3 / 5;
+    grid-row: 2;
+  }
+
+  .cv-panel--lector .cv-ayuda--barra,
+  .cv-panel--buscar .cv-ayuda--barra {
+    align-self: start;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  .cv-panel--buscar .cv-btn-agregar:not(.cv-btn-agregar--reserva),
+  .cv-panel--lector .cv-btn-agregar--reserva {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    min-height: 2.35rem;
+    padding: 0 0.85rem;
+  }
+
+  .cv-panel--buscar .cv-resultados {
+    max-height: min(11rem, 32vh);
+  }
+
+  .cv-panel--buscar .cv-ayuda--vacio {
+    margin: 0;
   }
 }
 </style>

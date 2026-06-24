@@ -7,6 +7,7 @@ import {
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { permisosPorDefectoSegunRol } from '../../comunes/tipos/permisos-usuario';
 import { CondicionIvaCliente, FormaPagoVenta, RolUsuario } from '@prisma/client';
+import { CuponesDescuentoService } from '../cupones-descuento/cupones-descuento.service';
 import { CuentaCorrienteService } from '../cuenta-corriente/cuenta-corriente.service';
 import { StockService } from '../stock/stock.service';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
@@ -32,14 +33,17 @@ describe('VentasService', () => {
   };
 
   const stockService = {
-    obtenerCantidad: jest.fn(),
-    validarStockParaVenta: jest.fn(),
+    validarStockBloqueadoParaVenta: jest.fn(),
     aplicarSalidaPorVenta: jest.fn(),
   };
 
   const cuentaCorrienteService = {
     validarCreditoDisponibleParaCargo: jest.fn(),
     registrarCargo: jest.fn(),
+  };
+
+  const cuponesDescuentoService = {
+    validarYAplicarCuponEnVenta: jest.fn(),
   };
 
   const idSecuencia = {
@@ -55,6 +59,7 @@ describe('VentasService', () => {
         { provide: IdSecuenciaService, useValue: idSecuencia },
         { provide: StockService, useValue: stockService },
         { provide: CuentaCorrienteService, useValue: cuentaCorrienteService },
+        { provide: CuponesDescuentoService, useValue: cuponesDescuentoService },
       ],
     }).compile();
 
@@ -152,8 +157,7 @@ describe('VentasService', () => {
       prisma.$transaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
         callback(prisma),
       );
-      stockService.obtenerCantidad.mockResolvedValue(0);
-      stockService.validarStockParaVenta.mockReturnValue([
+      stockService.validarStockBloqueadoParaVenta.mockResolvedValue([
         { varianteId: '000101', nombre: 'Remera M', solicitado: 1, disponible: 0 },
       ]);
 

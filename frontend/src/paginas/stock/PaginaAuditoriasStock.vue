@@ -68,6 +68,7 @@ function limpiarFiltros(): void {
 function claseTipoAuditoria(tipo: TipoAuditoriaStock): string {
   if (tipo === 'venta') return 'aud-chip aud-chip--venta';
   if (tipo === 'compra') return 'aud-chip aud-chip--compra';
+  if (tipo === 'devolucion') return 'aud-chip aud-chip--devolucion';
   return 'aud-chip aud-chip--conteo';
 }
 
@@ -139,6 +140,7 @@ function alCerrarDetalleAuditoria(): void {
               <option value="venta">Venta</option>
               <option value="compra">Compra</option>
               <option value="conteo">Conteo</option>
+              <option value="devolucion">Devolución</option>
             </select>
           </label>
         </div>
@@ -474,6 +476,12 @@ function alCerrarDetalleAuditoria(): void {
   color: var(--color-exito);
   background: var(--color-exito-suave);
   border-color: var(--color-exito-borde);
+}
+
+.aud-chip--devolucion {
+  color: var(--color-texto);
+  background: var(--color-fondo-cabecera);
+  border-color: var(--color-borde);
 }
 
 .aud-chip--conteo {

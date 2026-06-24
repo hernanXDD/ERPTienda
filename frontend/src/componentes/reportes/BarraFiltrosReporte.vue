@@ -73,7 +73,7 @@ const opcionesEstadoFacturacionResueltas = computed(() => props.opcionesEstadoFa
         </select>
       </label>
       <label v-if="mostrarFiltroEstadoFacturacion" class="rep-filtro-etiq rep-filtro-etiq--entidad">
-        <span>Estado fact.</span>
+        <span>Facturación</span>
         <select v-model="filtro.idEstadoFacturacion" class="rep-filtro-inp rep-filtro-sel">
           <option
             v-for="op in opcionesEstadoFacturacionResueltas"

@@ -33,6 +33,7 @@ export interface DatosRegistrarVenta {
   ajustePorcentaje?: number | null;
   lineas: LineaVentaRegistro[];
   observaciones: string;
+  cuponDescuentoId?: string | null;
 }
 
 function subtotalDesdeLineas(lineas: LineaVentaRegistro[]): number {
@@ -62,7 +63,18 @@ function mapearVentaApi(
     total: venta.total,
     facturacion: venta.facturacion ?? '',
     estadoFacturacion: venta.estadoFacturacion ?? ESTADO_FACTURACION_PENDIENTE,
-    lineas: venta.lineas,
+    lineas: venta.lineas.map((ln) => ({
+      id: ln.id ?? '',
+      varianteId: ln.varianteId,
+      nombre: ln.nombre,
+      cantidad: ln.cantidad,
+      cantidadDevuelta: ln.cantidadDevuelta ?? 0,
+      cantidadDisponibleDevolver:
+        ln.cantidadDisponibleDevolver ??
+        Math.max(0, ln.cantidad - (ln.cantidadDevuelta ?? 0)),
+      precioUnitario: ln.precioUnitario,
+      subtotal: ln.subtotal,
+    })),
     observaciones: venta.observaciones,
     registradoPor: registradoPor ?? {
       idUsuario: null,

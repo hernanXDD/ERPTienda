@@ -18,6 +18,10 @@ import {
   obtenerDiaComparableDesdeValor,
 } from '../../utilidades/formatoFechaHora';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { calcularCreditoDisponible } from '../../utilidades/cuentaCorriente';
+import ModalConfirmarRegistroPago, {
+  type DatosConfirmacionRegistroPago,
+} from '../../componentes/cuentaCorriente/ModalConfirmarRegistroPago.vue';
 
 const descripcionPagina = obtenerDescripcionPagina('compras-cuentas-corrientes-proveedor');
 const { tienePermiso } = usePermisosOperador();
@@ -36,6 +40,9 @@ const { movimientos } = storeToRefs(cuentaCorrienteProveedorStore);
 
 const refDialogoMovimientos = ref<HTMLDialogElement | null>(null);
 const refCuadroRegistrarPago = ref<HTMLDialogElement | null>(null);
+const refConfirmarRegistroPago = ref<InstanceType<typeof ModalConfirmarRegistroPago> | null>(null);
+const pagoPendienteConfirmacion = ref<DatosConfirmacionRegistroPago | null>(null);
+const registrandoPago = ref(false);
 const proveedorModal = ref<Proveedor | null>(null);
 const fechaFiltroDesde = ref('');
 const fechaFiltroHasta = ref('');
@@ -101,7 +108,7 @@ function limpiarFiltrosListado(): void {
 
 function creditoDisponible(proveedor: Proveedor): number {
   const saldo = cuentaCorrienteProveedorStore.saldoProveedorCacheado(proveedor.id);
-  return proveedor.limiteCreditoCompras - saldo;
+  return calcularCreditoDisponible(proveedor.limiteCreditoCompras, saldo);
 }
 
 const movimientosFiltradosModal = computed(() => {
@@ -194,7 +201,7 @@ function normalizarImporteArgentino(texto: string): number {
   return Number.isFinite(n) ? n : Number.NaN;
 }
 
-function confirmarRegistroPago(): void {
+function solicitarRegistroPago(): void {
   const c = proveedorModal.value;
   if (!c) return;
   const importe = normalizarImporteArgentino(importePagoTexto.value);
@@ -211,32 +218,58 @@ function confirmarRegistroPago(): void {
     errorFormularioPago.value = 'Elegí la forma de pago.';
     return;
   }
-  const fechaIso = `${fechaPago.value}T12:00:00`;
-  void cuentaCorrienteProveedorStore
-    .agregarPagoRegistrado(
+
+  errorFormularioPago.value = '';
+  pagoPendienteConfirmacion.value = {
+    nombreTercero: c.nombre,
+    documentoTercero: c.documento,
+    importe,
+    fechaIso: `${fechaPago.value}T12:00:00`,
+    formaPago: formaTrim,
+    concepto: descripcionPago.value.trim(),
+  };
+  refConfirmarRegistroPago.value?.abrir();
+}
+
+function cancelarConfirmacionRegistroPago(): void {
+  pagoPendienteConfirmacion.value = null;
+}
+
+async function ejecutarRegistroPago(): Promise<void> {
+  const c = proveedorModal.value;
+  const pago = pagoPendienteConfirmacion.value;
+  if (!c || !pago || registrandoPago.value) return;
+
+  registrandoPago.value = true;
+  try {
+    const movimientoCreado = await cuentaCorrienteProveedorStore.agregarPagoRegistrado(
       c.id,
-      importe,
-      fechaIso,
-      descripcionPago.value.trim(),
-      formaTrim,
+      pago.importe,
+      pago.fechaIso,
+      pago.concepto,
+      pago.formaPago,
       referenciaPagoTexto.value.trim() || null,
-    )
-    .then(async (movimientoCreado) => {
-      cerrarCuadroRegistrarPago();
-      try {
-        await exportarReciboPagoCuentaCorrienteProveedorPdf({
-          proveedor: { nombre: c.nombre, documento: c.documento },
-          movimiento: movimientoCreado,
-        });
-      } catch (error: unknown) {
-        notificarError(
-          error instanceof Error ? error.message : 'No se pudo exportar el comprobante de pago.',
-        );
-      }
-    })
-    .catch((error: unknown) => {
-      errorFormularioPago.value = mensajeErrorHttp(error, 'No se pudo registrar el pago.');
-    });
+    );
+    refConfirmarRegistroPago.value?.cerrar();
+    pagoPendienteConfirmacion.value = null;
+    cerrarCuadroRegistrarPago();
+    try {
+      await exportarReciboPagoCuentaCorrienteProveedorPdf({
+        proveedor: { nombre: c.nombre, documento: c.documento },
+        movimiento: movimientoCreado,
+      });
+    } catch (error: unknown) {
+      notificarError(
+        error instanceof Error ? error.message : 'No se pudo exportar el comprobante de pago.',
+      );
+    }
+  } catch (error: unknown) {
+    refConfirmarRegistroPago.value?.cerrar();
+    pagoPendienteConfirmacion.value = null;
+    errorFormularioPago.value = mensajeErrorHttp(error, 'No se pudo registrar el pago.');
+  } finally {
+    registrandoPago.value = false;
+  }
 }
 
 onMounted(() => {
@@ -732,7 +765,7 @@ async function imprimirCuentaProveedor(): Promise<void> {
           </div>
         </div>
 
-        <form class="cc-reg-pago-form" @submit.prevent="confirmarRegistroPago">
+        <form class="cc-reg-pago-form" @submit.prevent="solicitarRegistroPago">
           <p v-if="errorFormularioPago" class="cc-form-error" role="alert">{{ errorFormularioPago }}</p>
 
           <div role="group" aria-labelledby="cc-reg-pago-leyenda-dat" class="cc-reg-datos-recuadro">
@@ -812,6 +845,15 @@ async function imprimirCuentaProveedor(): Promise<void> {
         </form>
       </div>
     </dialog>
+
+    <ModalConfirmarRegistroPago
+      ref="refConfirmarRegistroPago"
+      etiqueta-tercero="proveedor"
+      :datos="pagoPendienteConfirmacion"
+      :registrando="registrandoPago"
+      @confirmar="ejecutarRegistroPago"
+      @cancelar="cancelarConfirmacionRegistroPago"
+    />
   </section>
 </template>
 

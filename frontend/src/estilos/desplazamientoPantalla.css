@@ -23,8 +23,12 @@
   /* Centro de ventas: dejar crecer la página en lugar de recortar */
   .pg-wrap--centro-ventas,
   .pg-marco--centro-ventas,
+  .pg-wrap--cambio,
+  .pg-marco--cambio,
   .centro-ventas.cv,
-  .cv-cuerpo {
+  .cambio,
+  .cv-cuerpo,
+  .cambio-cuerpo {
     height: auto !important;
     min-height: auto !important;
     overflow: visible !important;

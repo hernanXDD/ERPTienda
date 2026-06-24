@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { Minus, Plus, Trash2 } from 'lucide-vue-next';
+import { Minus, Plus, ScanBarcode, Trash2 } from 'lucide-vue-next';
 import { usarCentroVentasContexto } from './centroVentasContexto';
 
-const { lineas, subtotalLinea, cambiarCantidad, quitarLinea, vaciarLineas } =
-  usarCentroVentasContexto();
+const {
+  lineas,
+  esMovil,
+  subtotalLinea,
+  cambiarCantidad,
+  quitarLinea,
+  vaciarLineas,
+  enfocarIngresoProducto,
+} = usarCentroVentasContexto();
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -40,7 +47,20 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
         <tbody>
           <tr v-if="lineas.length === 0">
             <td colspan="5" class="cv-vacio">
-              Sin productos. Usá el lector o la búsqueda para agregar líneas.
+              <div class="cv-vacio-cont">
+                <ScanBarcode :size="28" stroke-width="1.6" aria-hidden="true" class="cv-vacio-ico" />
+                <p class="cv-vacio-tit">El ticket está vacío</p>
+                <p class="cv-vacio-txt">
+                  {{
+                    esMovil
+                      ? 'Buscá un producto por nombre para empezar la venta.'
+                      : 'Escaneá con el lector o buscá por nombre para agregar artículos.'
+                  }}
+                </p>
+                <button type="button" class="cv-vacio-cta" @click="enfocarIngresoProducto">
+                  Ir a agregar productos
+                </button>
+              </div>
             </td>
           </tr>
           <tr v-for="l in lineas" :key="l.varianteId" class="cv-fila">
@@ -180,6 +200,48 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   color: var(--color-texto-apagado);
   font-size: 0.82rem;
   line-height: 1.45;
+}
+
+.cv-vacio-cont {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 18rem;
+  margin: 0 auto;
+}
+
+.cv-vacio-ico {
+  color: var(--color-texto-apagado);
+  opacity: 0.75;
+}
+
+.cv-vacio-tit {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--color-texto);
+}
+
+.cv-vacio-txt {
+  margin: 0;
+}
+
+.cv-vacio-cta {
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--color-acento-borde);
+  border-radius: var(--radio-control);
+  background: var(--color-acento-suave);
+  color: var(--color-acento-hover);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cv-vacio-cta:hover {
+  background: var(--color-fondo-elevado);
 }
 
 .cv-col-desc {

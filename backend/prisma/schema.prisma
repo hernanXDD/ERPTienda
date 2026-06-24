@@ -58,8 +58,24 @@ enum TipoAuditoriaStock {
   venta
   compra
   conteo
+  devolucion
 
   @@map("tipo_auditoria_stock")
+}
+
+enum EstadoCuponDescuento {
+  activo
+  usado
+  anulado
+
+  @@map("estado_cupon_descuento")
+}
+
+enum TipoDescuentoCupon {
+  porcentaje
+  monto_fijo
+
+  @@map("tipo_descuento_cupon")
 }
 
 // —— Usuarios y seguridad ——
@@ -86,6 +102,8 @@ model Usuario {
   movimientosCuentaCorriente MovimientoCuentaCorriente[] @relation("MovimientoCcRegistradoPor")
   movimientosCuentaCorrienteProveedor MovimientoCuentaCorrienteProveedor[] @relation("MovimientoCcProveedorRegistradoPor")
   auditoriasStock            AuditoriaStock[]
+  devolucionesRegistradas  Devolucion[]                @relation("DevolucionRegistradaPor")
+  cuponesDescuentoRegistrados CuponDescuento[]         @relation("CuponDescuentoRegistradoPor")
 
   @@index([habilitado])
   @@index([rol])
@@ -181,11 +199,13 @@ model AuditoriaStock {
   cantidadMovimientos   Int                @default(0) @map("cantidad_movimientos")
   ventaId               String?            @map("venta_id") @db.Char(6)
   compraId              String?            @map("compra_id") @db.Char(6)
+  devolucionId          String?            @map("devolucion_id") @db.Char(6)
   ejecutadoPorUsuarioId String?            @map("ejecutado_por_usuario_id") @db.Char(6)
   fechaCreacion         DateTime           @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
 
   venta               Venta?            @relation(fields: [ventaId], references: [id], onDelete: SetNull)
   compra              Compra?           @relation(fields: [compraId], references: [id], onDelete: SetNull)
+  devolucion          Devolucion?       @relation(fields: [devolucionId], references: [id], onDelete: SetNull)
   ejecutadoPorUsuario Usuario?          @relation(fields: [ejecutadoPorUsuarioId], references: [id], onDelete: SetNull)
   movimientos         MovimientoStock[]
 
@@ -193,6 +213,7 @@ model AuditoriaStock {
   @@index([tipo])
   @@index([ventaId])
   @@index([compraId])
+  @@index([devolucionId])
   @@map("auditoria_stock")
 }
 
@@ -263,6 +284,7 @@ model Cliente {
 
   ventas                     Venta[]
   movimientosCuentaCorriente MovimientoCuentaCorriente[]
+  cuponesDescuento           CuponDescuento[]
 
   @@index([habilitado])
   @@index([nombre])
@@ -400,13 +422,16 @@ model Venta {
   facturacion             String              @default("") @db.VarChar(32)
   estadoFacturacionId     String              @map("estado_facturacion_id") @db.Char(6)
   observaciones           String              @default("") @db.VarChar(1000)
+  cuponDescuentoId        String?             @unique @map("cupon_descuento_id") @db.Char(6)
   fechaCreacion           DateTime            @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
 
   cliente           Cliente?          @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   estadoFacturacion EstadoFacturacion @relation(fields: [estadoFacturacionId], references: [id], onDelete: Restrict)
+  cuponDescuento    CuponDescuento?   @relation(fields: [cuponDescuentoId], references: [id], onDelete: SetNull)
   lineas            VentaLinea[]
   movimientosStock  MovimientoStock[]
   auditoriasStock   AuditoriaStock[]
+  devoluciones      Devolucion[]
 
   @@index([fecha(sort: Desc)])
   @@index([clienteId])
@@ -425,9 +450,79 @@ model VentaLinea {
 
   venta    Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
   variante Variante @relation(fields: [varianteId], references: [id], onDelete: Restrict)
+  devolucionLineas DevolucionLinea[]
 
   @@index([ventaId])
   @@map("venta_linea")
+}
+
+model Devolucion {
+  id                     String   @id @db.Char(6)
+  numero                 String   @unique @db.VarChar(32)
+  fecha                  DateTime @default(now()) @db.Timestamptz(3)
+  ventaId                String   @map("venta_id") @db.Char(6)
+  total                  Decimal  @db.Decimal(14, 2)
+  observaciones          String   @default("") @db.VarChar(1000)
+  registradoPorUsuarioId String?  @map("registrado_por_usuario_id") @db.Char(6)
+  fechaCreacion          DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+
+  venta                Venta             @relation(fields: [ventaId], references: [id], onDelete: Restrict)
+  registradoPorUsuario Usuario?          @relation("DevolucionRegistradaPor", fields: [registradoPorUsuarioId], references: [id], onDelete: SetNull)
+  lineas               DevolucionLinea[]
+  auditoriasStock      AuditoriaStock[]
+  cuponesDescuento     CuponDescuento[]
+
+  @@index([ventaId])
+  @@index([fecha(sort: Desc)])
+  @@map("devolucion")
+}
+
+model DevolucionLinea {
+  id             String  @id @db.Char(6)
+  devolucionId   String  @map("devolucion_id") @db.Char(6)
+  ventaLineaId   String  @map("venta_linea_id") @db.Char(6)
+  varianteId     String  @map("variante_id") @db.Char(6)
+  nombre         String  @db.VarChar(255)
+  cantidad       Int
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(14, 2)
+  subtotal       Decimal @db.Decimal(14, 2)
+
+  devolucion Devolucion @relation(fields: [devolucionId], references: [id], onDelete: Cascade)
+  ventaLinea VentaLinea @relation(fields: [ventaLineaId], references: [id], onDelete: Restrict)
+
+  @@index([devolucionId])
+  @@index([ventaLineaId])
+  @@map("devolucion_linea")
+}
+
+model CuponDescuento {
+  id                      String               @id @db.Char(6)
+  numero                  String               @unique @db.VarChar(32)
+  /// Código único para escaneo; no se expone en listados de la API.
+  codigo                  String               @unique @db.VarChar(32)
+  tipoDescuento           TipoDescuentoCupon   @default(porcentaje) @map("tipo_descuento")
+  porcentajeDescuento     Decimal?             @map("porcentaje_descuento") @db.Decimal(5, 2)
+  montoDescuento          Decimal?             @map("monto_descuento") @db.Decimal(14, 2)
+  clienteId               String?              @map("cliente_id") @db.Char(6)
+  nombreClienteMostrar      String               @map("nombre_cliente_mostrar") @db.VarChar(200)
+  documentoClienteMostrar String               @default("") @map("documento_cliente_mostrar") @db.VarChar(32)
+  estado                  EstadoCuponDescuento @default(activo)
+  devolucionId            String?              @map("devolucion_id") @db.Char(6)
+  observaciones           String               @default("") @db.VarChar(1000)
+  registradoPorUsuarioId  String?              @map("registrado_por_usuario_id") @db.Char(6)
+  fechaCreacion           DateTime             @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaVencimiento        DateTime             @map("fecha_vencimiento") @db.Timestamptz(3)
+
+  cliente              Cliente?    @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  devolucion           Devolucion? @relation(fields: [devolucionId], references: [id], onDelete: SetNull)
+  registradoPorUsuario Usuario?    @relation("CuponDescuentoRegistradoPor", fields: [registradoPorUsuarioId], references: [id], onDelete: SetNull)
+  ventaUsada           Venta?
+
+  @@index([clienteId])
+  @@index([devolucionId])
+  @@index([estado])
+  @@index([fechaCreacion(sort: Desc)])
+  @@map("cupon_descuento")
 }
 
 // —— Configuración del negocio (fila única) ——
@@ -467,8 +562,10 @@ model ConfiguracionSistema {
   maximoCuentaCorriente      Decimal  @default(500000) @map("maximo_cuenta_corriente") @db.Decimal(14, 2)
   porcentajeGananciaSugerida Decimal  @default(35) @map("porcentaje_ganancia_sugerida") @db.Decimal(6, 2)
   diasDeudaCuentaCorriente   Int      @default(30) @map("dias_deuda_cuenta_corriente")
+  diasPlazoDevolucion        Int      @default(30) @map("dias_plazo_devolucion")
   stockMinimoAlerta          Int      @default(5) @map("stock_minimo_alerta")
   movimientoManualStockHabilitado Boolean @default(true) @map("movimiento_manual_stock_habilitado")
+  plantillaCupon                 String   @default("clasica") @map("plantilla_cupon") @db.VarChar(16)
   fechaCreacion              DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
   fechaActualizacion         DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
 

@@ -1,0 +1,28 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc rep-doc--cupon rep-doc--cupon-ticket">
+  <div class="cup-bol">
+    <section class="cup-bol-izq" aria-label="Datos del cupón">
+      <span class="cup-bol-etiq">Cupón de descuento</span>
+      <div class="cup-bol-marca">
+        <% if (it.tieneLogoImagen) { %>
+        <img class="cup-bol-logo" src="<%~ it.negocioLogoDataUrl %>" alt="" />
+        <% } else { %>
+        <span class="cup-bol-ini" aria-hidden="true"><%= it.negocioIniciales %></span>
+        <% } %>
+        <p class="cup-bol-nom"><%= it.negocioNombre %></p>
+      </div>
+      <strong class="cup-bol-val"><%= it.valorDescuento %></strong>
+      <ul class="cup-bol-chips" aria-label="Detalle">
+        <li><%= it.numeroCupon %></li>
+        <li><%= it.fechaVencimiento %></li>
+        <li><%= it.estadoLegible %></li>
+      </ul>
+    </section>
+    <section class="cup-bol-der" aria-label="Código para escanear">
+      <span class="cup-bol-canje">Presentar en caja</span>
+      <div class="cup-bol-barcode"><%~ it.codigoBarrasSvg %></div>
+      <code class="cup-bol-cod"><%= it.codigoCupon %></code>
+      <span class="cup-bol-num"><%= it.numeroCupon %></span>
+    </section>
+  </div>
+</article>

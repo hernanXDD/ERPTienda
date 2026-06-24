@@ -12,6 +12,7 @@ const {
   hayAjusteTicketActivo,
   ajusteMontoTicket,
   observaciones,
+  cuponAplicado,
 } = usarCentroVentasContexto();
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
@@ -21,6 +22,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 });
 
 function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
+  if (cuponAplicado.value) return;
   tipoAjusteTicket.value = tipo;
   if (tipo === 'NINGUNO') {
     porcentajeAjusteTexto.value = '';
@@ -32,15 +34,25 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
   <footer class="cv-pie" aria-label="Totales y observaciones">
     <div class="cv-pie-grid">
       <div class="cv-pie-izq">
-        <fieldset class="cv-ajuste-fs">
+        <fieldset class="cv-ajuste-fs" :class="{ 'cv-ajuste-fs--cupon': cuponAplicado }">
           <legend class="cv-ajuste-etiq">Ajuste del ticket</legend>
-          <div class="cv-ajuste-tipos" role="radiogroup" aria-label="Tipo de ajuste">
+          <p v-if="cuponAplicado" class="cv-ajuste-cupon-aviso">
+            Descuento aplicado por cupón {{ cuponAplicado.numero }}.
+            Quitá el cupón en «Cliente y cobro» para modificar el ajuste manualmente.
+          </p>
+          <div
+            class="cv-ajuste-tipos"
+            role="radiogroup"
+            aria-label="Tipo de ajuste"
+            :aria-disabled="cuponAplicado ? 'true' : undefined"
+          >
             <button
               type="button"
               role="radio"
               class="cv-ajuste-tipo"
               :class="{ 'cv-ajuste-tipo--on': tipoAjusteTicket === 'NINGUNO' }"
               :aria-checked="tipoAjusteTicket === 'NINGUNO'"
+              :disabled="!!cuponAplicado"
               @click="elegirTipoAjuste('NINGUNO')"
             >
               Sin ajuste
@@ -51,6 +63,7 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
               class="cv-ajuste-tipo"
               :class="{ 'cv-ajuste-tipo--on': tipoAjusteTicket === 'DESCUENTO' }"
               :aria-checked="tipoAjusteTicket === 'DESCUENTO'"
+              :disabled="!!cuponAplicado"
               @click="elegirTipoAjuste('DESCUENTO')"
             >
               Descuento
@@ -61,6 +74,7 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
               class="cv-ajuste-tipo"
               :class="{ 'cv-ajuste-tipo--on': tipoAjusteTicket === 'RECARGO' }"
               :aria-checked="tipoAjusteTicket === 'RECARGO'"
+              :disabled="!!cuponAplicado"
               @click="elegirTipoAjuste('RECARGO')"
             >
               Recargo
@@ -81,6 +95,7 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
                   class="cv-ajuste-inp"
                   placeholder="Ej. 10"
                   autocomplete="off"
+                  :readonly="!!cuponAplicado"
                 />
                 <span class="cv-ajuste-suf" aria-hidden="true">%</span>
               </div>
@@ -170,6 +185,22 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-texto-apagado);
+}
+
+.cv-ajuste-fs--cupon {
+  opacity: 0.92;
+}
+
+.cv-ajuste-cupon-aviso {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-texto-apagado);
+}
+
+.cv-ajuste-tipo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .cv-ajuste-tipos {

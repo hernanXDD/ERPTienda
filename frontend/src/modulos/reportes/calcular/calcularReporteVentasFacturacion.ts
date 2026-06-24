@@ -10,8 +10,11 @@ import { CONDICION_IVA_POR_DEFECTO } from '../../../tipos/condicionIva';
 import { formatearFechaYHora } from '../../../utilidades/formatoFechaHora';
 import {
   cumpleFiltroCliente,
+  cumpleFiltroEstadoFacturacion,
   etiquetaFiltroClienteLegible,
-  type FiltrosReporteConCliente,
+  etiquetaFiltroEstadoFacturacionLegible,
+  opcionesFiltroFacturacionVentasFacturacion,
+  type FiltrosReporteVista,
   type OpcionEntidadReporte,
 } from '../filtroEntidadReporte';
 import { estaEnRangoFechas } from '../filtroFechasReporte';
@@ -51,6 +54,7 @@ export interface DatosReporteVentasFacturacion {
   negocioNombre: string;
   rangoLegible: string;
   filtroEntidadLegible: string;
+  filtroEstadoFacturacionLegible: string;
   generadoEl: string;
   filas: FilaReporteVentasFacturacion[];
   totalImporte: number;
@@ -80,19 +84,23 @@ function resolverCondicionIvaVenta(venta: VentaRegistrada, cliente?: Cliente): s
 export function calcularReporteVentasFacturacion(
   ventas: VentaRegistrada[],
   clientes: Cliente[],
-  filtro: FiltrosReporteConCliente,
+  filtro: FiltrosReporteVista,
   opcionesCliente: OpcionEntidadReporte[],
 ): DatosReporteVentasFacturacion {
   const clientesPorId = new Map(clientes.map((c) => [c.id, c]));
-  const meta = metadatosComunesReporte(
-    filtro,
-    etiquetaFiltroClienteLegible(filtro.idCliente, opcionesCliente),
+  const filtroClienteLegible = etiquetaFiltroClienteLegible(filtro.idCliente, opcionesCliente);
+  const filtroEstadoLegible = etiquetaFiltroEstadoFacturacionLegible(
+    filtro.idEstadoFacturacion,
+    opcionesFiltroFacturacionVentasFacturacion(),
   );
+  const meta = metadatosComunesReporte(filtro, filtroClienteLegible);
 
   const enPeriodo = ventas
     .filter(
       (v) =>
-        estaEnRangoFechas(v.fecha, filtro) && cumpleFiltroCliente(filtro.idCliente, v.clienteId),
+        estaEnRangoFechas(v.fecha, filtro) &&
+        cumpleFiltroCliente(filtro.idCliente, v.clienteId) &&
+        cumpleFiltroEstadoFacturacion(filtro.idEstadoFacturacion, v.estadoFacturacion),
     )
     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
@@ -121,7 +129,8 @@ export function calcularReporteVentasFacturacion(
     tituloReporte: 'Ventas para facturación',
     negocioNombre: meta.negocioNombre,
     rangoLegible: meta.rangoLegible,
-    filtroEntidadLegible: etiquetaFiltroClienteLegible(filtro.idCliente, opcionesCliente),
+    filtroEntidadLegible: filtroClienteLegible,
+    filtroEstadoFacturacionLegible: filtroEstadoLegible,
     generadoEl: meta.generadoEl,
     filas,
     totalImporte,

@@ -5,6 +5,9 @@ import {
   leerDatosPieDesdeDocumento,
 } from './piePaginaReporte';
 
+const ID_ESTILOS_VISTA_PREVIA = 'rep-vista-previa-estilos';
+const SELECTOR_DOCUMENTO_REPORTE = '.rep-doc';
+
 function sanitizarNombreArchivo(nombre: string): string {
   return (
     nombre
@@ -80,6 +83,53 @@ interface JsPdfConPaginas {
   output: (tipo: string) => string | Blob;
 }
 
+function crearEnvoltorioOffscreenPdf(): HTMLDivElement {
+  const envoltorio = document.createElement('div');
+  envoltorio.setAttribute('aria-hidden', 'true');
+  envoltorio.style.cssText = [
+    'position:fixed',
+    'left:-10000px',
+    'top:0',
+    `width:${ANCHO_PAGINA_A4_PX}px`,
+    `max-width:${ANCHO_PAGINA_A4_PX}px`,
+    'background:#fff',
+    'z-index:-1',
+    'pointer-events:none',
+    'overflow:visible',
+  ].join(';');
+  return envoltorio;
+}
+
+function resolverDocumentoEnRaiz(raiz: HTMLElement, selector: string): HTMLElement {
+  if (raiz.matches(selector)) return raiz;
+  const encontrado = raiz.querySelector(selector);
+  if (!(encontrado instanceof HTMLElement)) {
+    throw new Error('No se encontró el contenido para exportar a PDF.');
+  }
+  return encontrado;
+}
+
+function inyectarEstilosReporteDesdeHead(contenedor: HTMLElement): void {
+  const hoja = document.getElementById(ID_ESTILOS_VISTA_PREVIA);
+  if (!hoja?.textContent?.trim()) return;
+  const estilo = document.createElement('style');
+  estilo.textContent = hoja.textContent;
+  contenedor.appendChild(estilo);
+}
+
+/** Incluye el bloque `<style>` hermano o los estilos de vista previa para que html2canvas renderice bien. */
+function armarRaizCapturaConEstilos(elementoDocumento: HTMLElement): HTMLElement {
+  const raiz = document.createElement('div');
+  const estiloHermano = elementoDocumento.previousElementSibling;
+  if (estiloHermano instanceof HTMLStyleElement) {
+    raiz.appendChild(estiloHermano.cloneNode(true));
+  } else {
+    inyectarEstilosReporteDesdeHead(raiz);
+  }
+  raiz.appendChild(elementoDocumento.cloneNode(true));
+  return raiz;
+}
+
 /**
  * Abre una URL (blob del PDF) en una pestaña nueva. Sin `noopener` en window.open
  * para que el visor del navegador pueda cargar el recurso correctamente.
@@ -131,28 +181,14 @@ export function prepararClonDocumentoA4Pdf(clon: HTMLElement): void {
   clon.style.margin = '0';
 }
 
-function crearClonAisaldoParaPdf(elementoReporte: HTMLElement): {
+function crearClonAisaldoParaPdf(raizCaptura: HTMLElement): {
   elemento: HTMLElement;
   limpiar: () => void;
 } {
-  const envoltorio = document.createElement('div');
-  envoltorio.setAttribute('aria-hidden', 'true');
-  envoltorio.style.cssText = [
-    'position:fixed',
-    'left:-10000px',
-    'top:0',
-    `width:${ANCHO_PAGINA_A4_PX}px`,
-    `max-width:${ANCHO_PAGINA_A4_PX}px`,
-    'background:#fff',
-    'z-index:-1',
-    'pointer-events:none',
-    'overflow:visible',
-  ].join(';');
-
-  const clon = elementoReporte.cloneNode(true) as HTMLElement;
+  const envoltorio = crearEnvoltorioOffscreenPdf();
+  const clon = raizCaptura.cloneNode(true) as HTMLElement;
   envoltorio.appendChild(clon);
   document.body.appendChild(envoltorio);
-  prepararClonParaCapturaPdf(clon);
 
   return {
     elemento: clon,
@@ -171,29 +207,32 @@ function activarEstilosExportacionPdf(elementoReporte: HTMLElement): () => void 
 }
 
 interface OpcionesCapturaPdf {
-  prepararClon?: (clon: HTMLElement) => void;
-  antesCaptura?: (clon: HTMLElement) => () => void;
-  postProcesarPdf?: (pdf: JsPdfConPaginas, clon: HTMLElement) => void;
+  selectorDocumento?: string;
+  prepararClon?: (clonDocumento: HTMLElement) => void;
+  antesCaptura?: (clonDocumento: HTMLElement) => () => void;
+  postProcesarPdf?: (pdf: JsPdfConPaginas, clonDocumento: HTMLElement) => void;
 }
 
 async function capturarElementoComoPdf(
-  elementoRaiz: HTMLElement,
+  raizCaptura: HTMLElement,
   nombreArchivo: string,
   opciones: OpcionesCapturaPdf = {},
 ): Promise<void> {
+  const selectorDocumento = opciones.selectorDocumento ?? SELECTOR_DOCUMENTO_REPORTE;
   const { default: html2pdf } = await import('html2pdf.js');
 
-  const { elemento: elementoCaptura, limpiar: limpiarClon } =
-    crearClonAisaldoParaPdf(elementoRaiz);
+  const { elemento: clonRaiz, limpiar: limpiarClon } = crearClonAisaldoParaPdf(raizCaptura);
+  const clonDocumento = resolverDocumentoEnRaiz(clonRaiz, selectorDocumento);
 
-  opciones.prepararClon?.(elementoCaptura);
-  const restaurarCaptura = opciones.antesCaptura?.(elementoCaptura);
+  prepararClonParaCapturaPdf(clonDocumento);
+  opciones.prepararClon?.(clonDocumento);
+  const restaurarCaptura = opciones.antesCaptura?.(clonDocumento);
 
   let pdf: unknown;
   try {
     pdf = await html2pdf()
       .set(opcionesPdfPorDefecto(nombreArchivo))
-      .from(elementoCaptura)
+      .from(clonRaiz)
       .toPdf()
       .get('pdf');
   } finally {
@@ -205,7 +244,7 @@ async function capturarElementoComoPdf(
     throw new Error('No se pudo generar el archivo PDF.');
   }
 
-  opciones.postProcesarPdf?.(pdf, elementoCaptura);
+  opciones.postProcesarPdf?.(pdf, clonDocumento);
 
   const salida = pdf.output('bloburl');
   const urlPdf = typeof salida === 'string' ? salida : URL.createObjectURL(salida);
@@ -220,6 +259,48 @@ async function capturarElementoComoPdf(
   abrirUrlPdfEnNuevaPestana(urlPdf, revocar);
 }
 
+async function generarPdfDesdeDocumentoReporte(
+  documentoReporte: HTMLElement,
+  nombreArchivo: string,
+  opciones: OpcionesCapturaPdf = {},
+): Promise<void> {
+  const pieDatos = leerDatosPieDesdeDocumento(documentoReporte);
+  const raizCaptura = armarRaizCapturaConEstilos(documentoReporte);
+
+  await capturarElementoComoPdf(raizCaptura, nombreArchivo, {
+    ...opciones,
+    antesCaptura: (clonDocumento) => {
+      const pieHtml = clonDocumento.querySelector('.rep-pie-pagina');
+      const visibilidadPieOriginal =
+        pieHtml instanceof HTMLElement ? pieHtml.style.visibility : '';
+
+      if (pieHtml instanceof HTMLElement) {
+        pieHtml.style.visibility = 'hidden';
+      }
+
+      const restaurarEstilosExportacion = clonDocumento.classList.contains('rep-doc')
+        ? activarEstilosExportacionPdf(clonDocumento)
+        : () => {};
+
+      const restaurarPersonalizado = opciones.antesCaptura?.(clonDocumento);
+
+      return () => {
+        restaurarPersonalizado?.();
+        restaurarEstilosExportacion();
+        if (pieHtml instanceof HTMLElement) {
+          pieHtml.style.visibility = visibilidadPieOriginal;
+        }
+      };
+    },
+    postProcesarPdf: (pdf, clonDocumento) => {
+      if (pieDatos && clonDocumento.classList.contains('rep-doc')) {
+        dibujarPieEnTodasLasPaginasPdf(pdf, pieDatos);
+      }
+      opciones.postProcesarPdf?.(pdf, clonDocumento);
+    },
+  });
+}
+
 /**
  * Genera PDF a partir de HTML en memoria (p. ej. comprobantes) y lo abre en una pestaña.
  */
@@ -229,77 +310,26 @@ export async function exportarHtmlRaizComoPdf(
   nombreArchivo: string,
   opciones: OpcionesCapturaPdf = {},
 ): Promise<void> {
-  const envoltorio = document.createElement('div');
-  envoltorio.setAttribute('aria-hidden', 'true');
-  envoltorio.style.cssText = [
-    'position:fixed',
-    'left:-10000px',
-    'top:0',
-    `width:${ANCHO_PAGINA_A4_PX}px`,
-    `max-width:${ANCHO_PAGINA_A4_PX}px`,
-    'background:#fff',
-    'z-index:-1',
-    'pointer-events:none',
-    'overflow:visible',
-  ].join(';');
+  const envoltorio = crearEnvoltorioOffscreenPdf();
   envoltorio.innerHTML = fragmentoHtml;
   document.body.appendChild(envoltorio);
 
-  const documento = envoltorio.querySelector(selectorDocumento);
-  if (!(documento instanceof HTMLElement)) {
-    document.body.removeChild(envoltorio);
-    throw new Error('No se encontró el contenido para exportar a PDF.');
-  }
-
   try {
-    await capturarElementoComoPdf(documento, nombreArchivo, opciones);
+    const documento = resolverDocumentoEnRaiz(envoltorio, selectorDocumento);
+    await generarPdfDesdeDocumentoReporte(documento, nombreArchivo, {
+      ...opciones,
+      selectorDocumento,
+    });
   } finally {
     document.body.removeChild(envoltorio);
   }
 }
 
-/**
- * Genera un PDF del nodo `.rep-doc` y lo abre en una nueva pestaña del navegador.
- */
-async function generarPdfDesdeElemento(
-  elementoReporte: HTMLElement,
-  nombreArchivo: string
-): Promise<void> {
-  const pieDatos = leerDatosPieDesdeDocumento(elementoReporte);
-
-  await capturarElementoComoPdf(elementoReporte, nombreArchivo, {
-    prepararClon: prepararClonParaCapturaPdf,
-    antesCaptura: (elementoCaptura) => {
-      const pieHtml = elementoCaptura.querySelector('.rep-pie-pagina');
-      const visibilidadPieOriginal =
-        pieHtml instanceof HTMLElement ? pieHtml.style.visibility : '';
-
-      if (pieHtml instanceof HTMLElement) {
-        pieHtml.style.visibility = 'hidden';
-      }
-
-      const restaurarEstilosExportacion = activarEstilosExportacionPdf(elementoCaptura);
-
-      return () => {
-        restaurarEstilosExportacion();
-        if (pieHtml instanceof HTMLElement) {
-          pieHtml.style.visibility = visibilidadPieOriginal;
-        }
-      };
-    },
-    postProcesarPdf: (pdf) => {
-      if (pieDatos) {
-        dibujarPieEnTodasLasPaginasPdf(pdf, pieDatos);
-      }
-    },
-  });
-}
-
 export async function exportarElementoReporteComoPdf(
   elementoReporte: HTMLElement,
-  nombreArchivo: string
+  nombreArchivo: string,
 ): Promise<void> {
-  await generarPdfDesdeElemento(elementoReporte, nombreArchivo);
+  await generarPdfDesdeDocumentoReporte(elementoReporte, nombreArchivo);
 }
 
 /**
@@ -307,34 +337,19 @@ export async function exportarElementoReporteComoPdf(
  */
 export async function exportarReporteComoPdf(
   cuerpoHtml: string,
-  nombreArchivo: string
+  nombreArchivo: string,
 ): Promise<void> {
-  const envoltorio = document.createElement('div');
-  envoltorio.setAttribute('aria-hidden', 'true');
-  envoltorio.style.cssText = [
-    'position:fixed',
-    'left:-10000px',
-    'top:0',
-    `width:${ANCHO_PAGINA_A4_PX}px`,
-    `max-width:${ANCHO_PAGINA_A4_PX}px`,
-    'background:#fff',
-    'z-index:-1',
-    'pointer-events:none',
-    'overflow:visible',
-  ].join(';');
+  if (!cuerpoHtml.trim()) {
+    throw new Error('No hay contenido de reporte para exportar.');
+  }
+
+  const envoltorio = crearEnvoltorioOffscreenPdf();
   envoltorio.innerHTML = cuerpoHtml;
   document.body.appendChild(envoltorio);
 
-  const documento = envoltorio.querySelector('.rep-doc');
-  if (!(documento instanceof HTMLElement)) {
-    document.body.removeChild(envoltorio);
-    throw new Error('No se encontró el contenido del reporte para exportar.');
-  }
-
-  prepararClonParaCapturaPdf(documento);
-
   try {
-    await exportarElementoReporteComoPdf(documento, nombreArchivo);
+    const documento = resolverDocumentoEnRaiz(envoltorio, SELECTOR_DOCUMENTO_REPORTE);
+    await generarPdfDesdeDocumentoReporte(documento, nombreArchivo);
   } finally {
     document.body.removeChild(envoltorio);
   }
@@ -342,22 +357,12 @@ export async function exportarReporteComoPdf(
 
 /**
  * Genera el PDF con los filtros aplicados y lo abre en una nueva pestaña.
- * Usa el elemento visible de la vista previa o, si no está disponible, el HTML generado.
+ * Usa el HTML renderizado (incluye estilos) para evitar capturas vacías o sin formato.
  */
 export async function exportarVistaReporteComoPdf(
   htmlReporte: string,
   nombreArchivo: string,
-  contenedorVista?: HTMLElement | null
+  _contenedorVista?: HTMLElement | null,
 ): Promise<void> {
-  const documentoVisible = contenedorVista?.querySelector('.rep-doc');
-  if (documentoVisible instanceof HTMLElement) {
-    await exportarElementoReporteComoPdf(documentoVisible, nombreArchivo);
-    return;
-  }
-
-  if (!htmlReporte.trim()) {
-    throw new Error('No hay contenido de reporte para exportar.');
-  }
-
   await exportarReporteComoPdf(htmlReporte, nombreArchivo);
 }

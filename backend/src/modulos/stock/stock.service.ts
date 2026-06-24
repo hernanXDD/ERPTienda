@@ -1,8 +1,15 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, TipoAuditoriaStock } from '@prisma/client';
 import {
   ID_MOTIVO_AJUSTE_CONTEO,
   ID_MOTIVO_ENTRADA_COMPRA,
+  ID_MOTIVO_ENTRADA_DEVOLUCION,
   ID_MOTIVO_SALIDA_VENTA,
 } from '../../comunes/constantes/ids-motivo-stock';
 import { armarNombreLineaComercial } from '../../comunes/utilidades/nombre-linea-comercial';
@@ -278,18 +285,60 @@ export class StockService {
     return resumen;
   }
 
+  /**
+   * Bloquea las filas de stock (FOR UPDATE) y valida disponibilidad.
+   * Debe invocarse al inicio de la transacción de venta para evitar oversell concurrente.
+   */
+  async validarStockBloqueadoParaVenta(
+    tx: ClienteTx,
+    lineas: LineaVentaStock[],
+  ): Promise<FaltaStockLineaApi[] | null> {
+    const varianteIds = lineas.map((ln) => ln.varianteId);
+    const cantidades = await this.bloquearCantidadesStock(tx, varianteIds);
+    return this.validarStockParaVenta(lineas, cantidades);
+  }
+
+  /** Orden fijo de IDs para evitar deadlocks al bloquear varias variantes. */
+  async bloquearCantidadesStock(
+    tx: ClienteTx,
+    varianteIds: string[],
+  ): Promise<Map<string, number>> {
+    const idsUnicos = [...new Set(varianteIds)].sort();
+    const mapa = new Map<string, number>();
+    for (const varianteId of idsUnicos) {
+      const filas = await tx.$queryRaw<Array<{ cantidad_actual: number }>>`
+        SELECT cantidad_actual
+        FROM stock_variante
+        WHERE variante_id = ${varianteId}
+        FOR UPDATE
+      `;
+      mapa.set(varianteId, filas[0]?.cantidad_actual ?? 0);
+    }
+    return mapa;
+  }
+
   validarStockParaVenta(
     lineas: LineaVentaStock[],
     cantidades: Map<string, number>,
   ): FaltaStockLineaApi[] | null {
-    const faltas: FaltaStockLineaApi[] = [];
+    const solicitadoPorVariante = new Map<string, { nombre: string; cantidad: number }>();
     for (const ln of lineas) {
-      const disponible = cantidades.get(ln.varianteId) ?? 0;
-      if (disponible < ln.cantidad) {
+      const previo = solicitadoPorVariante.get(ln.varianteId);
+      if (previo) {
+        previo.cantidad += ln.cantidad;
+      } else {
+        solicitadoPorVariante.set(ln.varianteId, { nombre: ln.nombre, cantidad: ln.cantidad });
+      }
+    }
+
+    const faltas: FaltaStockLineaApi[] = [];
+    for (const [varianteId, { nombre, cantidad }] of solicitadoPorVariante) {
+      const disponible = cantidades.get(varianteId) ?? 0;
+      if (disponible < cantidad) {
         faltas.push({
-          varianteId: ln.varianteId,
-          nombre: ln.nombre,
-          solicitado: ln.cantidad,
+          varianteId,
+          nombre,
+          solicitado: cantidad,
           disponible,
         });
       }
@@ -331,6 +380,9 @@ export class StockService {
       const stock = await tx.stockVariante.findUnique({ where: { varianteId: ln.varianteId } });
       if (!stock) throw new NotFoundException(`Sin stock para variante ${ln.varianteId}.`);
       const nuevo = stock.cantidadActual - ln.cantidad;
+      if (nuevo < 0) {
+        throw new ConflictException('Stock insuficiente para completar la venta.');
+      }
       await tx.stockVariante.update({
         where: { varianteId: ln.varianteId },
         data: { cantidadActual: nuevo },
@@ -343,6 +395,55 @@ export class StockService {
           nombreVariante: ln.nombre,
           motivoId: ID_MOTIVO_SALIDA_VENTA,
           cantidadVariacion: -ln.cantidad,
+          stockResultante: nuevo,
+          ventaId,
+          numeroVenta,
+          auditoriaStockId: idAuditoria,
+          ejecutadoPorUsuarioId,
+        },
+      });
+    }
+
+    await this.actualizarResumenAuditoria(tx, idAuditoria);
+  }
+
+  async aplicarEntradaPorDevolucion(
+    tx: ClienteTx,
+    lineas: LineaVentaStock[],
+    devolucionId: string,
+    numeroDevolucion: string,
+    ventaId: string,
+    numeroVenta: string,
+    ejecutadoPorUsuarioId: string | null,
+  ): Promise<void> {
+    const idAuditoria = await this.crearAuditoriaStock(tx, {
+      tipo: TipoAuditoriaStock.devolucion,
+      titulo: `Devolución ${numeroDevolucion}`,
+      referencia: numeroDevolucion,
+      ventaId,
+      devolucionId,
+      ejecutadoPorUsuarioId,
+    });
+
+    for (const ln of lineas) {
+      const unidades = Math.floor(ln.cantidad);
+      if (!Number.isFinite(unidades) || unidades <= 0) continue;
+
+      await this.asegurarStockVariante(tx, ln.varianteId);
+      const stock = await tx.stockVariante.findUniqueOrThrow({ where: { varianteId: ln.varianteId } });
+      const nuevo = stock.cantidadActual + unidades;
+      await tx.stockVariante.update({
+        where: { varianteId: ln.varianteId },
+        data: { cantidadActual: nuevo },
+      });
+      const idMovimiento = await this.idSecuencia.siguienteMovimientoStock(tx);
+      await tx.movimientoStock.create({
+        data: {
+          id: idMovimiento,
+          varianteId: ln.varianteId,
+          nombreVariante: ln.nombre,
+          motivoId: ID_MOTIVO_ENTRADA_DEVOLUCION,
+          cantidadVariacion: unidades,
           stockResultante: nuevo,
           ventaId,
           numeroVenta,
@@ -670,6 +771,7 @@ export class StockService {
       nota?: string | null;
       ventaId?: string | null;
       compraId?: string | null;
+      devolucionId?: string | null;
       ejecutadoPorUsuarioId?: string | null;
     },
   ): Promise<string> {
@@ -683,6 +785,7 @@ export class StockService {
         nota: datos.nota ?? null,
         ventaId: datos.ventaId ?? null,
         compraId: datos.compraId ?? null,
+        devolucionId: datos.devolucionId ?? null,
         ejecutadoPorUsuarioId: datos.ejecutadoPorUsuarioId ?? null,
       },
     });

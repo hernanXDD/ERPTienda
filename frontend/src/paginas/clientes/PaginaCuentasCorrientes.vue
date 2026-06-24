@@ -18,6 +18,14 @@ import {
   obtenerDiaComparableDesdeValor,
 } from '../../utilidades/formatoFechaHora';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import {
+  calcularCreditoDisponible,
+  saldoEsAFavor,
+  saldoTieneDeuda,
+} from '../../utilidades/cuentaCorriente';
+import ModalConfirmarRegistroPago, {
+  type DatosConfirmacionRegistroPago,
+} from '../../componentes/cuentaCorriente/ModalConfirmarRegistroPago.vue';
 
 const descripcionPagina = obtenerDescripcionPagina('clientes-cuentas-corrientes');
 const { tienePermiso } = usePermisosOperador();
@@ -36,6 +44,9 @@ const { movimientos } = storeToRefs(cuentaCorrienteStore);
 
 const refDialogoMovimientos = ref<HTMLDialogElement | null>(null);
 const refCuadroRegistrarPago = ref<HTMLDialogElement | null>(null);
+const refConfirmarRegistroPago = ref<InstanceType<typeof ModalConfirmarRegistroPago> | null>(null);
+const pagoPendienteConfirmacion = ref<DatosConfirmacionRegistroPago | null>(null);
+const registrandoPago = ref(false);
 const clienteModal = ref<Cliente | null>(null);
 const fechaFiltroDesde = ref('');
 const fechaFiltroHasta = ref('');
@@ -99,9 +110,12 @@ function limpiarFiltrosListado(): void {
   filtroDeuda.value = '';
 }
 
+function saldoCliente(clienteId: string): number {
+  return cuentaCorrienteStore.saldoClienteCacheado(clienteId);
+}
+
 function creditoDisponible(cliente: Cliente): number {
-  const saldo = cuentaCorrienteStore.saldoClienteCacheado(cliente.id);
-  return cliente.limiteCompraCuentaCorriente - saldo;
+  return calcularCreditoDisponible(cliente.limiteCompraCuentaCorriente, saldoCliente(cliente.id));
 }
 
 const movimientosFiltradosModal = computed(() => {
@@ -194,7 +208,7 @@ function normalizarImporteArgentino(texto: string): number {
   return Number.isFinite(n) ? n : Number.NaN;
 }
 
-function confirmarRegistroPago(): void {
+function solicitarRegistroPago(): void {
   const c = clienteModal.value;
   if (!c) return;
   const importe = normalizarImporteArgentino(importePagoTexto.value);
@@ -211,32 +225,58 @@ function confirmarRegistroPago(): void {
     errorFormularioPago.value = 'Elegí la forma de pago.';
     return;
   }
-  const fechaIso = `${fechaPago.value}T12:00:00`;
-  void cuentaCorrienteStore
-    .agregarPagoRegistrado(
+
+  errorFormularioPago.value = '';
+  pagoPendienteConfirmacion.value = {
+    nombreTercero: c.nombre,
+    documentoTercero: c.documento,
+    importe,
+    fechaIso: `${fechaPago.value}T12:00:00`,
+    formaPago: formaTrim,
+    concepto: descripcionPago.value.trim(),
+  };
+  refConfirmarRegistroPago.value?.abrir();
+}
+
+function cancelarConfirmacionRegistroPago(): void {
+  pagoPendienteConfirmacion.value = null;
+}
+
+async function ejecutarRegistroPago(): Promise<void> {
+  const c = clienteModal.value;
+  const pago = pagoPendienteConfirmacion.value;
+  if (!c || !pago || registrandoPago.value) return;
+
+  registrandoPago.value = true;
+  try {
+    const movimientoCreado = await cuentaCorrienteStore.agregarPagoRegistrado(
       c.id,
-      importe,
-      fechaIso,
-      descripcionPago.value.trim(),
-      formaTrim,
+      pago.importe,
+      pago.fechaIso,
+      pago.concepto,
+      pago.formaPago,
       referenciaPagoTexto.value.trim() || null,
-    )
-    .then(async (movimientoCreado) => {
-      cerrarCuadroRegistrarPago();
-      try {
-        await exportarReciboPagoCuentaCorrientePdf({
-          cliente: { nombre: c.nombre, documento: c.documento },
-          movimiento: movimientoCreado,
-        });
-      } catch (error: unknown) {
-        notificarError(
-          error instanceof Error ? error.message : 'No se pudo exportar el recibo de cobro.',
-        );
-      }
-    })
-    .catch((error: unknown) => {
-      errorFormularioPago.value = mensajeErrorHttp(error, 'No se pudo registrar el pago.');
-    });
+    );
+    refConfirmarRegistroPago.value?.cerrar();
+    pagoPendienteConfirmacion.value = null;
+    cerrarCuadroRegistrarPago();
+    try {
+      await exportarReciboPagoCuentaCorrientePdf({
+        cliente: { nombre: c.nombre, documento: c.documento },
+        movimiento: movimientoCreado,
+      });
+    } catch (error: unknown) {
+      notificarError(
+        error instanceof Error ? error.message : 'No se pudo exportar el recibo de cobro.',
+      );
+    }
+  } catch (error: unknown) {
+    refConfirmarRegistroPago.value?.cerrar();
+    pagoPendienteConfirmacion.value = null;
+    errorFormularioPago.value = mensajeErrorHttp(error, 'No se pudo registrar el pago.');
+  } finally {
+    registrandoPago.value = false;
+  }
 }
 
 onMounted(() => {
@@ -388,8 +428,14 @@ async function imprimirCuentaCliente(): Promise<void> {
                 </div>
                 <div class="cc-cartera-tarjeta-monto cc-cartera-tarjeta-monto--saldo">
                   <dt>Saldo actual</dt>
-                  <dd class="pg-mono">
-                    {{ formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(c.id)) }}
+                  <dd
+                    class="pg-mono"
+                    :class="{
+                      'cc-cel-saldo--favor': saldoEsAFavor(saldoCliente(c.id)),
+                      'cc-cel-saldo--deuda': saldoTieneDeuda(saldoCliente(c.id)),
+                    }"
+                  >
+                    {{ formatoPeso.format(saldoCliente(c.id)) }}
                   </dd>
                 </div>
                 <div class="cc-cartera-tarjeta-monto">
@@ -439,8 +485,14 @@ async function imprimirCuentaCliente(): Promise<void> {
                 <td class="pg-der pg-mono cc-col-monto-lista cc-col-limite cc-col-oculta-movil">
                   {{ formatoPeso.format(c.limiteCompraCuentaCorriente) }}
                 </td>
-                <td class="pg-der pg-mono cc-col-monto-lista cc-col-saldo-actual">
-                  {{ formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(c.id)) }}
+                <td
+                  class="pg-der pg-mono cc-col-monto-lista cc-col-saldo-actual"
+                  :class="{
+                    'cc-cel-saldo--favor': saldoEsAFavor(saldoCliente(c.id)),
+                    'cc-cel-saldo--deuda': saldoTieneDeuda(saldoCliente(c.id)),
+                  }"
+                >
+                  {{ formatoPeso.format(saldoCliente(c.id)) }}
                 </td>
                 <td class="pg-der pg-mono cc-col-monto-lista cc-col-disponible cc-cel-disponible cc-col-oculta-movil">
                   {{ formatoPeso.format(creditoDisponible(c)) }}
@@ -495,8 +547,14 @@ async function imprimirCuentaCliente(): Promise<void> {
           <div class="cc-modal-kpis" role="group" aria-label="Resumen de saldos">
             <div class="pg-kpi">
               <span class="pg-kpi-etiq">Saldo actual</span>
-              <span class="pg-kpi-valor pg-mono">{{
-                formatoPeso.format(cuentaCorrienteStore.saldoClienteCacheado(clienteModal.id))
+              <span
+                class="pg-kpi-valor pg-mono"
+                :class="{
+                  'cc-cel-saldo--favor': saldoEsAFavor(saldoCliente(clienteModal.id)),
+                  'cc-cel-saldo--deuda': saldoTieneDeuda(saldoCliente(clienteModal.id)),
+                }"
+              >{{
+                formatoPeso.format(saldoCliente(clienteModal.id))
               }}</span>
             </div>
             <div class="pg-kpi pg-kpi--acento">
@@ -594,7 +652,15 @@ async function imprimirCuentaCliente(): Promise<void> {
                 </div>
                 <div class="cc-mov-tarjeta-monto cc-mov-tarjeta-monto--saldo">
                   <dt>Saldo</dt>
-                  <dd class="cc-mono">{{ formatoPeso.format(m.saldoTrasMovimiento) }}</dd>
+                  <dd
+                    class="cc-mono"
+                    :class="{
+                      'cc-cel-saldo--favor': m.saldoTrasMovimiento < 0,
+                      'cc-cel-saldo--deuda': m.saldoTrasMovimiento > 0,
+                    }"
+                  >
+                    {{ formatoPeso.format(m.saldoTrasMovimiento) }}
+                  </dd>
                 </div>
               </dl>
               <div v-if="m.tipoMovimiento === 'pagoRegistrado'" class="cc-mov-tarjeta-recibo">
@@ -675,7 +741,15 @@ async function imprimirCuentaCliente(): Promise<void> {
                   <td class="cc-der cc-mono cc-col-monto">
                     {{ m.tipoMovimiento === 'pagoRegistrado' ? formatoPeso.format(m.importe) : '—' }}
                   </td>
-                  <td class="cc-der cc-mono cc-col-saldo">{{ formatoPeso.format(m.saldoTrasMovimiento) }}</td>
+                  <td
+                    class="cc-der cc-mono cc-col-saldo"
+                    :class="{
+                      'cc-cel-saldo--favor': m.saldoTrasMovimiento < 0,
+                      'cc-cel-saldo--deuda': m.saldoTrasMovimiento > 0,
+                    }"
+                  >
+                    {{ formatoPeso.format(m.saldoTrasMovimiento) }}
+                  </td>
                 </tr>
                 <tr v-if="movimientosFiltradosModal.length === 0">
                   <td colspan="7" class="cc-vacio-inner">No hay movimientos en el rango de fechas elegido.</td>
@@ -732,7 +806,7 @@ async function imprimirCuentaCliente(): Promise<void> {
           </div>
         </div>
 
-        <form class="cc-reg-pago-form" @submit.prevent="confirmarRegistroPago">
+        <form class="cc-reg-pago-form" @submit.prevent="solicitarRegistroPago">
           <p v-if="errorFormularioPago" class="cc-form-error" role="alert">{{ errorFormularioPago }}</p>
 
           <div role="group" aria-labelledby="cc-reg-pago-leyenda-dat" class="cc-reg-datos-recuadro">
@@ -812,6 +886,15 @@ async function imprimirCuentaCliente(): Promise<void> {
         </form>
       </div>
     </dialog>
+
+    <ModalConfirmarRegistroPago
+      ref="refConfirmarRegistroPago"
+      etiqueta-tercero="cliente"
+      :datos="pagoPendienteConfirmacion"
+      :registrando="registrandoPago"
+      @confirmar="ejecutarRegistroPago"
+      @cancelar="cancelarConfirmacionRegistroPago"
+    />
   </section>
 </template>
 
@@ -849,6 +932,16 @@ async function imprimirCuentaCliente(): Promise<void> {
 .cc-cel-cliente {
   color: var(--color-texto);
   font-weight: 500;
+}
+
+.cc-cel-saldo--favor {
+  font-weight: 600;
+  color: var(--color-advertencia);
+}
+
+.cc-cel-saldo--deuda {
+  font-weight: 600;
+  color: var(--color-peligro);
 }
 
 .cc-cel-disponible {
@@ -1787,10 +1880,6 @@ async function imprimirCuentaCliente(): Promise<void> {
   color: var(--color-texto);
 }
 
-.cc-cartera-tarjeta-monto--saldo dd {
-  color: var(--color-peligro);
-}
-
 .cc-cartera-vacio {
   display: none;
   margin: 0;
@@ -1895,6 +1984,14 @@ async function imprimirCuentaCliente(): Promise<void> {
 
 .cc-mov-tarjeta-monto--saldo dd {
   color: var(--color-acento-hover);
+}
+
+.cc-mov-tarjeta-monto--saldo dd.cc-cel-saldo--favor {
+  color: var(--color-advertencia);
+}
+
+.cc-mov-tarjeta-monto--saldo dd.cc-cel-saldo--deuda {
+  color: var(--color-peligro);
 }
 
 .cc-mov-tarjeta-recibo {

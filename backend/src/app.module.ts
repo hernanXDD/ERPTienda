@@ -10,6 +10,8 @@ import { ComprasModule } from './modulos/compras/compras.module';
 import { CuentaCorrienteProveedorModule } from './modulos/cuenta-corriente-proveedor/cuenta-corriente-proveedor.module';
 import { CuentaCorrienteModule } from './modulos/cuenta-corriente/cuenta-corriente.module';
 import { ConfiguracionSistemaModule } from './modulos/configuracion-sistema/configuracion-sistema.module';
+import { DevolucionesModule } from './modulos/devoluciones/devoluciones.module';
+import { CuponesDescuentoModule } from './modulos/cupones-descuento/cupones-descuento.module';
 import { NegocioModule } from './modulos/negocio/negocio.module';
 import { ProveedoresModule } from './modulos/proveedores/proveedores.module';
 import { StockModule } from './modulos/stock/stock.module';
@@ -37,6 +39,8 @@ import { PermisosModule } from './comunes/permisos/permisos.module';
     StockModule,
     ComprasModule,
     VentasModule,
+    DevolucionesModule,
+    CuponesDescuentoModule,
     UsuariosModule,
     NegocioModule,
     ConfiguracionSistemaModule,

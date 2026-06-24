@@ -80,4 +80,8 @@ export class RegistrarVentaDto {
   @IsString()
   @MaxLength(32)
   documentoClienteMostrar?: string;
+
+  @IsOptional()
+  @EsIdEntidad()
+  cuponDescuentoId?: string | null;
 }

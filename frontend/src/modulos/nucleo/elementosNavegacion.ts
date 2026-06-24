@@ -84,6 +84,8 @@ export const elementosMenuPrincipal: ElementoMenuPrincipal[] = [
     icono: ShoppingCart,
     subelementos: [
       subenlace('ventas-centro', 'Centro de ventas'),
+      subenlace('ventas-devoluciones', 'Devoluciones'),
+      subenlace('ventas-cupones', 'Cupones'),
       subenlace('ventas-historial', 'Historial de ventas'),
     ],
   },

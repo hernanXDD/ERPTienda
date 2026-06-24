@@ -9,6 +9,10 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+    dedupe: ['html2canvas'],
+  },
+  optimizeDeps: {
+    include: ['html2pdf.js'],
   },
   server: {
     host: true,

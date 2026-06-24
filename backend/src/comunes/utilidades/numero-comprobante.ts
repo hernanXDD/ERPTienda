@@ -1,4 +1,7 @@
-export function siguienteNumeroComprobante(prefijo: 'V' | 'C', ultimoNumero: string | null): string {
+export function siguienteNumeroComprobante(
+  prefijo: 'V' | 'C' | 'D' | 'CD',
+  ultimoNumero: string | null,
+): string {
   let maximo = 0;
   if (ultimoNumero) {
     const coincidencia = new RegExp(`^${prefijo}-(\\d+)$`).exec(ultimoNumero);

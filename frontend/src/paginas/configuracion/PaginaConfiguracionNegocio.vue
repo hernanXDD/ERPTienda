@@ -461,43 +461,11 @@ async function guardarNegocio(): Promise<void> {
       </header>
 
       <form id="form-negocio" @submit.prevent="manejarAccionPie">
-        <div class="pg-barra">
-          <div class="pg-barra-fila">
-            <div class="pg-barra-col pg-barra-col--accion">
-              <span class="pg-filtro-etiq pg-sr">Acción</span>
-              <button
-                v-if="puedeEditarConfiguracionNegocio"
-                type="submit"
-                class="pg-btn-primario"
-                :disabled="guardando || cargandoInicial"
-              >
-                {{
-                  guardando
-                    ? 'Guardando…'
-                    : modoEdicion
-                      ? 'Guardar configuración'
-                      : 'Editar configuración'
-                }}
-              </button>
-            </div>
-          </div>
-          <p
-            v-if="mensajeExito"
-            class="perm-aviso perm-aviso--ok"
-            role="status"
-          >
-            {{ mensajeExito }}
-          </p>
-          <p
-            v-if="mensajeError"
-            class="perm-aviso perm-aviso--error"
-            role="alert"
-          >
-            {{ mensajeError }}
-          </p>
-        </div>
-
-        <div v-if="!cargandoInicial" class="perm-ficha" aria-label="Vista previa del negocio">
+        <div
+          v-if="!cargandoInicial"
+          class="perm-ficha perm-ficha--con-accion"
+          aria-label="Vista previa del negocio"
+        >
           <div class="perm-ficha-ident">
             <p class="perm-ficha-nombre">
               {{ vistaPreviaNombre || 'Nombre del negocio' }}
@@ -514,6 +482,26 @@ async function guardarNegocio(): Promise<void> {
               {{ tieneLogo ? 'Logo activo' : 'Sin logo' }}
             </span>
           </div>
+          <div v-if="puedeEditarConfiguracionNegocio" class="perm-ficha-accion">
+            <button type="submit" class="pg-btn-primario" :disabled="guardando || cargandoInicial">
+              {{
+                guardando
+                  ? 'Guardando…'
+                  : modoEdicion
+                    ? 'Guardar configuración'
+                    : 'Editar configuración'
+              }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="mensajeExito || mensajeError" class="perm-avisos-barra">
+          <p v-if="mensajeExito" class="perm-aviso perm-aviso--ok" role="status">
+            {{ mensajeExito }}
+          </p>
+          <p v-if="mensajeError" class="perm-aviso perm-aviso--error" role="alert">
+            {{ mensajeError }}
+          </p>
         </div>
 
         <div v-if="cargandoInicial" class="cfg-ficha-carga" role="status">

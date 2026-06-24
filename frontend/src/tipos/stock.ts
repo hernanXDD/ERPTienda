@@ -1,7 +1,7 @@
 import type { RegistroOperador } from './registroOperador';
 
 /** Tipo de auditoría agrupada en el historial de stock. */
-export type TipoAuditoriaStock = 'venta' | 'compra' | 'conteo';
+export type TipoAuditoriaStock = 'venta' | 'compra' | 'conteo' | 'devolucion';
 
 export interface MovimientoStock {
   id: string;

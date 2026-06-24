@@ -1,0 +1,6 @@
+/** Formato ISO/IEC 7810 ID-1 (tarjeta de crédito). */
+export const TARJETA_CUPON_ANCHO_MM = 85.6;
+export const TARJETA_CUPON_ALTO_MM = 53.98;
+export const TARJETA_CUPON_RADIO_MM = 3.18;
+
+export const TARJETA_CUPON_PROPORCION = TARJETA_CUPON_ANCHO_MM / TARJETA_CUPON_ALTO_MM;

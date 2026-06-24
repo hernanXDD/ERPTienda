@@ -8,6 +8,7 @@ import { exportarExcelVentasFacturacion } from '../../modulos/reportes/exportaci
 import {
   filtrosReporteVistaPorDefecto,
   opcionesClientesParaReporte,
+  opcionesFiltroFacturacionVentasFacturacion,
 } from '../../modulos/reportes/filtroEntidadReporte';
 import { esRangoFechasValido } from '../../modulos/reportes/filtroFechasReporte';
 import { useClientesStore } from '../../stores/clientes';
@@ -25,6 +26,7 @@ const exportandoExcel = ref(false);
 const refContenedor = ref<InstanceType<typeof ContenedorVistaReporteExcel> | null>(null);
 
 const opcionesCliente = computed(() => opcionesClientesParaReporte(clientes.value));
+const opcionesEstadoFacturacion = opcionesFiltroFacturacionVentasFacturacion();
 
 const datosReporte = computed(() => {
   if (!esRangoFechasValido(filtro.value)) {
@@ -40,7 +42,15 @@ const datosReporte = computed(() => {
 
 const resumenReporte = computed(() => {
   if (datosReporte.value.sinVentas) return '';
-  return `${datosReporte.value.cantidadOperaciones} ventas · Total ${datosReporte.value.totalImporte.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })} · ${datosReporte.value.rangoLegible}`;
+  const partes = [
+    `${datosReporte.value.cantidadOperaciones} ventas`,
+    `Total ${datosReporte.value.totalImporte.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}`,
+    datosReporte.value.rangoLegible,
+  ];
+  if (datosReporte.value.filtroEstadoFacturacionLegible) {
+    partes.push(datosReporte.value.filtroEstadoFacturacionLegible);
+  }
+  return partes.join(' · ');
 });
 
 function validarFiltro(): void {
@@ -91,7 +101,9 @@ async function exportarExcel(): Promise<void> {
     :resumen="resumenReporte"
     :exportando="exportandoExcel"
     mostrar-filtro-cliente
+    mostrar-filtro-estado-facturacion
     :opciones-cliente="opcionesCliente"
+    :opciones-estado-facturacion="opcionesEstadoFacturacion"
     @actualizar="validarFiltro"
     @exportar="exportarExcel"
   >

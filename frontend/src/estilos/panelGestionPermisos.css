@@ -94,6 +94,72 @@
   justify-content: flex-end;
 }
 
+.perm-ficha--con-accion {
+  align-items: center;
+}
+
+.perm-ficha-accion {
+  flex-shrink: 0;
+}
+
+.perm-ficha-accion .pg-btn-primario {
+  white-space: nowrap;
+}
+
+.perm-avisos-barra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.35rem clamp(1rem, 3vw, 1.65rem) 0;
+}
+
+@media (min-width: 901px) {
+  .perm-ficha--con-accion {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+  }
+
+  .perm-ficha--con-accion .perm-ficha-ident {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: min(28rem, 38%);
+  }
+
+  .perm-ficha--con-accion .perm-ficha-chips {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .perm-ficha--con-accion .perm-ficha-accion {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .perm-ficha--con-accion:not(:has(.perm-ficha-accion)) .perm-ficha-chips {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 900px) {
+  .perm-ficha--con-accion {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .perm-ficha--con-accion .perm-ficha-chips {
+    justify-content: flex-start;
+  }
+
+  .perm-ficha--con-accion .perm-ficha-accion .pg-btn-primario {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .perm-chip {
   display: inline-flex;
   align-items: center;

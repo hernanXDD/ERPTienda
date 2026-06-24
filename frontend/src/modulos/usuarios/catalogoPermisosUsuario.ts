@@ -35,7 +35,7 @@ export interface GrupoPermisosOperativos {
 
 const RESUMEN_MENU: Record<ClaveMenuPrincipal, string> = {
   clientes: 'Altas, edición y movimientos de cuenta corriente.',
-  ventas: 'Centro de ventas, historial y carga de facturaciones.',
+  ventas: 'Centro de ventas, devoluciones, cupones, historial y carga de facturaciones.',
   compras: 'Proveedores y registro de compras.',
   productos: 'Catálogo, variantes y categorías.',
   stock: 'Stock actual, entradas, conteos y auditorías.',
@@ -66,15 +66,16 @@ export const GRUPOS_PERMISOS_OPERATIVOS: GrupoPermisosOperativos[] = [
       {
         clave: 'puedeAjustarStock',
         etiqueta: 'Conteos de inventario',
-        descripcion: 'Exportar plantilla, importar conteo físico y ajustar existencias por conteo.',
-        sensibilidad: 'normal',
+        descripcion:
+          'Conteo en pantalla, importación Excel y ajustes por conteo físico. Requiere confirmación y queda registrado en auditorías.',
+        sensibilidad: 'elevada',
       },
       {
         clave: 'puedeMoverStockManualmente',
         etiqueta: 'Movimiento manual de stock',
         descripcion:
           'Registrar entradas manuales de mercadería. Sin este permiso, el stock solo se mueve con compras o conteos.',
-        sensibilidad: 'normal',
+        sensibilidad: 'elevada',
       },
       {
         clave: 'puedeRegistrarCompras',
@@ -111,7 +112,8 @@ export const GRUPOS_PERMISOS_OPERATIVOS: GrupoPermisosOperativos[] = [
       {
         clave: 'puedeRegistrarVentas',
         etiqueta: 'Registrar ventas',
-        descripcion: 'Confirmar ventas desde el centro de ventas.',
+        descripcion:
+          'Confirmar ventas en caja, devoluciones, emitir y anular cupones, escanear cupones al cobrar y ver o descargar cupones impresos.',
         sensibilidad: 'normal',
       },
       {
@@ -149,7 +151,8 @@ export const GRUPOS_PERMISOS_OPERATIVOS: GrupoPermisosOperativos[] = [
       {
         clave: 'puedeEditarConfiguracionSistema',
         etiqueta: 'Parámetros del sistema',
-        descripcion: 'Límites operativos y preferencias globales.',
+        descripcion:
+          'Límites operativos, preferencias globales y plantilla visual de cupones de descuento.',
         sensibilidad: 'elevada',
       },
     ],

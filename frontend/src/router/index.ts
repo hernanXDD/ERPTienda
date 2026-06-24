@@ -59,6 +59,16 @@ const router = createRouter({
               component: () => import('../paginas/ventas/PaginaCentroVentas.vue'),
             },
             {
+              path: 'devoluciones',
+              name: 'ventas-devoluciones',
+              component: () => import('../paginas/ventas/PaginaDevoluciones.vue'),
+            },
+            {
+              path: 'cupones',
+              name: 'ventas-cupones',
+              component: () => import('../paginas/ventas/PaginaCupones.vue'),
+            },
+            {
               path: 'historial',
               name: 'ventas-historial',
               component: () => import('../paginas/ventas/PaginaHistorialVentas.vue'),
@@ -138,6 +148,11 @@ const router = createRouter({
               path: 'panel',
               name: 'reportes-panel',
               component: () => import('../paginas/reportes/PaginaPanelReportes.vue'),
+            },
+            {
+              path: 'ventas-diario',
+              name: 'reportes-ventas-diario',
+              component: () => import('../paginas/reportes/PaginaReporteVentasDiario.vue'),
             },
             {
               path: 'ventas-periodo',

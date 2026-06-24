@@ -5,6 +5,7 @@ import { MENUS_LECTURA_VENTAS } from '../../comunes/permisos/menus-lectura';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
+import { IdEntidadPipe } from '../../comunes/pipes/id-entidad.pipe';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { RegistrarVentaDto } from './dto/registrar-venta.dto';
 import { CargarFacturacionesDto } from './dto/cargar-facturaciones.dto';
@@ -31,7 +32,7 @@ export class VentasController {
 
   @Get(':id')
   @RequiereAlgunoMenu(...MENUS_LECTURA_VENTAS)
-  async obtenerPorId(@Param('id') id: string) {
+  async obtenerPorId(@Param('id', IdEntidadPipe) id: string) {
     const venta = await this.ventasService.obtenerPorId(id);
     return respuestaOk(venta, 'Venta obtenida correctamente.');
   }

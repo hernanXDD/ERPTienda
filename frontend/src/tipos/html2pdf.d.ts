@@ -18,6 +18,7 @@ declare module 'html2pdf.js' {
     toPdf(): TrabajoHtml2Pdf;
     get(clave: string): Promise<unknown>;
     outputPdf(tipo?: string): Promise<Blob>;
+    save(): Promise<void>;
   }
 
   export default function html2pdf(): TrabajoHtml2Pdf;

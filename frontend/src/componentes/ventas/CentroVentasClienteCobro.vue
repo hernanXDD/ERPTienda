@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { TicketPercent } from 'lucide-vue-next';
 import { FORMAS_PAGO } from '../../datos/formasPago';
 import { usarCentroVentasContexto } from './centroVentasContexto';
+import { etiquetaValorDescuentoCupon } from '../../tipos/cuponDescuento';
 
 const {
+  cuponAplicado,
   textoBusquedaCliente,
   desplegableClienteAbierto,
   clienteId,
@@ -25,6 +28,8 @@ const {
   seleccionarConsumidorFinal,
   seleccionarClienteRegistrado,
   alEscribirDocumentoConsumidorFinal,
+  abrirModalEscanearCupon,
+  quitarCuponAplicado,
 } = usarCentroVentasContexto();
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
@@ -216,6 +221,23 @@ function alPegarDocumento(event: ClipboardEvent) {
           <p v-if="excedeCreditoCuentaCorriente" class="cv-credito-alerta">
             El total del ticket supera el crédito disponible del cliente.
           </p>
+        </div>
+
+        <div class="cv-cupon">
+          <button type="button" class="cv-btn-cupon" @click="abrirModalEscanearCupon">
+            <TicketPercent :size="16" stroke-width="2" aria-hidden="true" />
+            Escanear cupón
+          </button>
+
+          <div v-if="cuponAplicado" class="cv-cupon-aplicado" role="status">
+            <span class="cv-cupon-aplicado-texto">
+              Cupón <strong>{{ cuponAplicado.numero }}</strong>
+              · {{ etiquetaValorDescuentoCupon(cuponAplicado) }} de descuento
+            </span>
+            <button type="button" class="cv-cupon-quitar" @click="quitarCuponAplicado">
+              Quitar
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -424,6 +446,78 @@ function alPegarDocumento(event: ClipboardEvent) {
   font-size: 0.72rem;
   line-height: 1.35;
   color: var(--color-peligro);
+}
+
+.cv-cupon {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+
+.cv-btn-cupon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--color-acento-borde);
+  border-radius: var(--radio-control);
+  background: var(--color-acento-suave);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.cv-btn-cupon:hover {
+  background: var(--color-hover-neutro);
+}
+
+.cv-cupon-aplicado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radio-control);
+  border: 1px solid var(--color-acento-borde);
+  background: var(--color-acento-suave);
+}
+
+.cv-cupon-aplicado-texto {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--color-texto-suave);
+}
+
+.cv-cupon-aplicado-texto strong {
+  color: var(--color-texto);
+}
+
+.cv-cupon-quitar {
+  flex-shrink: 0;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--color-borde);
+  border-radius: calc(var(--radio-control) - 2px);
+  background: var(--color-fondo-cabecera);
+  color: var(--color-texto-suave);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cv-cupon-quitar:hover {
+  color: var(--color-texto);
+  background: var(--color-hover-neutro);
 }
 
 @media (min-width: 901px) {

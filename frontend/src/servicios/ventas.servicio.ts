@@ -36,6 +36,7 @@ export interface DatosRegistrarVentaApi {
   ajustePorcentaje?: number | null;
   lineas: LineaVentaRegistro[];
   observaciones: string;
+  cuponDescuentoId?: string | null;
 }
 
 export async function listarVentasApi(): Promise<VentaRegistradaApi[]> {
@@ -54,6 +55,7 @@ export async function registrarVentaApi(datos: DatosRegistrarVentaApi): Promise<
     ajustePorcentaje: datos.ajustePorcentaje ?? null,
     lineas: datos.lineas,
     observaciones: datos.observaciones.trim(),
+    cuponDescuentoId: datos.cuponDescuentoId ?? null,
   });
   return data.datos;
 }

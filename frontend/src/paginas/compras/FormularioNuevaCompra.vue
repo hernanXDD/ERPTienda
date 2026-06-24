@@ -22,6 +22,7 @@ import { useCuentaCorrienteProveedorStore } from '../../stores/cuentaCorrientePr
 import { useProveedoresStore } from '../../stores/proveedores';
 import { useRegistroComprasStore } from '../../stores/registroCompras';
 import { useStockStore } from '../../stores/stock';
+import { calcularCreditoDisponible } from '../../utilidades/cuentaCorriente';
 import { PackagePlus, Search } from 'lucide-vue-next';
 
 const emit = defineEmits<{
@@ -396,7 +397,7 @@ const creditoDisponibleProveedor = computed(() => {
   const p = proveedorSeleccionado.value;
   if (!p) return 0;
   const saldo = cuentaCorrienteProveedorStore.saldoProveedorCacheado(p.id);
-  return p.limiteCreditoCompras - saldo;
+  return calcularCreditoDisponible(p.limiteCreditoCompras, saldo);
 });
 
 const excedeCreditoCuentaProveedor = computed(() => {
@@ -459,7 +460,7 @@ async function guardar() {
       return;
     }
     if (excedeCreditoCuentaProveedor.value) {
-      mensajeError.value = `La compra supera el crédito disponible (${formatoPeso.format(Math.max(0, creditoDisponibleProveedor.value))}).`;
+      mensajeError.value = `La compra supera el crédito disponible (${formatoPeso.format(creditoDisponibleProveedor.value)}).`;
       return;
     }
   }
@@ -528,7 +529,7 @@ function cancelar() {
       </div>
       <p v-if="condicionCompra === 'CUENTA_PROVEEDOR' && proveedorSeleccionado" class="fnc-aviso">
         Crédito disponible:
-        <strong>{{ formatoPeso.format(Math.max(0, creditoDisponibleProveedor)) }}</strong>
+        <strong>{{ formatoPeso.format(creditoDisponibleProveedor) }}</strong>
         <span v-if="proveedorSeleccionado.limiteCreditoCompras <= 0"> (sin límite configurado)</span>
       </p>
       <p v-else-if="!puedeCuentaProveedor && proveedorSeleccionadoId" class="fnc-aviso">

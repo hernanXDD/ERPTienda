@@ -191,4 +191,38 @@ export class IdSecuenciaService {
     }
     return ids;
   }
+
+  siguienteDevolucion(cliente: ClienteTransaccion = this.prisma) {
+    return obtenerSiguienteIdEntidad(async () => {
+      const fila = await cliente.devolucion.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true },
+      });
+      return fila?.id ?? null;
+    });
+  }
+
+  async siguientesDevolucionLinea(cantidad: number, cliente: ClienteTransaccion = this.prisma) {
+    const ultimo = await cliente.devolucionLinea.findFirst({
+      orderBy: { id: 'desc' },
+      select: { id: true },
+    });
+    let base = ultimo ? parseInt(ultimo.id, 10) : 0;
+    const ids: string[] = [];
+    for (let i = 0; i < cantidad; i += 1) {
+      base += 1;
+      ids.push(String(base).padStart(6, '0'));
+    }
+    return ids;
+  }
+
+  siguienteCuponDescuento(cliente: ClienteTransaccion = this.prisma) {
+    return obtenerSiguienteIdEntidad(async () => {
+      const fila = await cliente.cuponDescuento.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true },
+      });
+      return fila?.id ?? null;
+    });
+  }
 }

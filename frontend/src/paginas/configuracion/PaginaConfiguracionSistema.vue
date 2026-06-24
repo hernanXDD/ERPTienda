@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { CalendarClock, Package, Settings, Wallet } from 'lucide-vue-next';
+import { CalendarClock, Package, Settings, Tag, Undo2, Wallet } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, ref } from 'vue';
 import {
   normalizarConfiguracionSistemaEditable,
   normalizarDiasDeudaCuentaCorriente,
+  normalizarDiasPlazoDevolucion,
   normalizarPorcentajeGananciaSugerida,
   normalizarStockMinimoAlerta,
 } from '../../modulos/configuracion/normalizarConfiguracionSistema';
@@ -13,6 +14,7 @@ import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema'
 import type { ConfiguracionSistemaEditable } from '../../tipos/configuracionSistema';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
+import SelectorPlantillaCupon from '../../componentes/configuracion/SelectorPlantillaCupon.vue';
 import '../../estilos/formularioConfiguracion.css';
 
 const descripcionPagina = obtenerDescripcionPagina('configuracion-sistema');
@@ -32,16 +34,9 @@ const modoEdicion = ref(false);
 const mensajeExito = ref('');
 const mensajeError = ref('');
 
-const vistaPreviaResumen = computed(() => {
-  const normalizado = normalizarConfiguracionSistemaEditable(borrador.value);
-  return {
-    max: normalizado.maximoCuentaCorriente,
-    pct: normalizado.porcentajeGananciaSugerida,
-    dias: normalizado.diasDeudaCuentaCorriente,
-    stock: normalizado.stockMinimoAlerta,
-    movimientoManual: normalizado.movimientoManualStockHabilitado,
-  };
-});
+const porcentajeGananciaEjemplo = computed(() =>
+  normalizarPorcentajeGananciaSugerida(borrador.value.porcentajeGananciaSugerida),
+);
 
 onMounted(async () => {
   mensajeExito.value = '';
@@ -77,6 +72,10 @@ function alPerderFocoDias(): void {
   );
 }
 
+function alPerderFocoDiasDevolucion(): void {
+  borrador.value.diasPlazoDevolucion = normalizarDiasPlazoDevolucion(borrador.value.diasPlazoDevolucion);
+}
+
 function alPerderFocoStockMinimo(): void {
   borrador.value.stockMinimoAlerta = normalizarStockMinimoAlerta(borrador.value.stockMinimoAlerta);
 }
@@ -105,6 +104,7 @@ async function guardarConfiguracion(): Promise<void> {
   alPerderFocoMaximo();
   alPerderFocoPorcentaje();
   alPerderFocoDias();
+  alPerderFocoDiasDevolucion();
   alPerderFocoStockMinimo();
 
   const datos = normalizarConfiguracionSistemaEditable(borrador.value);
@@ -140,68 +140,18 @@ async function guardarConfiguracion(): Promise<void> {
             </div>
           </div>
         </div>
-        <div class="pg-kpis" aria-label="Resumen de parámetros">
-          <div class="pg-kpi pg-kpi--acento">
-            <span class="pg-kpi-etiq">Máx. CC</span>
-            <span class="pg-kpi-valor pg-mono">
-              $ {{ vistaPreviaResumen.max.toLocaleString('es-AR') }}
-            </span>
-          </div>
-          <div class="pg-kpi">
-            <span class="pg-kpi-etiq">Ganancia sugerida</span>
-            <span class="pg-kpi-valor pg-mono">+{{ vistaPreviaResumen.pct }} %</span>
-          </div>
-          <div class="pg-kpi">
-            <span class="pg-kpi-etiq">Días deuda</span>
-            <span class="pg-kpi-valor pg-mono">{{ vistaPreviaResumen.dias }}</span>
-          </div>
-          <div class="pg-kpi">
-            <span class="pg-kpi-etiq">Stock mínimo</span>
-            <span class="pg-kpi-valor pg-mono">{{ vistaPreviaResumen.stock }}</span>
-          </div>
-          <div class="pg-kpi">
-            <span class="pg-kpi-etiq">Entrada manual</span>
-            <span class="pg-kpi-valor">
-              {{ vistaPreviaResumen.movimientoManual ? 'Habilitada' : 'Deshabilitada' }}
-            </span>
-          </div>
-        </div>
       </header>
 
       <form id="form-config-sistema" @submit.prevent="manejarAccionPie">
-        <div class="pg-barra">
-          <div class="pg-barra-fila">
-            <div class="pg-barra-col pg-barra-col--accion">
-              <span class="pg-filtro-etiq pg-sr">Acción</span>
-              <button
-                v-if="puedeEditarConfiguracionSistema"
-                type="submit"
-                class="pg-btn-primario"
-                :disabled="guardando || cargandoInicial"
-              >
-                {{
-                  guardando
-                    ? 'Guardando…'
-                    : modoEdicion
-                      ? 'Guardar configuración'
-                      : 'Editar configuración'
-                }}
-              </button>
-            </div>
-          </div>
-          <p v-if="mensajeExito" class="perm-aviso perm-aviso--ok" role="status">
-            {{ mensajeExito }}
-          </p>
-          <p v-if="mensajeError" class="perm-aviso perm-aviso--error" role="alert">
-            {{ mensajeError }}
-          </p>
-        </div>
-
-        <div v-if="!cargandoInicial" class="perm-ficha" aria-label="Estado de la configuración">
+        <div
+          v-if="!cargandoInicial"
+          class="perm-ficha perm-ficha--con-accion"
+          aria-label="Estado de la configuración"
+        >
           <div class="perm-ficha-ident">
             <p class="perm-ficha-nombre">Preferencias operativas del negocio</p>
             <p class="perm-ficha-login">
-              Cuentas corrientes, alertas de stock y márgenes sugeridos en catálogo.
+              Cuentas corrientes, devoluciones, cupones, alertas de stock y márgenes sugeridos en catálogo.
             </p>
           </div>
           <div class="perm-ficha-chips">
@@ -209,6 +159,26 @@ async function guardarConfiguracion(): Promise<void> {
             <span v-if="modoEdicion" class="perm-chip perm-chip--edicion">Modo edición</span>
             <span v-else class="perm-chip">Solo lectura</span>
           </div>
+          <div v-if="puedeEditarConfiguracionSistema" class="perm-ficha-accion">
+            <button type="submit" class="pg-btn-primario" :disabled="guardando || cargandoInicial">
+              {{
+                guardando
+                  ? 'Guardando…'
+                  : modoEdicion
+                    ? 'Guardar configuración'
+                    : 'Editar configuración'
+              }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="mensajeExito || mensajeError" class="perm-avisos-barra">
+          <p v-if="mensajeExito" class="perm-aviso perm-aviso--ok" role="status">
+            {{ mensajeExito }}
+          </p>
+          <p v-if="mensajeError" class="perm-aviso perm-aviso--error" role="alert">
+            {{ mensajeError }}
+          </p>
         </div>
 
         <div v-if="cargandoInicial" class="cfg-ficha-carga" role="status">
@@ -274,6 +244,42 @@ async function guardarConfiguracion(): Promise<void> {
                         placeholder="30"
                         :disabled="!modoEdicion || guardando"
                         @blur="alPerderFocoDias"
+                      />
+                      <span class="cfg-ficha-inp-sufijo" aria-hidden="true">días</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="perm-bloque" aria-labelledby="cfg-sys-sec-devoluciones">
+                <header class="perm-bloque-enc">
+                  <span class="perm-bloque-ico" aria-hidden="true">
+                    <Undo2 :size="16" stroke-width="2" />
+                  </span>
+                  <h2 id="cfg-sys-sec-devoluciones" class="perm-bloque-tit">Devoluciones</h2>
+                </header>
+                <div class="perm-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--vertical">
+                  <div class="cfg-ficha-campo">
+                    <label class="cfg-ficha-etiq" for="cfg-dias-devolucion">
+                      Plazo para aceptar devoluciones
+                    </label>
+                    <p class="cfg-ficha-ayuda">
+                      Cantidad de días desde la venta. Pasado ese plazo no se podrá registrar una
+                      devolución en el módulo de Ventas.
+                    </p>
+                    <div class="cfg-ficha-inp-grupo cfg-ficha-inp-grupo--corto">
+                      <input
+                        id="cfg-dias-devolucion"
+                        v-model.number="borrador.diasPlazoDevolucion"
+                        type="number"
+                        class="cfg-ficha-inp cfg-ficha-inp-mono cfg-ficha-inp--sufijo"
+                        min="1"
+                        max="365"
+                        step="1"
+                        inputmode="numeric"
+                        placeholder="30"
+                        :disabled="!modoEdicion || guardando"
+                        @blur="alPerderFocoDiasDevolucion"
                       />
                       <span class="cfg-ficha-inp-sufijo" aria-hidden="true">días</span>
                     </div>
@@ -389,14 +395,37 @@ async function guardarConfiguracion(): Promise<void> {
                       stroke-width="2"
                     />
                     <p class="cfg-ficha-nota-txt">
-                      Ejemplo con costo $ 10.000 y {{ vistaPreviaResumen.pct }} % de ganancia:
+                      Ejemplo con costo $ 10.000 y {{ porcentajeGananciaEjemplo }} % de ganancia:
                       precio sugerido $
                       {{
-                        Math.round(10_000 * (1 + vistaPreviaResumen.pct / 100)).toLocaleString(
+                        Math.round(10_000 * (1 + porcentajeGananciaEjemplo / 100)).toLocaleString(
                           'es-AR',
                         )
                       }}.
                     </p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="perm-bloque perm-bloque--ancho" aria-labelledby="cfg-sys-sec-cupones">
+                <header class="perm-bloque-enc">
+                  <span class="perm-bloque-ico" aria-hidden="true">
+                    <Tag :size="16" stroke-width="2" />
+                  </span>
+                  <h2 id="cfg-sys-sec-cupones" class="perm-bloque-tit">Cupones de descuento</h2>
+                </header>
+                <div class="perm-bloque-cuerpo cfg-ficha-grid cfg-ficha-grid--vertical">
+                  <div class="cfg-ficha-campo cfg-ficha-campo--ancho">
+                    <p class="cfg-ficha-etiq">Plantilla del cupón</p>
+                    <p class="cfg-ficha-ayuda">
+                      Elegí el diseño que verán los clientes al imprimir o compartir un cupón. Siempre
+                      se usan el logo y los colores configurados en
+                      <strong>Configuración del negocio</strong>.
+                    </p>
+                    <SelectorPlantillaCupon
+                      v-model="borrador.plantillaCupon"
+                      :deshabilitado="!modoEdicion || guardando"
+                    />
                   </div>
                 </div>
               </section>

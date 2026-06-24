@@ -184,7 +184,7 @@ function alCerrarDialogoRegistrar() {
         No hay compras que coincidan con los filtros.
       </p>
 
-      <div class="rcp-tabla-scroll--escritorio">
+      <div class="pg-tabla-scroll rcp-tabla-scroll rcp-tabla-scroll--escritorio">
         <table class="pg-tabla pg-tabla--estado">
           <thead>
             <tr>
@@ -284,6 +284,10 @@ function alCerrarDialogoRegistrar() {
 </template>
 
 <style scoped>
+.rcp-tabla-scroll {
+  --pg-cap-de-filas: 10;
+}
+
 .rcp {
   display: flex;
   flex-direction: column;
@@ -406,33 +410,10 @@ function alCerrarDialogoRegistrar() {
 }
 
 .pg-tabla-cuerpo {
-  overflow-x: auto;
+  overflow: visible;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-control);
   background: var(--color-fondo-elevado);
-}
-
-.pg-tabla pg-tabla--estado {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.pg-tabla pg-tabla--estado th,
-.pg-tabla pg-tabla--estado td {
-  padding: 0.55rem 0.7rem;
-  text-align: left;
-  border-bottom: 1px solid var(--color-borde);
-  vertical-align: middle;
-}
-
-.pg-tabla pg-tabla--estado thead th {
-  font-weight: 600;
-  color: var(--color-texto-suave);
-  background: var(--color-fondo-cabecera);
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .rcp-der {
@@ -751,14 +732,22 @@ function alCerrarDialogoRegistrar() {
 
 @media (max-width: 900px) {
   .pg-tabla-cuerpo {
-    overflow-x: visible;
+    overflow: visible;
   }
 
   .rcp-tabla-scroll--escritorio {
     display: none;
   }
 
-  .rcp-compra-lista,
+  .rcp-compra-lista {
+    display: flex;
+    max-height: min(
+      calc(var(--pg-altura-cap-cab-tabla, 0px) + 10 * 7.35rem),
+      calc(100dvh - var(--pg-reserva-vertical-vista, 14rem))
+    );
+    overflow-y: auto;
+  }
+
   .rcp-compra-vacio {
     display: flex;
   }

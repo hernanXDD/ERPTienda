@@ -1,0 +1,30 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc rep-doc--cupon rep-doc--cupon-clasica">
+  <div class="cup-vale">
+    <header class="cup-vale-cab" aria-label="Negocio">
+      <% if (it.tieneLogoImagen) { %>
+      <img class="cup-vale-logo" src="<%~ it.negocioLogoDataUrl %>" alt="" />
+      <% } else { %>
+      <span class="cup-vale-ini" aria-hidden="true"><%= it.negocioIniciales %></span>
+      <% } %>
+      <p class="cup-vale-nom"><%= it.negocioNombre %></p>
+    </header>
+    <div class="cup-vale-cuerpo" aria-label="Beneficio del cupón">
+      <div class="cup-vale-benef">
+        <strong class="cup-vale-val"><%= it.valorDescuento %></strong>
+        <span class="cup-vale-tipo"><%= it.tipoDescuentoLegible %></span>
+      </div>
+      <p class="cup-vale-meta">
+        <span class="cup-vale-meta-txt" title="<%= it.nombreCliente %>"><%= it.nombreCliente %></span>
+        <span class="cup-vale-sep" aria-hidden="true">·</span>
+        <span>Vence <%= it.fechaVencimiento %></span>
+        <span class="cup-vale-sep" aria-hidden="true">·</span>
+        <span><%= it.numeroCupon %></span>
+      </p>
+    </div>
+    <footer class="cup-vale-scan" aria-label="Código para escanear">
+      <div class="cup-vale-barcode"><%~ it.codigoBarrasSvg %></div>
+      <code class="cup-vale-cod"><%= it.codigoCupon %></code>
+    </footer>
+  </div>
+</article>

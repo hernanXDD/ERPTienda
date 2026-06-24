@@ -7,7 +7,7 @@
     <% } %>
   </div>
   <div class="rep-emisor-cuerpo">
-    <p class="rep-emisor-etiq">Reporte</p>
+    <p class="rep-emisor-etiq"><%= it.etiquetaTipoDocumento || 'Reporte' %></p>
     <h1 class="rep-emisor-reporte"><%= it.tituloReporte %></h1>
     <div class="rep-emisor-resumen">
       <% if (it.tieneCuit) { %><span class="rep-emisor-cuit">CUIT <%= it.negocioCuit %></span><% } %>

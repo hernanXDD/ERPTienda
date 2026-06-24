@@ -1,0 +1,51 @@
+<style><%~ it.estilos %></style>
+<article class="rep-doc">
+  <!-- PIE_REPORTE -->
+  <header class="rep-enc-pro">
+    <!-- EMISOR_REPORTE -->
+    <div class="rep-doc-meta">
+      <div class="rep-meta-grid">
+        <div class="rep-meta-item"><strong>Día</strong><span><%= it.rangoLegible %></span></div>
+        <% if (it.filtroEntidadLegible) { %><div class="rep-meta-item"><strong>Cliente</strong><span><%= it.filtroEntidadLegible %></span></div><% } %>
+        <% if (it.filtroEstadoFacturacionLegible) { %><div class="rep-meta-item"><strong>Estado fact.</strong><span><%= it.filtroEstadoFacturacionLegible %></span></div><% } %>
+      </div>
+    </div>
+  </header>
+
+  <div class="rep-kpis">
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Total vendido</span><span class="rep-kpi-val"><%= it.totalVentas %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Operaciones</span><span class="rep-kpi-val"><%= it.cantidadOperaciones %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Ticket promedio</span><span class="rep-kpi-val"><%= it.ticketPromedio %></span></div>
+    <div class="rep-kpi"><span class="rep-kpi-etiq">Unidades</span><span class="rep-kpi-val"><%= it.unidadesVendidas %></span></div>
+  </div>
+
+  <% if (it.sinVentas) { %>
+  <p class="rep-vacio">No hay ventas registradas en el día seleccionado.</p>
+  <% } else { %>
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Ventas del día</h2>
+    <table class="rep-tabla">
+      <thead><tr><th>Nº</th><th>Hora</th><th>Cliente</th><th>Forma de pago</th><th>Estado fact.</th><th>N° factura</th><th class="der">Total</th></tr></thead>
+      <tbody>
+      <% it.filasVentas.forEach(function (v) { %>
+        <tr><td><%= v.numero %></td><td><%= v.hora %></td><td><%= v.cliente %></td><td><%= v.formaPago %></td><td><%= v.estadoFacturacion %></td><td><%= v.facturacion %></td><td class="der"><%= v.total %></td></tr>
+      <% }) %>
+      </tbody>
+      <tfoot><tr><td colspan="6">Total del día</td><td class="der"><%= it.totalVentas %></td></tr></tfoot>
+    </table>
+  </section>
+
+  <section class="rep-seccion">
+    <h2 class="rep-seccion-tit">Resumen · desglose por forma de pago</h2>
+    <table class="rep-tabla">
+      <thead><tr><th>Forma de pago</th><th class="der">Operaciones</th><th class="der">Importe</th><th class="der">%</th></tr></thead>
+      <tbody>
+      <% it.filasFormaPago.forEach(function (f) { %>
+        <tr><td><%= f.etiqueta %></td><td class="der"><%= f.cantidad %></td><td class="der"><%= f.importe %></td><td class="der"><%= f.porcentaje %></td></tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </section>
+  <% } %>
+
+</article>

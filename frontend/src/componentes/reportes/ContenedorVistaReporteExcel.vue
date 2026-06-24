@@ -14,8 +14,10 @@ const props = withDefaults(
     errorFiltro?: string;
     mostrarFiltroCliente?: boolean;
     mostrarFiltroProveedor?: boolean;
+    mostrarFiltroEstadoFacturacion?: boolean;
     opcionesCliente?: OpcionEntidadReporte[];
     opcionesProveedor?: OpcionEntidadReporte[];
+    opcionesEstadoFacturacion?: OpcionEntidadReporte[];
     hayDatos: boolean;
     mensajeVacio?: string;
     resumen?: string;
@@ -24,8 +26,10 @@ const props = withDefaults(
   {
     mostrarFiltroCliente: false,
     mostrarFiltroProveedor: false,
+    mostrarFiltroEstadoFacturacion: false,
     opcionesCliente: () => [],
     opcionesProveedor: () => [],
+    opcionesEstadoFacturacion: () => [],
     mensajeVacio: 'Ajustá el rango de fechas y pulsá «Actualizar».',
     exportando: false,
   },
@@ -92,8 +96,10 @@ defineExpose({ registrarErrorExportacion });
         :error-mensaje="errorFiltro"
         :mostrar-filtro-cliente="mostrarFiltroCliente"
         :mostrar-filtro-proveedor="mostrarFiltroProveedor"
+        :mostrar-filtro-estado-facturacion="mostrarFiltroEstadoFacturacion"
         :opciones-cliente="opcionesCliente"
         :opciones-proveedor="opcionesProveedor"
+        :opciones-estado-facturacion="opcionesEstadoFacturacion"
         @actualizar="emit('actualizar')"
       />
 

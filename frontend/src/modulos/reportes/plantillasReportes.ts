@@ -6,10 +6,12 @@ import plantillaMovimientosStock from './plantillas/movimientos-stock.eta?raw';
 import plantillaProductosMasVendidos from './plantillas/productos-mas-vendidos.eta?raw';
 import plantillaStockCritico from './plantillas/stock-critico.eta?raw';
 import plantillaStockValorizado from './plantillas/stock-valorizado.eta?raw';
+import plantillaVentasDiario from './plantillas/ventas-diario.eta?raw';
 import plantillaVentasPeriodo from './plantillas/ventas-periodo.eta?raw';
 import plantillaVentasPorCategoria from './plantillas/ventas-por-categoria.eta?raw';
 
 export const plantillasReportes = {
+  'ventas-diario': plantillaVentasDiario,
   'ventas-periodo': plantillaVentasPeriodo,
   'stock-critico': plantillaStockCritico,
   'stock-valorizado': plantillaStockValorizado,

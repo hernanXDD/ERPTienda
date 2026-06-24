@@ -2,11 +2,14 @@
 import { provide } from 'vue';
 import { CLAVE_CENTRO_VENTAS, useCentroVentas } from '../../composables/useCentroVentas';
 import CentroVentasCabecera from '../../componentes/ventas/CentroVentasCabecera.vue';
+import CentroVentasOnboarding from '../../componentes/ventas/CentroVentasOnboarding.vue';
 import CentroVentasClienteCobro from '../../componentes/ventas/CentroVentasClienteCobro.vue';
 import CentroVentasIngreso from '../../componentes/ventas/CentroVentasIngreso.vue';
 import CentroVentasLineas from '../../componentes/ventas/CentroVentasLineas.vue';
 import CentroVentasTotales from '../../componentes/ventas/CentroVentasTotales.vue';
+import CentroVentasPieMobile from '../../componentes/ventas/CentroVentasPieMobile.vue';
 import CentroVentasExitoVenta from '../../componentes/ventas/CentroVentasExitoVenta.vue';
+import ModalEscanearCupon from '../../componentes/ventas/ModalEscanearCupon.vue';
 
 const centroVentas = useCentroVentas();
 provide(CLAVE_CENTRO_VENTAS, centroVentas);
@@ -18,6 +21,7 @@ const { mensajeToast } = centroVentas;
   <section class="pg-wrap pg-wrap--centro-ventas" aria-labelledby="titulo-centro-ventas">
     <div class="pg-marco pg-marco--centro-ventas">
       <CentroVentasCabecera />
+      <CentroVentasOnboarding />
 
       <div class="centro-ventas cv">
         <CentroVentasClienteCobro />
@@ -28,6 +32,7 @@ const { mensajeToast } = centroVentas;
         </div>
 
         <CentroVentasTotales />
+        <CentroVentasPieMobile />
 
         <Transition name="cv-toast">
           <div v-if="mensajeToast" class="cv-toast" role="status" aria-live="polite">
@@ -36,6 +41,7 @@ const { mensajeToast } = centroVentas;
         </Transition>
 
         <CentroVentasExitoVenta />
+        <ModalEscanearCupon />
       </div>
     </div>
   </section>
@@ -78,20 +84,13 @@ const { mensajeToast } = centroVentas;
   overflow: hidden;
 }
 
-@media (min-width: 900px) {
-  .cv-cuerpo {
-    flex-direction: row;
-  }
+.cv-cuerpo :deep(.cv-ingreso) {
+  flex-shrink: 0;
+}
 
-  .cv-cuerpo :deep(.cv-ingreso) {
-    flex: 0 0 min(22rem, 32%);
-    max-width: 22rem;
-    overflow: auto;
-  }
-
-  .cv-cuerpo :deep(.cv-lineas) {
-    flex: 1;
-  }
+.cv-cuerpo :deep(.cv-lineas) {
+  flex: 1;
+  min-height: 0;
 }
 
 .cv-toast {
@@ -124,6 +123,16 @@ const { mensajeToast } = centroVentas;
 .cv-toast-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(0.5rem);
+}
+
+@media (max-width: 900px) {
+  .pg-wrap--centro-ventas {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .cv-toast {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (min-width: 901px) {

@@ -16,7 +16,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:seed:demo": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node prisma/semilla-demo.ts",
+    "db:seed:demo": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/semilla-demo.ts",
     "db:reset": "prisma migrate reset --force",
     "prisma:migrate": "prisma migrate dev"
   },

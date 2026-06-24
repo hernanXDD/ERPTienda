@@ -16,9 +16,28 @@ import {
 } from '../modulos/ventas/ajusteTicketVentas';
 import { usePermisosOperador } from './usePermisosOperador';
 import { useEsMovil } from './useEsMovil';
+import { useSesionStore } from '../stores/sesion';
 import { notificarError } from '../utilidades/notificacion';
+import { calcularCreditoDisponible } from '../utilidades/cuentaCorriente';
 import { mensajeErrorHttp } from '../servicios/apiUtil';
 import { useCuentaCorrienteStore } from '../stores/cuentaCorriente';
+import {
+  mapearCuponDescuentoApi,
+  validarCuponCodigoApi,
+} from '../servicios/cuponesDescuento.servicio';
+import type { CuponDescuentoRegistrado } from '../tipos/cuponDescuento';
+import {
+  calcularAjusteCuponEnTicket,
+  etiquetaValorDescuentoCupon,
+  mensajeCuponAplicado,
+} from '../tipos/cuponDescuento';
+import {
+  clasificarErrorCuponEscaneo,
+  type ErrorCuponEscaneo,
+  type TipoErrorCuponEscaneo,
+} from '../modulos/postventa/mensajesErrorPostventa';
+
+export type { ErrorCuponEscaneo, TipoErrorCuponEscaneo };
 
 export interface LineaTicketCentroVentas {
   varianteId: string;
@@ -38,12 +57,51 @@ export type ModoIngresoCentroVentas = 'LECTOR' | 'NOMBRE';
 
 export const ETIQUETA_CONSUMIDOR_FINAL = 'Consumidor final';
 
+function clavePreferenciaCentroVentas(usuarioId: string, sufijo: string): string {
+  return `erp-centro-ventas-${sufijo}-${usuarioId}`;
+}
+
+function leerModoIngresoPreferido(usuarioId: string): ModoIngresoCentroVentas | null {
+  try {
+    const raw = localStorage.getItem(clavePreferenciaCentroVentas(usuarioId, 'modo-ingreso'));
+    if (raw === 'LECTOR' || raw === 'NOMBRE') return raw;
+  } catch {
+    /* almacenamiento no disponible */
+  }
+  return null;
+}
+
+function guardarModoIngresoPreferido(usuarioId: string, modo: ModoIngresoCentroVentas) {
+  try {
+    localStorage.setItem(clavePreferenciaCentroVentas(usuarioId, 'modo-ingreso'), modo);
+  } catch {
+    /* almacenamiento no disponible */
+  }
+}
+
+function leerOnboardingVisto(usuarioId: string): boolean {
+  try {
+    return localStorage.getItem(clavePreferenciaCentroVentas(usuarioId, 'onboarding-visto')) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function guardarOnboardingVisto(usuarioId: string) {
+  try {
+    localStorage.setItem(clavePreferenciaCentroVentas(usuarioId, 'onboarding-visto'), '1');
+  } catch {
+    /* almacenamiento no disponible */
+  }
+}
+
 export function useCentroVentas() {
   const catalogo = useCatalogoStore();
   const clientesStore = useClientesStore();
   const ventasStore = useVentasStore();
   const stockStore = useStockStore();
   const cuentaCorrienteStore = useCuentaCorrienteStore();
+  const sesionStore = useSesionStore();
   const { tienePermiso } = usePermisosOperador();
   const esMovil = useEsMovil();
   const { variantes } = storeToRefs(catalogo);
@@ -54,6 +112,11 @@ export function useCentroVentas() {
 
   const modoProducto = ref<ModoIngresoCentroVentas>('LECTOR');
   const codigoLector = ref('');
+  const codigoCuponEscaneo = ref('');
+  const cuponAplicado = ref<CuponDescuentoRegistrado | null>(null);
+  const validandoCupon = ref(false);
+  const modalEscanearCuponAbierto = ref(false);
+  const errorEscanearCupon = ref<ErrorCuponEscaneo | null>(null);
   const busquedaNombre = ref('');
   const varianteSeleccionadaId = ref<string | null>(null);
   const textoBusquedaCliente = ref('');
@@ -70,7 +133,10 @@ export function useCentroVentas() {
   const mensajeToast = ref('');
   const ventaConfirmada = ref<VentaRegistrada | null>(null);
   const confirmandoVenta = ref(false);
+  const mostrarOnboarding = ref(false);
   let idToast: ReturnType<typeof setTimeout> | null = null;
+
+  const usuarioId = computed(() => sesionStore.usuario?.id ?? 'anon');
 
   function mostrarToast(texto: string, duracion = 3200) {
     mensajeToast.value = texto;
@@ -112,11 +178,45 @@ export function useCentroVentas() {
     return trozos.some((t) => t.includes(q));
   }
 
+  function varianteTieneStock(varianteId: string): boolean {
+    return stockStore.cantidadActual(varianteId) > 0;
+  }
+
+  function cantidadEnTicket(varianteId: string): number {
+    return lineas.value.find((l) => l.varianteId === varianteId)?.cantidad ?? 0;
+  }
+
+  function stockRestanteParaVariante(varianteId: string): number {
+    return Math.max(0, stockStore.cantidadActual(varianteId) - cantidadEnTicket(varianteId));
+  }
+
+  function avisarStockInsuficiente(varianteId: string) {
+    const restante = stockRestanteParaVariante(varianteId);
+    const stockTotal = stockStore.cantidadActual(varianteId);
+    if (stockTotal <= 0) {
+      mostrarToast('No hay stock disponible para este artículo.', 4000);
+      return;
+    }
+    mostrarToast(
+      `Stock insuficiente. Podés agregar ${restante} unidad${restante === 1 ? '' : 'es'} más.`,
+      4200,
+    );
+  }
+
+  function puedeIncrementarCantidadEnTicket(varianteId: string, delta: number): boolean {
+    if (delta <= 0) return true;
+    const linea = lineas.value.find((l) => l.varianteId === varianteId);
+    const cantidadNueva = (linea?.cantidad ?? 0) + delta;
+    if (cantidadNueva <= stockStore.cantidadActual(varianteId)) return true;
+    avisarStockInsuficiente(varianteId);
+    return false;
+  }
+
   const resultadosVariante = computed(() => {
     const q = busquedaNombre.value.trim();
     if (!q) return [];
     return [...filasVarianteActivas.value]
-      .filter((f) => coincideBusquedaVariante(f, q))
+      .filter((f) => coincideBusquedaVariante(f, q) && varianteTieneStock(f.variante.id))
       .sort((a, b) => a.nombreLinea.localeCompare(b.nombreLinea, 'es', { sensitivity: 'base' }));
   });
 
@@ -181,15 +281,32 @@ export function useCentroVentas() {
     ),
   );
 
-  const ajusteMontoTicket = computed(() => ajusteTicketCalculado.value.ajusteMonto);
+  const ajusteCuponCalculado = computed(() => {
+    if (!cuponAplicado.value) return null;
+    return calcularAjusteCuponEnTicket(cuponAplicado.value, subtotalTicket.value);
+  });
 
-  const porcentajeAjusteTicket = computed(() => ajusteTicketCalculado.value.porcentaje);
+  const ajusteMontoTicket = computed(() => {
+    if (ajusteCuponCalculado.value) return ajusteCuponCalculado.value.ajusteMonto;
+    return ajusteTicketCalculado.value.ajusteMonto;
+  });
+
+  const porcentajeAjusteTicket = computed(() => {
+    if (ajusteCuponCalculado.value) return ajusteCuponCalculado.value.ajustePorcentaje;
+    return ajusteTicketCalculado.value.porcentaje;
+  });
 
   const totalTicket = computed(() => Math.max(0, subtotalTicket.value + ajusteMontoTicket.value));
 
-  const etiquetaAjusteTicketActivo = computed(() =>
-    etiquetaAjustePorcentaje(tipoAjusteTicket.value, porcentajeAjusteTicket.value),
-  );
+  const etiquetaAjusteTicketActivo = computed(() => {
+    if (cuponAplicado.value) {
+      const valor = etiquetaValorDescuentoCupon(cuponAplicado.value);
+      return cuponAplicado.value.tipoDescuento === 'monto_fijo'
+        ? `Descuento cupón ${valor}`
+        : `Descuento cupón ${valor}`;
+    }
+    return etiquetaAjustePorcentaje(tipoAjusteTicket.value, porcentajeAjusteTicket.value);
+  });
 
   const montoAjusteTicketAbsoluto = computed(() => Math.abs(ajusteMontoTicket.value));
 
@@ -233,7 +350,7 @@ export function useCentroVentas() {
     const limite = c.limiteCompraCuentaCorriente;
     if (limite <= 0) return null;
     const saldo = cuentaCorrienteStore.saldoClienteCacheado(c.id);
-    return limite - saldo;
+    return calcularCreditoDisponible(limite, saldo);
   });
 
   const tieneLimiteCuentaCorriente = computed(
@@ -255,6 +372,22 @@ export function useCentroVentas() {
       !excedeCreditoCuentaCorriente.value,
   );
 
+  const motivoNoConfirmarVenta = computed((): string => {
+    if (!tienePermiso('puedeRegistrarVentas')) {
+      return 'Necesitás permiso para registrar ventas.';
+    }
+    if (confirmandoVenta.value) return 'Registrando la venta…';
+    if (lineas.value.length === 0) return 'Agregá al menos un producto al ticket.';
+    if (formaPago.value === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente.value) {
+      return 'Elegí un cliente con cuenta corriente habilitada.';
+    }
+    if (excedeCreditoCuentaCorriente.value) {
+      const disponible = creditoDisponibleCliente.value ?? 0;
+      return `El total supera el crédito disponible (${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(disponible)}).`;
+    }
+    return '';
+  });
+
   watch(clienteId, (id) => {
     if (id) {
       const c = clientesStore.clientePorId(id);
@@ -264,6 +397,10 @@ export function useCentroVentas() {
     }
     if (formaPago.value === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente.value) {
       formaPago.value = 'EFECTIVO';
+    }
+    if (cuponAplicado.value?.clienteId && cuponAplicado.value.clienteId !== (id || null)) {
+      quitarCuponAplicado();
+      mostrarToast('Se quitó el cupón porque pertenece a otro cliente.', 4000);
     }
   });
 
@@ -338,6 +475,29 @@ export function useCentroVentas() {
     return esMovil.value ? 'NOMBRE' : 'LECTOR';
   }
 
+  function modoProductoInicial(): ModoIngresoCentroVentas {
+    const preferido = leerModoIngresoPreferido(usuarioId.value);
+    if (preferido && !(esMovil.value && preferido === 'LECTOR')) {
+      return preferido;
+    }
+    return modoProductoPorDefecto();
+  }
+
+  function cerrarOnboarding(persistir = false) {
+    if (persistir) {
+      guardarOnboardingVisto(usuarioId.value);
+    }
+    mostrarOnboarding.value = false;
+  }
+
+  function reabrirOnboarding() {
+    mostrarOnboarding.value = true;
+  }
+
+  function enfocarIngresoProducto() {
+    enfocarModoActual();
+  }
+
   watch(esMovil, (movil) => {
     if (movil && modoProducto.value === 'LECTOR') {
       modoProducto.value = 'NOMBRE';
@@ -374,7 +534,7 @@ export function useCentroVentas() {
     codigoLector.value = '';
     busquedaNombre.value = '';
     varianteSeleccionadaId.value = null;
-    modoProducto.value = modoProductoPorDefecto();
+    modoProducto.value = modoProductoInicial();
     textoBusquedaCliente.value = '';
     desplegableClienteAbierto.value = false;
     lineas.value = [];
@@ -386,6 +546,76 @@ export function useCentroVentas() {
     tipoAjusteTicket.value = 'NINGUNO';
     porcentajeAjusteTexto.value = '';
     observaciones.value = '';
+    codigoCuponEscaneo.value = '';
+    cuponAplicado.value = null;
+    validandoCupon.value = false;
+    modalEscanearCuponAbierto.value = false;
+    errorEscanearCupon.value = null;
+  }
+
+  function aplicarCuponAlTicket(cupon: CuponDescuentoRegistrado) {
+    cuponAplicado.value = cupon;
+    if (cupon.tipoDescuento === 'porcentaje' && cupon.porcentajeDescuento != null) {
+      tipoAjusteTicket.value = 'DESCUENTO';
+      porcentajeAjusteTexto.value = String(cupon.porcentajeDescuento);
+    } else {
+      tipoAjusteTicket.value = 'DESCUENTO';
+      porcentajeAjusteTexto.value = '';
+    }
+  }
+
+  function quitarCuponAplicado() {
+    cuponAplicado.value = null;
+    codigoCuponEscaneo.value = '';
+    tipoAjusteTicket.value = 'NINGUNO';
+    porcentajeAjusteTexto.value = '';
+    errorEscanearCupon.value = null;
+  }
+
+  function abrirModalEscanearCupon() {
+    if (validandoCupon.value) return;
+    errorEscanearCupon.value = null;
+    codigoCuponEscaneo.value = '';
+    modalEscanearCuponAbierto.value = true;
+  }
+
+  function cerrarModalEscanearCupon() {
+    modalEscanearCuponAbierto.value = false;
+    errorEscanearCupon.value = null;
+    codigoCuponEscaneo.value = '';
+  }
+
+  async function aplicarCodigoCupon() {
+    const codigoNorm = codigoCuponEscaneo.value.trim();
+    if (!codigoNorm) {
+      errorEscanearCupon.value = {
+        tipo: 'vacio',
+        mensaje: 'Escaneá o ingresá el código del cupón.',
+      };
+      return;
+    }
+    if (validandoCupon.value) return;
+
+    validandoCupon.value = true;
+    errorEscanearCupon.value = null;
+    try {
+      const cuponApi = await validarCuponCodigoApi(codigoNorm, clienteId.value || null);
+      const cupon = mapearCuponDescuentoApi(cuponApi);
+      if (cuponAplicado.value && cuponAplicado.value.id !== cupon.id) {
+        quitarCuponAplicado();
+      }
+      aplicarCuponAlTicket(cupon);
+      cerrarModalEscanearCupon();
+      mostrarToast(mensajeCuponAplicado(cupon), 3800);
+    } catch (error: unknown) {
+      errorEscanearCupon.value = clasificarErrorCuponEscaneo(
+        error,
+        'No se pudo validar el cupón. Revisá el código e intentá de nuevo.',
+      );
+      codigoCuponEscaneo.value = '';
+    } finally {
+      validandoCupon.value = false;
+    }
   }
 
   function agregarAlTicket(variante: Variante) {
@@ -398,6 +628,7 @@ export function useCentroVentas() {
       mostrarToast('El producto no tiene precio de venta válido.', 4000);
       return;
     }
+    if (!puedeIncrementarCantidadEnTicket(variante.id, 1)) return;
     const existente = lineas.value.find((l) => l.varianteId === variante.id);
     if (existente) {
       existente.cantidad += 1;
@@ -447,6 +678,7 @@ export function useCentroVentas() {
   function setModoProducto(m: ModoIngresoCentroVentas) {
     if (esMovil.value && m === 'LECTOR') return;
     modoProducto.value = m;
+    guardarModoIngresoPreferido(usuarioId.value, m);
   }
 
   function elegirFormaPago(id: IdFormaPago) {
@@ -477,6 +709,7 @@ export function useCentroVentas() {
       quitarLinea(varianteId);
       return;
     }
+    if (!puedeIncrementarCantidadEnTicket(varianteId, delta)) return;
     l.cantidad = nueva;
   }
 
@@ -535,6 +768,7 @@ export function useCentroVentas() {
         ajustePorcentaje: porcentajeAjusteTicket.value,
         lineas: lineasRegistro,
         observaciones: observaciones.value,
+        cuponDescuentoId: cuponAplicado.value?.id ?? null,
       });
 
       await stockStore.cargar({ forzar: true });
@@ -571,6 +805,7 @@ export function useCentroVentas() {
   }
 
   onMounted(() => {
+    mostrarOnboarding.value = !leerOnboardingVisto(usuarioId.value);
     resetBorrador();
     nextTick(() => enfocarModoActual());
   });
@@ -579,8 +814,14 @@ export function useCentroVentas() {
     refInputLector,
     refInputNombre,
     esMovil,
+    mostrarOnboarding,
     modoProducto,
     codigoLector,
+    codigoCuponEscaneo,
+    cuponAplicado,
+    validandoCupon,
+    modalEscanearCuponAbierto,
+    errorEscanearCupon,
     busquedaNombre,
     varianteSeleccionadaId,
     textoBusquedaCliente,
@@ -616,13 +857,17 @@ export function useCentroVentas() {
     tieneLimiteCuentaCorriente,
     excedeCreditoCuentaCorriente,
     puedeConfirmarVenta,
+    motivoNoConfirmarVenta,
     confirmandoVenta,
     etiquetaClienteSelectorVenta,
     subtotalLinea,
     agregarPorLector,
     seleccionarVarianteNombre,
     agregarVarianteNombreSeleccionada,
+    enfocarIngresoProducto,
     setModoProducto,
+    cerrarOnboarding,
+    reabrirOnboarding,
     elegirFormaPago,
     abrirDesplegableCliente,
     cerrarDesplegableCliente,
@@ -637,6 +882,10 @@ export function useCentroVentas() {
     confirmarVenta,
     cerrarExitoVenta,
     imprimirResumenVentaConfirmada,
+    abrirModalEscanearCupon,
+    cerrarModalEscanearCupon,
+    aplicarCodigoCupon,
+    quitarCuponAplicado,
   };
 }
 

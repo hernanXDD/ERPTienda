@@ -3,11 +3,13 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  ClipboardCheck,
   ClipboardList,
   FileDown,
   Info,
   PackagePlus,
   RefreshCw,
+  ScanBarcode,
   Upload,
   Warehouse,
 } from 'lucide-vue-next';
@@ -24,6 +26,11 @@ import {
   type MetadatosReporteCambioConteo,
 } from '../../modulos/inventario/reporteCambioConteo';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
+import {
+  parsearCantidadFisica,
+  requiereObservacionConteo,
+  useConteoEnPantalla,
+} from '../../composables/useConteoEnPantalla';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useCatalogoStore } from '../../stores/catalogo';
 import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema';
@@ -53,6 +60,8 @@ const sesionStore = useSesionStore();
 const { tienePermiso } = usePermisosOperador();
 const { categorias, variantes } = storeToRefs(catalogoStore);
 const { parametros: parametrosSistema } = storeToRefs(configuracionSistemaStore);
+
+const conteoEnPantalla = useConteoEnPantalla(catalogoStore, stockStore);
 
 const umbralStockBajo = computed(() => parametrosSistema.value.stockMinimoAlerta);
 
@@ -98,7 +107,20 @@ let idToast: ReturnType<typeof setTimeout> | null = null;
 const refModalEntrada = useTemplateRef('refModalEntrada');
 const refModalConfirmarConteo = useTemplateRef('refModalConfirmarConteo');
 const refModalExitoConteo = useTemplateRef('refModalExitoConteo');
+const refModalConteoUnitario = useTemplateRef('refModalConteoUnitario');
+const refModalDescartarConteo = useTemplateRef('refModalDescartarConteo');
 const refInputImportarConteo = useTemplateRef('refInputImportarConteo');
+
+const origenConteoConfirmacion = ref<'excel' | 'pantalla'>('excel');
+const inputsConteoFila = ref<Record<string, string>>({});
+const filaConteoEscaneada = ref<FilaStock | null>(null);
+const cantidadEscaneoTexto = ref('');
+
+const filaConteoUnitario = ref<FilaStock | null>(null);
+const cantidadConteoUnitarioTexto = ref('');
+const observacionConteoUnitario = ref('');
+const mensajeConteoUnitario = ref('');
+const aplicandoConteoUnitario = ref(false);
 
 const cambiosConteoPendientes = ref<CambioConteoPrevisto[]>([]);
 const erroresParseoConteo = ref<string[]>([]);
@@ -260,6 +282,14 @@ const opcionesCategoriaParaFiltro = computed(() =>
   categorias.value.map((c) => ({ etiqueta: c.nombre, valor: c.id }))
 );
 
+const hayFiltrosActivos = computed(
+  () =>
+    Boolean(busqueda.value.trim()) ||
+    Boolean(categoriaSeleccionada.value) ||
+    soloStockCritico.value ||
+    soloStockBajo.value,
+);
+
 function claseEstadoCantidad(unidades: number): string {
   if (unidades === 0) return 'stk-chip stk-chip--agotado';
   if (unidades <= umbralStockBajo.value) return 'stk-chip stk-chip--bajo';
@@ -304,6 +334,18 @@ const totalUnidadesAjusteConteo = computed(() =>
   cambiosConteoPendientes.value.reduce((suma, fila) => suma + Math.abs(fila.delta), 0),
 );
 
+const observacionConteoObligatoria = computed(() =>
+  requiereObservacionConteo(cambiosConteoPendientes.value),
+);
+
+const puedeConfirmarConteo = computed(
+  () =>
+    !importandoConteo.value &&
+    erroresParseoConteo.value.length === 0 &&
+    cambiosConteoPendientes.value.length > 0 &&
+    (!observacionConteoObligatoria.value || Boolean(observacionImportacionConteo.value.trim())),
+);
+
 function abrirSelectorImportarConteo(): void {
   refInputImportarConteo.value?.click();
 }
@@ -317,6 +359,7 @@ function limpiarEstadoConfirmacionConteo(): void {
   observacionImportacionConteo.value = '';
   mensajeModalConfirmarConteo.value = '';
   importandoConteo.value = false;
+  origenConteoConfirmacion.value = 'excel';
 }
 
 function limpiarEstadoExitoConteo(): void {
@@ -371,6 +414,7 @@ async function alSeleccionarArchivoConteo(event: Event): Promise<void> {
   if (!archivo) return;
 
   limpiarEstadoConfirmacionConteo();
+  origenConteoConfirmacion.value = 'excel';
   nombreArchivoConteo.value = archivo.name;
 
   try {
@@ -402,14 +446,16 @@ async function alSeleccionarArchivoConteo(event: Event): Promise<void> {
 }
 
 async function confirmarImportacionConteo(): Promise<void> {
-  if (erroresParseoConteo.value.length > 0 || cambiosConteoPendientes.value.length === 0) return;
+  if (!puedeConfirmarConteo.value) return;
 
   importandoConteo.value = true;
   mensajeModalConfirmarConteo.value = '';
 
   const cambiosSnapshot = [...cambiosConteoPendientes.value];
+  const origenSnapshot = origenConteoConfirmacion.value;
   const metadatosSnapshot: MetadatosReporteCambioConteo = {
-    nombreArchivoOrigen: nombreArchivoConteo.value,
+    nombreArchivoOrigen:
+      origenSnapshot === 'pantalla' ? 'Conteo en pantalla' : nombreArchivoConteo.value,
     observacion: observacionImportacionConteo.value.trim(),
     operador: sesionStore.usuario?.nombreUsuario ?? '—',
   };
@@ -424,6 +470,10 @@ async function confirmarImportacionConteo(): Promise<void> {
     );
     cerrarModalConfirmarConteo();
     limpiarEstadoConfirmacionConteo();
+    if (origenSnapshot === 'pantalla') {
+      conteoEnPantalla.desactivar();
+      inputsConteoFila.value = {};
+    }
 
     cambiosConteoAplicados.value = cambiosSnapshot;
     metadatosExitoConteo.value = metadatosSnapshot;
@@ -433,7 +483,7 @@ async function confirmarImportacionConteo(): Promise<void> {
   } catch (error) {
     mensajeModalConfirmarConteo.value = mensajeErrorHttp(
       error,
-      'No se pudo aplicar la importación. Intentá de nuevo.',
+      'No se pudo aplicar el conteo. Intentá de nuevo.',
     );
   } finally {
     importandoConteo.value = false;
@@ -500,6 +550,155 @@ function guardarModalEntrada(): void {
       mensajeModalEntrada.value = 'No se pudo registrar la entrada. Intentá de nuevo.';
     });
 }
+
+function alternarModoConteoEnPantalla(): void {
+  if (conteoEnPantalla.activo.value) {
+    if (conteoEnPantalla.cantidadPendientes.value > 0) {
+      refModalDescartarConteo.value?.showModal();
+      return;
+    }
+    conteoEnPantalla.desactivar();
+    inputsConteoFila.value = {};
+    return;
+  }
+  conteoEnPantalla.activar();
+  mostrarToast(
+    'Modo conteo activo. Cada ajuste queda en borrador hasta que lo confirmés con revisión previa.',
+    'ok',
+  );
+}
+
+function confirmarSalidaModoConteo(): void {
+  conteoEnPantalla.desactivar();
+  inputsConteoFila.value = {};
+  refModalDescartarConteo.value?.close();
+}
+
+function registrarConteoFila(fila: FilaStock): void {
+  const texto = inputsConteoFila.value[fila.variante.id] ?? '';
+  const error = conteoEnPantalla.registrarCantidadFila(fila, texto);
+  if (error) {
+    mostrarToast(error, 'error');
+    return;
+  }
+  delete inputsConteoFila.value[fila.variante.id];
+  inputsConteoFila.value = { ...inputsConteoFila.value };
+}
+
+function valorInputConteoFila(varianteId: string, existencia: number): string {
+  const enSesion = conteoEnPantalla.cantidadEnSesion(varianteId);
+  if (enSesion != null) return String(enSesion);
+  return inputsConteoFila.value[varianteId] ?? String(existencia);
+}
+
+function actualizarInputConteoFila(varianteId: string, valor: string): void {
+  inputsConteoFila.value = { ...inputsConteoFila.value, [varianteId]: valor };
+}
+
+function abrirConfirmacionConteoPantalla(): void {
+  const cambios = conteoEnPantalla.cambiosPrevistos.value;
+  if (cambios.length === 0) {
+    mostrarToast('No hay diferencias entre lo contado y el stock del sistema.', 'error');
+    return;
+  }
+  limpiarEstadoConfirmacionConteo();
+  origenConteoConfirmacion.value = 'pantalla';
+  nombreArchivoConteo.value = 'Conteo en pantalla';
+  cambiosConteoPendientes.value = cambios;
+  nextTick(() => refModalConfirmarConteo.value?.showModal());
+}
+
+function alEnviarEscaneoConteo(): void {
+  const codigo = conteoEnPantalla.textoEscaneo.value.trim();
+  if (!codigo) return;
+  const fila = conteoEnPantalla.buscarVariantePorCodigo(codigo);
+  if (!fila) {
+    conteoEnPantalla.mensajeEscaneo.value = 'No hay una variante activa con ese código.';
+    return;
+  }
+  filaConteoEscaneada.value = fila;
+  cantidadEscaneoTexto.value = String(
+    conteoEnPantalla.cantidadEnSesion(fila.variante.id) ?? fila.existencia,
+  );
+  conteoEnPantalla.textoEscaneo.value = '';
+  conteoEnPantalla.mensajeEscaneo.value = '';
+}
+
+function confirmarConteoEscaneado(): void {
+  if (!filaConteoEscaneada.value) return;
+  const error = conteoEnPantalla.registrarCantidadFila(
+    filaConteoEscaneada.value,
+    cantidadEscaneoTexto.value,
+  );
+  if (error) {
+    conteoEnPantalla.mensajeEscaneo.value = error;
+    return;
+  }
+  filaConteoEscaneada.value = null;
+  cantidadEscaneoTexto.value = '';
+  mostrarToast('Cantidad agregada al borrador del conteo.', 'ok');
+}
+
+function abrirConteoUnitario(fila: FilaStock): void {
+  filaConteoUnitario.value = fila;
+  cantidadConteoUnitarioTexto.value = String(fila.existencia);
+  observacionConteoUnitario.value = '';
+  mensajeConteoUnitario.value = '';
+  nextTick(() => refModalConteoUnitario.value?.showModal());
+}
+
+function cerrarConteoUnitario(): void {
+  refModalConteoUnitario.value?.close();
+}
+
+function alCerrarConteoUnitario(): void {
+  filaConteoUnitario.value = null;
+}
+
+const deltaConteoUnitario = computed(() => {
+  const fila = filaConteoUnitario.value;
+  if (!fila) return 0;
+  const cantidad = parsearCantidadFisica(cantidadConteoUnitarioTexto.value);
+  if (cantidad === null) return 0;
+  return cantidad - fila.existencia;
+});
+
+async function confirmarConteoUnitario(): Promise<void> {
+  const fila = filaConteoUnitario.value;
+  if (!fila || !sesionStore.usuario) return;
+
+  const cantidad = parsearCantidadFisica(cantidadConteoUnitarioTexto.value);
+  if (cantidad === null) {
+    mensajeConteoUnitario.value = 'Ingresá un número entero mayor o igual a cero.';
+    return;
+  }
+  if (cantidad === fila.existencia) {
+    mensajeConteoUnitario.value = 'La cantidad contada coincide con el stock actual.';
+    return;
+  }
+  if (deltaConteoUnitario.value < 0 && !observacionConteoUnitario.value.trim()) {
+    mensajeConteoUnitario.value = 'Las bajas de stock requieren una observación para auditoría.';
+    return;
+  }
+
+  aplicandoConteoUnitario.value = true;
+  mensajeConteoUnitario.value = '';
+  try {
+    await stockStore.aplicarAjustePorConteo(
+      fila.variante.id,
+      catalogoStore.nombreLineaComercial(fila.variante.id),
+      cantidad,
+      sesionStore.usuario.nombreUsuario,
+      observacionConteoUnitario.value.trim() || undefined,
+    );
+    cerrarConteoUnitario();
+    mostrarToast('Stock actualizado por conteo unitario.', 'ok');
+  } catch (error) {
+    mensajeConteoUnitario.value = mensajeErrorHttp(error, 'No se pudo aplicar el conteo.');
+  } finally {
+    aplicandoConteoUnitario.value = false;
+  }
+}
 </script>
 
 <template>
@@ -522,87 +721,195 @@ function guardarModalEntrada(): void {
       <span class="stk-banner-texto">{{ textoBannerRestricciones }}</span>
     </p>
 
-    <div class="pg-barra">
-      <div class="pg-barra-col pg-barra-col--busq">
-        <label class="pg-filtro-bl" for="stk-filtro-busq">
-          <span class="pg-filtro-etiq">Buscar</span>
-          <input
-            id="stk-filtro-busq"
-            v-model="busqueda"
-            type="search"
-            class="pg-filtro-inp"
-            placeholder="Nombre, marca o código…"
-            autocomplete="off"
-          />
-        </label>
-      </div>
+    <div class="pg-barra stk-barra-herramientas">
+      <div class="stk-barra-filtros pg-barra-fila" aria-label="Filtros de stock">
+        <div class="pg-barra-col pg-barra-col--busq">
+          <label class="pg-filtro-bl" for="stk-filtro-busq">
+            <span class="pg-filtro-etiq">Buscar</span>
+            <input
+              id="stk-filtro-busq"
+              v-model="busqueda"
+              type="search"
+              class="pg-filtro-inp"
+              placeholder="Nombre, marca o código…"
+              autocomplete="off"
+            />
+          </label>
+        </div>
 
-      <div class="pg-barra-col pg-barra-col--cat">
-        <label class="pg-filtro-bl" for="stk-filtro-cat">
-          <span class="pg-filtro-etiq">Categoría</span>
-          <select id="stk-filtro-cat" v-model="categoriaSeleccionada" class="pg-filtro-inp">
-            <option value="">Todas</option>
-            <option v-for="c in opcionesCategoriaParaFiltro" :key="c.valor" :value="c.valor">
-              {{ c.etiqueta }}
-            </option>
-          </select>
-        </label>
-      </div>
+        <div class="pg-barra-col pg-barra-col--cat">
+          <label class="pg-filtro-bl" for="stk-filtro-cat">
+            <span class="pg-filtro-etiq">Categoría</span>
+            <select id="stk-filtro-cat" v-model="categoriaSeleccionada" class="pg-filtro-inp">
+              <option value="">Todas</option>
+              <option v-for="c in opcionesCategoriaParaFiltro" :key="c.valor" :value="c.valor">
+                {{ c.etiqueta }}
+              </option>
+            </select>
+          </label>
+        </div>
 
-      <div class="pg-barra-col pg-barra-col--atajos">
-        <div class="pg-filtro-bl">
-          <span id="stk-leyenda-atajos" class="pg-filtro-etiq">Filtros rápidos</span>
-          <div class="stk-filtros-cheq" role="group" aria-labelledby="stk-leyenda-atajos">
-            <label class="stk-cheq-wrap">
-              <input v-model="soloStockCritico" type="checkbox" class="stk-cheq" />
-              Solo agotados
-            </label>
-            <label class="stk-cheq-wrap">
-              <input v-model="soloStockBajo" type="checkbox" class="stk-cheq" />
-              Solo {{ umbralStockBajo }} o menos unidades
-            </label>
+        <div class="pg-barra-col pg-barra-col--atajos">
+          <div class="pg-filtro-bl">
+            <span id="stk-leyenda-atajos" class="pg-filtro-etiq">Filtros rápidos</span>
+            <div class="stk-filtros-cheq" role="group" aria-labelledby="stk-leyenda-atajos">
+              <label class="stk-cheq-wrap">
+                <input v-model="soloStockCritico" type="checkbox" class="stk-cheq" />
+                Solo agotados
+              </label>
+              <label class="stk-cheq-wrap">
+                <input v-model="soloStockBajo" type="checkbox" class="stk-cheq" />
+                Solo {{ umbralStockBajo }} o menos unidades
+              </label>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div v-if="puedeAjustarConteo" class="pg-barra-col pg-barra-col--conteo">
-        <div class="pg-filtro-bl">
-          <span class="pg-filtro-etiq">Conteo</span>
-          <div class="stk-conteo-acciones">
+        <div class="pg-barra-col pg-barra-col--reinicio stk-barra-reinicio">
+          <div class="pg-filtro-bl">
+            <span class="pg-filtro-etiq">Reinicio</span>
             <button
               type="button"
-              class="pg-btn-primario stk-btn-conteo"
-              :disabled="filasParaConteoFisico.length === 0"
-              @click="generarPlantillaConteoFisico"
+              class="pg-btn-reset-filtros"
+              :disabled="!hayFiltrosActivos"
+              @click="limpiarFiltros"
             >
-              <ClipboardList :size="18" stroke-width="2" aria-hidden="true" />
-              Exportar Excel
+              <RefreshCw :size="16" aria-hidden="true" />
+              Limpiar filtros
             </button>
-            <button type="button" class="stk-btn-importar" @click="abrirSelectorImportarConteo">
-              <Upload :size="18" stroke-width="2" aria-hidden="true" />
-              Importar conteo
-            </button>
-            <input
-              ref="refInputImportarConteo"
-              type="file"
-              class="stk-input-archivo"
-              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-              @change="alSeleccionarArchivoConteo"
-            />
           </div>
         </div>
       </div>
 
-      <div class="pg-barra-col pg-barra-col--reinicio">
-        <div class="pg-filtro-bl">
-          <span class="pg-filtro-etiq">Reinicio</span>
-          <button type="button" class="pg-btn-reset-filtros" @click="limpiarFiltros">
-            <RefreshCw :size="16" aria-hidden="true" />
-            Limpiar filtros
+      <div
+        v-if="puedeAjustarConteo"
+        class="stk-barra-acciones"
+        aria-label="Acciones de conteo"
+      >
+        <span class="pg-filtro-etiq stk-barra-acciones-etiq">Conteo de inventario</span>
+        <div class="stk-conteo-acciones">
+          <button
+            type="button"
+            class="pg-btn-primario stk-btn-conteo"
+            :class="{ 'stk-btn-conteo--on': conteoEnPantalla.activo.value }"
+            @click="alternarModoConteoEnPantalla"
+          >
+            <ClipboardCheck :size="18" stroke-width="2" aria-hidden="true" />
+            {{ conteoEnPantalla.activo.value ? 'Salir del conteo' : 'Conteo en pantalla' }}
           </button>
+          <button
+            type="button"
+            class="pg-btn-primario stk-btn-conteo"
+            :disabled="filasParaConteoFisico.length === 0 || conteoEnPantalla.activo.value"
+            @click="generarPlantillaConteoFisico"
+          >
+            <ClipboardList :size="18" stroke-width="2" aria-hidden="true" />
+            Exportar Excel
+          </button>
+          <button
+            type="button"
+            class="stk-btn-importar"
+            :disabled="conteoEnPantalla.activo.value"
+            @click="abrirSelectorImportarConteo"
+          >
+            <Upload :size="18" stroke-width="2" aria-hidden="true" />
+            Importar conteo
+          </button>
+          <input
+            ref="refInputImportarConteo"
+            type="file"
+            class="stk-input-archivo"
+            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            @change="alSeleccionarArchivoConteo"
+          />
         </div>
       </div>
     </div>
+
+    <section
+      v-if="puedeAjustarConteo && conteoEnPantalla.activo.value"
+      class="stk-conteo-panel"
+      aria-label="Conteo en pantalla"
+    >
+      <p class="stk-conteo-panel-aviso" role="status">
+        <Info :size="16" aria-hidden="true" />
+        Los cambios quedan en borrador hasta que los revisés y confirmés. Cada ajuste se registra en
+        auditorías con tu usuario.
+      </p>
+
+      <form class="stk-conteo-escaneo" @submit.prevent="alEnviarEscaneoConteo">
+        <label class="pg-filtro-bl stk-conteo-escaneo-lab" for="stk-escaneo-conteo">
+          <span class="pg-filtro-etiq">Escanear código</span>
+          <div class="stk-conteo-escaneo-inp">
+            <ScanBarcode :size="18" aria-hidden="true" />
+            <input
+              id="stk-escaneo-conteo"
+              v-model="conteoEnPantalla.textoEscaneo.value"
+              type="text"
+              class="pg-filtro-inp"
+              placeholder="Código de barras o ID de variante…"
+              autocomplete="off"
+            />
+          </div>
+        </label>
+        <button type="submit" class="stk-btn-pri stk-btn-pri--compacto">Buscar</button>
+      </form>
+
+      <div v-if="filaConteoEscaneada" class="stk-conteo-escaneo-res">
+        <p class="stk-conteo-escaneo-prod">
+          <strong>{{ filaConteoEscaneada.producto.nombre }}</strong>
+          · {{ etiquetaTalleColor(filaConteoEscaneada.variante.talle, filaConteoEscaneada.variante.color) }}
+          · Sistema: {{ filaConteoEscaneada.existencia }} u.
+        </p>
+        <label class="stk-conteo-escaneo-cant" for="stk-escaneo-cant">
+          <span class="pg-sr">Cantidad contada</span>
+          <input
+            id="stk-escaneo-cant"
+            v-model="cantidadEscaneoTexto"
+            type="number"
+            min="0"
+            step="1"
+            class="pg-filtro-inp"
+          />
+        </label>
+        <button type="button" class="stk-btn-pri stk-btn-pri--compacto" @click="confirmarConteoEscaneado">
+          Agregar al borrador
+        </button>
+        <button type="button" class="stk-btn-sec stk-btn-sec--compacto" @click="filaConteoEscaneada = null">
+          Cancelar
+        </button>
+      </div>
+
+      <p v-if="conteoEnPantalla.mensajeEscaneo.value" class="stk-conteo-msg" role="alert">
+        {{ conteoEnPantalla.mensajeEscaneo.value }}
+      </p>
+
+      <div class="stk-conteo-panel-pie">
+        <p class="stk-conteo-resumen" role="status">
+          <strong>{{ conteoEnPantalla.cambiosPrevistos.value.length }}</strong>
+          {{ conteoEnPantalla.cambiosPrevistos.value.length === 1 ? 'diferencia' : 'diferencias' }}
+          pendientes
+        </p>
+        <div class="stk-conteo-panel-acc">
+          <button
+            type="button"
+            class="stk-btn-sec stk-btn-sec--compacto"
+            :disabled="conteoEnPantalla.cantidadPendientes.value === 0"
+            @click="conteoEnPantalla.descartarSesion()"
+          >
+            Descartar borrador
+          </button>
+          <button
+            type="button"
+            class="stk-btn-pri stk-btn-pri--compacto"
+            :disabled="conteoEnPantalla.cambiosPrevistos.value.length === 0"
+            @click="abrirConfirmacionConteoPantalla"
+          >
+            Revisar y confirmar
+          </button>
+        </div>
+      </div>
+    </section>
 
     <p
       v-if="mensajeToast"
@@ -677,6 +984,32 @@ function guardarModalEntrada(): void {
                   </p>
                   <div class="stk-variante-item-pie">
                     <span class="stk-variante-cant stk-mono stk-cant">{{ fila.existencia }} u.</span>
+                    <div v-if="conteoEnPantalla.activo.value && puedeAjustarConteo" class="stk-conteo-fila">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        class="pg-filtro-inp stk-conteo-fila-inp"
+                        :value="valorInputConteoFila(fila.variante.id, fila.existencia)"
+                        @input="
+                          actualizarInputConteoFila(
+                            fila.variante.id,
+                            ($event.target as HTMLInputElement).value,
+                          )
+                        "
+                      />
+                      <button type="button" class="stk-ac-mini" @click="registrarConteoFila(fila)">
+                        Contar
+                      </button>
+                    </div>
+                    <button
+                      v-else-if="puedeAjustarConteo"
+                      type="button"
+                      class="stk-ac-mini"
+                      @click="abrirConteoUnitario(fila)"
+                    >
+                      Contar
+                    </button>
                     <button
                       v-if="puedeEntradaManual"
                       type="button"
@@ -755,16 +1088,45 @@ function guardarModalEntrada(): void {
                 </span>
               </td>
               <td class="stk-cel-variantes">
-                <button
-                  v-if="puedeEntradaManual"
-                  type="button"
-                  class="stk-ac-mini stk-ac-mini--entr"
-                  title="Entrada tipo compra manual"
-                  @click="abrirModalEntrada(fila)"
-                >
+                <div class="stk-acc-variante">
+                  <template v-if="conteoEnPantalla.activo.value && puedeAjustarConteo">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      class="pg-filtro-inp stk-conteo-fila-inp"
+                      :value="valorInputConteoFila(fila.variante.id, fila.existencia)"
+                      @input="
+                        actualizarInputConteoFila(
+                          fila.variante.id,
+                          ($event.target as HTMLInputElement).value,
+                        )
+                      "
+                    />
+                    <button type="button" class="stk-ac-mini" @click="registrarConteoFila(fila)">
+                      Contar
+                    </button>
+                  </template>
+                  <button
+                    v-else-if="puedeAjustarConteo"
+                    type="button"
+                    class="stk-ac-mini"
+                    title="Conteo unitario con confirmación"
+                    @click="abrirConteoUnitario(fila)"
+                  >
+                    Contar
+                  </button>
+                  <button
+                    v-if="puedeEntradaManual"
+                    type="button"
+                    class="stk-ac-mini stk-ac-mini--entr"
+                    title="Entrada tipo compra manual"
+                    @click="abrirModalEntrada(fila)"
+                  >
                   <PackagePlus class="stk-ac-mini-ico" :size="17" aria-hidden="true" />
                   Entrada
                 </button>
+                </div>
               </td>
             </tr>
           </template>
@@ -789,7 +1151,13 @@ function guardarModalEntrada(): void {
         <div class="stk-dlg-pane stk-dlg-pane--import" @click.stop>
           <header class="stk-dlg-cap">
             <div>
-              <h2 id="stk-dlg-import-h">Confirmar importación de conteo</h2>
+              <h2 id="stk-dlg-import-h">
+                {{
+                  origenConteoConfirmacion === 'pantalla'
+                    ? 'Confirmar conteo en pantalla'
+                    : 'Confirmar importación de conteo'
+                }}
+              </h2>
               <p v-if="nombreArchivoConteo" class="stk-dlg-archivo">{{ nombreArchivoConteo }}</p>
             </div>
             <button
@@ -872,7 +1240,11 @@ function guardarModalEntrada(): void {
           </div>
 
           <label class="stk-dlg-lab stk-etq-bl" for="stk-import-obs">
-            <span class="pg-filtro-etiq">Observación para auditoría (opcional)</span>
+            <span class="pg-filtro-etiq">
+              Observación para auditoría
+              <span v-if="!observacionConteoObligatoria">(opcional)</span>
+              <span v-else class="stk-obs-oblig">(obligatoria)</span>
+            </span>
             <textarea
               id="stk-import-obs"
               v-model="observacionImportacionConteo"
@@ -881,8 +1253,13 @@ function guardarModalEntrada(): void {
               maxlength="240"
               placeholder="Ej. Conteo mensual depósito, inventario fin de temporada…"
               :disabled="importandoConteo"
+              :required="observacionConteoObligatoria"
             />
           </label>
+          <p v-if="observacionConteoObligatoria" class="stk-dlg-obs-aviso" role="status">
+            Este conteo incluye bajas de stock o varios ítems. Indicá el motivo para dejar trazabilidad
+            en auditorías.
+          </p>
 
           <p v-if="mensajeModalConfirmarConteo" class="stk-dlg-msg" role="alert">
             {{ mensajeModalConfirmarConteo }}
@@ -900,11 +1277,7 @@ function guardarModalEntrada(): void {
             <button
               type="button"
               class="stk-btn-pri"
-              :disabled="
-                importandoConteo ||
-                erroresParseoConteo.length > 0 ||
-                cambiosConteoPendientes.length === 0
-              "
+              :disabled="!puedeConfirmarConteo"
               @click="confirmarImportacionConteo"
             >
               {{ importandoConteo ? 'Aplicando…' : 'Confirmar y aplicar cambios' }}
@@ -948,6 +1321,103 @@ function guardarModalEntrada(): void {
             </button>
             <button type="button" class="stk-btn-sec" @click="volverAlMenuStock">
               Volver al menú stock
+            </button>
+          </footer>
+        </div>
+      </dialog>
+
+      <dialog
+        ref="refModalConteoUnitario"
+        class="stk-dlg-conte"
+        aria-labelledby="stk-dlg-conteo-unit-h"
+        @close="alCerrarConteoUnitario"
+      >
+        <form
+          v-if="filaConteoUnitario"
+          class="stk-dlg-pane"
+          @submit.prevent="confirmarConteoUnitario"
+        >
+          <header class="stk-dlg-cap">
+            <h2 id="stk-dlg-conteo-unit-h">Conteo unitario · {{ filaConteoUnitario.producto.nombre }}</h2>
+            <button
+              type="button"
+              class="stk-dlg-x"
+              aria-label="Cerrar"
+              :disabled="aplicandoConteoUnitario"
+              @click="cerrarConteoUnitario"
+            >
+              ×
+            </button>
+          </header>
+          <p class="stk-dlg-ley">
+            Variante
+            {{ etiquetaTalleColor(filaConteoUnitario.variante.talle, filaConteoUnitario.variante.color) }}.
+            Stock en sistema: <strong>{{ filaConteoUnitario.existencia }}</strong> u.
+          </p>
+          <label class="stk-dlg-lab stk-etq-bl" for="stk-conteo-unit-cant">
+            <span class="pg-filtro-etiq">Cantidad física contada</span>
+            <input
+              id="stk-conteo-unit-cant"
+              v-model="cantidadConteoUnitarioTexto"
+              type="number"
+              min="0"
+              step="1"
+              class="pg-filtro-inp"
+              required
+            />
+          </label>
+          <p
+            v-if="deltaConteoUnitario !== 0"
+            class="stk-conteo-unit-delta"
+            :class="claseDeltaConteo(deltaConteoUnitario)"
+            role="status"
+          >
+            Variación: {{ textoDeltaConteo(deltaConteoUnitario) }} u.
+          </p>
+          <label class="stk-dlg-lab stk-etq-bl" for="stk-conteo-unit-obs">
+            <span class="pg-filtro-etiq">
+              Observación
+              <span v-if="deltaConteoUnitario >= 0">(opcional)</span>
+              <span v-else class="stk-obs-oblig">(obligatoria para bajas)</span>
+            </span>
+            <textarea
+              id="stk-conteo-unit-obs"
+              v-model="observacionConteoUnitario"
+              class="stk-txt"
+              rows="2"
+              maxlength="240"
+              :required="deltaConteoUnitario < 0"
+            />
+          </label>
+          <p v-if="mensajeConteoUnitario" class="stk-dlg-msg" role="alert">{{ mensajeConteoUnitario }}</p>
+          <footer class="stk-dlg-acc">
+            <button type="button" class="stk-btn-sec" @click="cerrarConteoUnitario">Cancelar</button>
+            <button type="submit" class="stk-btn-pri" :disabled="aplicandoConteoUnitario">
+              {{ aplicandoConteoUnitario ? 'Aplicando…' : 'Confirmar conteo' }}
+            </button>
+          </footer>
+        </form>
+      </dialog>
+
+      <dialog
+        ref="refModalDescartarConteo"
+        class="stk-dlg-conte stk-dlg-conte--descartar"
+        aria-labelledby="stk-dlg-descartar-h"
+      >
+        <div class="stk-dlg-pane" @click.stop>
+          <header class="stk-dlg-cap">
+            <h2 id="stk-dlg-descartar-h">Salir del conteo en pantalla</h2>
+          </header>
+          <p class="stk-dlg-ley">
+            Hay cantidades en borrador sin confirmar. Si salís ahora, esos cambios no se aplicarán al
+            stock.
+          </p>
+          <footer class="stk-dlg-acc">
+            <button type="button" class="stk-btn-sec" @click="refModalDescartarConteo?.close()">
+              Seguir contando
+            </button>
+            <button type="button" class="stk-btn-pri" @click="confirmarSalidaModoConteo">
+              Descartar y salir
             </button>
           </footer>
         </div>
@@ -1115,6 +1585,49 @@ function guardarModalEntrada(): void {
   background: var(--color-fondo-elevado);
 }
 
+.stk-barra-herramientas {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.stk-barra-filtros {
+  width: 100%;
+  align-items: flex-end;
+}
+
+.stk-barra-reinicio {
+  margin-left: auto;
+}
+
+.stk-barra-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-borde);
+}
+
+.stk-barra-acciones-etiq {
+  text-align: left;
+}
+
+.stk-conteo-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.stk-conteo-acciones .stk-btn-conteo,
+.stk-conteo-acciones .stk-btn-importar {
+  flex: 0 1 auto;
+  min-width: 9.5rem;
+}
+
 .pg-barra-col {
   display: flex;
   flex-direction: column;
@@ -1135,23 +1648,6 @@ function guardarModalEntrada(): void {
 .pg-barra-col--atajos {
   flex: 1 1 15rem;
   min-width: min(100%, 14rem);
-}
-
-.pg-barra-col--conteo {
-  flex: 0 0 auto;
-  min-width: min(100%, 16rem);
-}
-
-.stk-conteo-acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: stretch;
-}
-
-.stk-conteo-acciones .stk-btn-conteo,
-.stk-conteo-acciones .stk-btn-importar {
-  flex: 1 1 9.5rem;
 }
 
 .stk-btn-importar {
@@ -1179,42 +1675,165 @@ function guardarModalEntrada(): void {
   display: none;
 }
 
-.pg-barra-col--conteo .stk-btn-conteo {
-  width: 100%;
+.stk-btn-conteo,
+.stk-btn-importar {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  gap: 0.45rem;
   min-height: 2.38rem;
-  box-sizing: border-box;
+  padding: 0.45rem 0.85rem;
   white-space: nowrap;
 }
 
-@media (min-width: 720px) {
-  .pg-barra-col--conteo .stk-btn-conteo {
-    width: auto;
-    min-width: 10.75rem;
-  }
+.stk-barra-acciones .stk-btn-conteo {
+  width: auto;
+  min-width: 10.75rem;
+  box-sizing: border-box;
+}
+
+.stk-btn-conteo--on {
+  box-shadow: inset 0 0 0 2px var(--color-advertencia-borde);
+  background: var(--color-advertencia-suave);
+  color: var(--color-advertencia);
+}
+
+.stk-conteo-panel {
+  margin: 0 clamp(1rem, 3vw, 1.65rem) 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-advertencia-borde);
+  background: var(--color-advertencia-suave);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stk-conteo-panel-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--color-texto);
+}
+
+.stk-conteo-escaneo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.stk-conteo-escaneo-lab {
+  flex: 1 1 14rem;
+}
+
+.stk-conteo-escaneo-inp {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.stk-conteo-escaneo-res {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-elevado);
+}
+
+.stk-conteo-escaneo-prod {
+  margin: 0;
+  flex: 1 1 100%;
+  font-size: 0.86rem;
+}
+
+.stk-conteo-escaneo-cant {
+  width: 5rem;
+}
+
+.stk-conteo-msg {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--color-peligro);
+}
+
+.stk-conteo-panel-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.stk-conteo-resumen {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.stk-conteo-panel-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.stk-btn-pri--compacto,
+.stk-btn-sec--compacto {
+  min-height: 2.1rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.82rem;
+}
+
+.stk-conteo-fila,
+.stk-acc-variante {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stk-conteo-fila-inp {
+  width: 4.5rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.45rem;
+}
+
+.stk-obs-oblig {
+  color: var(--color-peligro);
+  font-weight: 600;
+}
+
+.stk-dlg-obs-aviso {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--color-advertencia);
+}
+
+.stk-conteo-unit-delta {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .pg-barra-col--reinicio {
   flex: 0 0 auto;
-  margin-left: auto;
-}
-
-.pg-barra-col--reinicio .stk-btn-reset {
-  width: 100%;
-  justify-content: center;
-}
-
-@media (min-width: 720px) {
-  .pg-barra-col--reinicio .stk-btn-reset {
-    width: auto;
-    min-width: 10.5rem;
-  }
 }
 
 @media (max-width: 719px) {
   .pg-barra-col--reinicio {
-    margin-left: 0;
     flex: 1 1 100%;
+  }
+
+  .stk-conteo-acciones .stk-btn-conteo,
+  .stk-conteo-acciones .stk-btn-importar {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
   }
 }
 

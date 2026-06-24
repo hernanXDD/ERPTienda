@@ -10,6 +10,12 @@ export function diaComparableHoy(): string {
   return obtenerDiaComparableDesdeValor(new Date());
 }
 
+/** Solo el día actual (cierre diario). */
+export function rangoFechasHoy(): FiltroFechasReporte {
+  const hoy = diaComparableHoy();
+  return { fechaDesde: hoy, fechaHasta: hoy };
+}
+
 /** Últimos 90 días para reportes operativos. */
 export function rangoFechasPorDefecto(): FiltroFechasReporte {
   return rangoFechasUltimosDias(90);

@@ -44,7 +44,10 @@ function descargarBufferExcel(buffer: ArrayBuffer, nombreArchivo: string): void 
   const enlace = document.createElement('a');
   enlace.href = url;
   enlace.download = nombreArchivo;
+  enlace.style.display = 'none';
+  document.body.appendChild(enlace);
   enlace.click();
+  document.body.removeChild(enlace);
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
@@ -67,7 +70,6 @@ export async function exportarExcelVentasFacturacion(
   });
 
   hoja.columns = ENCABEZADOS.map((encabezado, indice) => ({
-    header: encabezado,
     key: encabezado,
     width: ANCHOS_COLUMNAS[indice] ?? 16,
   }));
@@ -81,7 +83,15 @@ export async function exportarExcelVentasFacturacion(
 
   hoja.mergeCells('A2:J2');
   const subtitulo = hoja.getCell('A2');
-  subtitulo.value = `${datos.negocioNombre} · Período: ${datos.rangoLegible} · ${datos.filtroEntidadLegible}`;
+  const partesSubtitulo = [
+    datos.negocioNombre,
+    `Período: ${datos.rangoLegible}`,
+    datos.filtroEntidadLegible,
+  ];
+  if (datos.filtroEstadoFacturacionLegible) {
+    partesSubtitulo.push(datos.filtroEstadoFacturacionLegible);
+  }
+  subtitulo.value = partesSubtitulo.join(' · ');
   subtitulo.font = { name: 'Segoe UI', size: 10, color: { argb: COLOR_TEXTO_APAGADO } };
   subtitulo.alignment = { vertical: 'middle', horizontal: 'left' };
 

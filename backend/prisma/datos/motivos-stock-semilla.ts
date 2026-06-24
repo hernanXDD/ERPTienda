@@ -1,10 +1,16 @@
 import {
   ID_MOTIVO_AJUSTE_CONTEO,
   ID_MOTIVO_ENTRADA_COMPRA,
+  ID_MOTIVO_ENTRADA_DEVOLUCION,
   ID_MOTIVO_SALIDA_VENTA,
 } from '../../src/comunes/constantes/ids-motivo-stock';
 
-export { ID_MOTIVO_AJUSTE_CONTEO, ID_MOTIVO_ENTRADA_COMPRA, ID_MOTIVO_SALIDA_VENTA };
+export {
+  ID_MOTIVO_AJUSTE_CONTEO,
+  ID_MOTIVO_ENTRADA_COMPRA,
+  ID_MOTIVO_ENTRADA_DEVOLUCION,
+  ID_MOTIVO_SALIDA_VENTA,
+};
 
 export interface MotivoStockSemilla {
   id: string;
@@ -27,5 +33,10 @@ export const MOTIVOS_STOCK_SEMILLA: MotivoStockSemilla[] = [
     id: ID_MOTIVO_AJUSTE_CONTEO,
     nombre: 'Ajuste por conteo',
     descripcion: 'Corrección de stock tras conteo físico o importación masiva.',
+  },
+  {
+    id: ID_MOTIVO_ENTRADA_DEVOLUCION,
+    nombre: 'Entrada por devolución',
+    descripcion: 'Reingreso de mercadería por devolución de una venta.',
   },
 ];

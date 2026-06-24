@@ -186,4 +186,28 @@ export class CuentaCorrienteService {
     });
     return this.mapearMovimiento(movimiento);
   }
+
+  async registrarCreditoPorDevolucion(
+    clienteId: string,
+    importe: number,
+    descripcion: string,
+    registradoPorUsuarioId: string,
+    tx?: ClienteTx,
+  ): Promise<MovimientoCuentaCorrienteApi> {
+    const prisma = tx ?? this.prisma;
+    if (!tx) await this.validarClienteExiste(clienteId);
+
+    const id = await this.idSecuencia.siguienteMovimientoCuentaCorriente(prisma);
+    const movimiento = await prisma.movimientoCuentaCorriente.create({
+      data: {
+        id,
+        clienteId,
+        tipoMovimiento: TipoMovimientoCuentaCorriente.pagoRegistrado,
+        importe: new Prisma.Decimal(importe),
+        descripcion: descripcion.trim() || 'Crédito por devolución',
+        registradoPorUsuarioId,
+      },
+    });
+    return this.mapearMovimiento(movimiento);
+  }
 }

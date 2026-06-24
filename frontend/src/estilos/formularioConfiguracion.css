@@ -120,6 +120,10 @@
     max-width: 100%;
   }
 
+  .perm-cuerpo--dos-bloques .perm-bloque--ancho .perm-bloque-cuerpo {
+    padding: 0.85rem 1rem 1rem;
+  }
+
   .perm-cuerpo--negocio .cfg-neg-columna-izq {
     grid-column: 1;
     grid-row: 2;

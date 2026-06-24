@@ -58,6 +58,15 @@ export const gruposReportes: GrupoReportes[] = [
 
 export const catalogoReportes: DefinicionReporte[] = [
   {
+    id: 'ventas-diario',
+    titulo: 'Ventas del día',
+    descripcion: 'Cierre diario: operaciones, totales y desglose por forma de pago.',
+    nombreRuta: 'reportes-ventas-diario',
+    categoria: 'operacion-diaria',
+    disponible: true,
+    ordenEnGrupo: 0,
+  },
+  {
     id: 'ventas-periodo',
     titulo: 'Ventas por período',
     descripcion: 'Totales, operaciones y desglose por forma de pago.',
@@ -73,7 +82,7 @@ export const catalogoReportes: DefinicionReporte[] = [
     nombreRuta: 'reportes-stock-critico',
     categoria: 'operacion-diaria',
     disponible: true,
-    ordenEnGrupo: 2,
+    ordenEnGrupo: 3,
   },
   {
     id: 'stock-valorizado',

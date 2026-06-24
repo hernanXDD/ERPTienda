@@ -1,5 +1,9 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsNumber, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNumber, Max, Min } from 'class-validator';
+import {
+  PLANTILLAS_CUPON_VALIDAS,
+  type PlantillaCupon,
+} from '../../../comunes/constantes/plantilla-cupon';
 
 export class ActualizarConfiguracionSistemaDto {
   @Type(() => Number)
@@ -22,10 +26,19 @@ export class ActualizarConfiguracionSistemaDto {
 
   @Type(() => Number)
   @IsInt()
+  @Min(1)
+  @Max(365)
+  diasPlazoDevolucion!: number;
+
+  @Type(() => Number)
+  @IsInt()
   @Min(0)
   @Max(9999)
   stockMinimoAlerta!: number;
 
   @IsBoolean()
   movimientoManualStockHabilitado!: boolean;
+
+  @IsIn(PLANTILLAS_CUPON_VALIDAS)
+  plantillaCupon!: PlantillaCupon;
 }

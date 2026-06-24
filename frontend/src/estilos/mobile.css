@@ -76,15 +76,20 @@
     display: none;
   }
 
-  .shell--contexto-movil .pg-marco .pg-cab:not(:has(.pg-kpis)):not(:has(.pg-cab-acciones)):not(:has(.rep-volver)) {
+  .shell--contexto-movil .pg-marco .pg-cab:not(:has(.pg-kpis)):not(:has([class*='-cab-acciones'])):not(:has(.rep-volver)) {
     display: none;
   }
 
   .shell--contexto-movil .pg-marco .pg-cab:has(.pg-kpis),
-  .shell--contexto-movil .pg-marco .pg-cab:has(.pg-cab-acciones),
+  .shell--contexto-movil .pg-marco .pg-cab:has([class*='-cab-acciones']),
   .shell--contexto-movil .pg-marco .pg-cab:has(.rep-volver) {
     gap: 0.5rem;
     padding: 0.55rem 0.75rem 0.65rem;
+  }
+
+  .shell--contexto-movil .pg-marco .pg-cab:has([class*='-cab-acciones']) [class*='-cab-acciones'] {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .shell--contexto-movil .pg-marco .stk-banner-lectura {

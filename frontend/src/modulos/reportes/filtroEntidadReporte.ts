@@ -2,7 +2,7 @@ import type { Cliente } from '../../tipos/cliente';
 import type { Proveedor } from '../../tipos/proveedor';
 import type { EstadoFacturacionVenta } from '../../tipos/venta';
 import type { FiltroFechasReporte } from './filtroFechasReporte';
-import { rangoFechasPorDefecto } from './filtroFechasReporte';
+import { rangoFechasPorDefecto, rangoFechasHoy } from './filtroFechasReporte';
 
 /** Valor especial en el selector para ventas sin cliente registrado. */
 export const ID_CONSUMIDOR_FINAL_REPORTE = '__consumidor_final__';
@@ -28,6 +28,15 @@ export interface FiltrosReporteVista extends FiltroFechasReporte {
   idProveedor: string;
   /** Vacío = todos los estados de facturación. */
   idEstadoFacturacion: string;
+}
+
+export function filtrosReporteVentasDiarioPorDefecto(): FiltrosReporteVista {
+  return {
+    ...rangoFechasHoy(),
+    idCliente: '',
+    idProveedor: '',
+    idEstadoFacturacion: '',
+  };
 }
 
 export function filtrosReporteVistaPorDefecto(): FiltrosReporteVista {
@@ -83,12 +92,21 @@ export function opcionesEstadoFacturacionParaReporte(): OpcionEntidadReporte[] {
   ];
 }
 
-export function etiquetaFiltroEstadoFacturacionLegible(idEstadoFacturacion: string): string {
+/** Opciones del reporte «Ventas para facturación». */
+export function opcionesFiltroFacturacionVentasFacturacion(): OpcionEntidadReporte[] {
+  return [
+    { id: '', etiqueta: 'Todas' },
+    { id: 'PENDIENTE', etiqueta: 'No facturadas' },
+    { id: 'FACTURADA', etiqueta: 'Facturadas' },
+  ];
+}
+
+export function etiquetaFiltroEstadoFacturacionLegible(
+  idEstadoFacturacion: string,
+  opciones: OpcionEntidadReporte[] = opcionesEstadoFacturacionParaReporte(),
+): string {
   if (!idEstadoFacturacion.trim()) return '';
-  return (
-    opcionesEstadoFacturacionParaReporte().find((o) => o.id === idEstadoFacturacion)?.etiqueta ??
-    'Estado seleccionado'
-  );
+  return opciones.find((o) => o.id === idEstadoFacturacion)?.etiqueta ?? 'Estado seleccionado';
 }
 
 export function opcionesClientesParaReporte(clientes: Cliente[]): OpcionEntidadReporte[] {
