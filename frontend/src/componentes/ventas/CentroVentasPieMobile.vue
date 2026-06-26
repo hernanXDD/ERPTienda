@@ -12,6 +12,7 @@ const {
   confirmandoVenta,
   motivoNoConfirmarVenta,
   confirmarVenta,
+  pedirLimpiar,
 } = usarCentroVentasContexto();
 
 const formatoPeso = new Intl.NumberFormat('es-AR', {
@@ -32,16 +33,19 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
         </span>
         <span v-else class="cv-pie-mobile-art">Sin productos en el ticket</span>
       </div>
-      <button
-        type="button"
-        class="cv-pie-mobile-btn"
-        :disabled="!puedeConfirmarVenta"
-        :title="motivoNoConfirmarVenta || undefined"
-        @click="confirmarVenta"
-      >
-        <CheckCircle2 :size="18" stroke-width="2" aria-hidden="true" />
-        {{ confirmandoVenta ? 'Registrando…' : 'Confirmar venta' }}
-      </button>
+      <div class="cv-pie-mobile-acciones">
+        <button type="button" class="cv-pie-mobile-limpiar" @click="pedirLimpiar">Limpiar</button>
+        <button
+          type="button"
+          class="cv-pie-mobile-btn"
+          :disabled="!puedeConfirmarVenta"
+          :title="motivoNoConfirmarVenta || undefined"
+          @click="confirmarVenta"
+        >
+          <CheckCircle2 :size="18" stroke-width="2" aria-hidden="true" />
+          {{ confirmandoVenta ? 'Registrando…' : 'Confirmar venta' }}
+        </button>
+      </div>
     </footer>
   </Teleport>
 </template>
@@ -93,6 +97,32 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
   .cv-pie-mobile-art {
     font-size: 0.72rem;
     color: var(--color-texto-apagado);
+  }
+
+  .cv-pie-mobile-acciones {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .cv-pie-mobile-limpiar {
+    flex-shrink: 0;
+    min-height: 2.65rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-control);
+    background: var(--color-fondo-cabecera);
+    color: var(--color-texto-suave);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .cv-pie-mobile-limpiar:hover {
+    color: var(--color-texto);
+    background: var(--color-hover-neutro);
   }
 
   .cv-pie-mobile-btn {

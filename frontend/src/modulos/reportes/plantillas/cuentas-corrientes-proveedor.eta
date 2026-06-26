@@ -1,5 +1,5 @@
 <style><%~ it.estilos %></style>
-<article class="rep-doc">
+<article class="rep-doc<% if (it.informeCuentaUnica) { %> rep-doc--cuenta-unica<% } %>">
   <!-- PIE_REPORTE -->
   <header class="rep-enc-pro">
     <!-- EMISOR_REPORTE -->
@@ -12,16 +12,24 @@
   </header>
 
   <div class="rep-kpis">
+    <% if (it.informeCuentaUnica && it.kpisCuentaUnica) { %>
+    <% it.kpisCuentaUnica.forEach(function (kpi) { %>
+    <div class="rep-kpi"><span class="rep-kpi-etiq"><%= kpi.etiqueta %></span><span class="rep-kpi-val"><%= kpi.valor %></span></div>
+    <% }) %>
+    <% } else { %>
     <div class="rep-kpi"><span class="rep-kpi-etiq">Deuda total proveedores</span><span class="rep-kpi-val"><%= it.totalDeuda %></span></div>
     <div class="rep-kpi"><span class="rep-kpi-etiq">Proveedores con saldo</span><span class="rep-kpi-val"><%= it.proveedoresConSaldo %></span></div>
+    <% } %>
   </div>
 
   <% if (it.sinProveedores) { %>
   <p class="rep-vacio">No hay proveedores con cuenta corriente o movimientos en el período.</p>
   <% } else { %>
   <% it.proveedores.forEach(function (p) { %>
-  <section class="rep-seccion">
+  <section class="rep-seccion<% if (it.informeCuentaUnica) { %> rep-seccion--cuenta-unica<% } %>">
+    <% if (!it.informeCuentaUnica) { %>
     <h2 class="rep-seccion-tit"><%= p.nombre %> · <%= p.documento %></h2>
+    <% } %>
     <table class="rep-tabla" style="margin-bottom:0.5rem;">
       <thead><tr><th>Saldo inicial</th><th class="der">Cargos período</th><th class="der">Pagos período</th><th class="der">Saldo final</th><th class="der">Límite CC</th></tr></thead>
       <tbody>
@@ -41,7 +49,32 @@
       <thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th class="der">Cargo</th><th class="der">Pago</th><th class="der">Saldo</th></tr></thead>
       <tbody>
       <% p.movimientos.forEach(function (m) { %>
-        <tr><td><%= m.fecha %></td><td><%= m.tipo %></td><td><%= m.descripcion %></td><td class="der"><%= m.cargo %></td><td class="der"><%= m.pago %></td><td class="der"><%= m.saldo %></td></tr>
+        <tr>
+          <td><%= m.fecha %></td>
+          <td><%= m.tipo %></td>
+          <td><%= m.descripcion %></td>
+          <td class="der"><%= m.cargo %></td>
+          <td class="der"><%= m.pago %></td>
+          <td class="der"><%= m.saldo %></td>
+        </tr>
+        <% if (m.tieneDetalleOperacion && m.detalleOperacion) { %>
+        <tr class="rep-cc-detalle-fila">
+          <td colspan="6">
+            <div class="rep-cc-detalle">
+              <p class="rep-cc-detalle-tit">Detalle de productos · <%= m.detalleOperacion.titulo %></p>
+              <ul class="rep-cc-productos" aria-label="Productos de <%= m.detalleOperacion.titulo %>">
+              <% m.detalleOperacion.lineas.forEach(function (ln) { %>
+                <li>
+                  <span class="rep-cc-productos-nom"><%= ln.nombre %></span>
+                  <span class="rep-cc-productos-det"><span class="rep-cc-productos-cant">×<%= ln.cantidad %></span> <span class="rep-cc-productos-importe"><%= ln.subtotal %></span></span>
+                </li>
+              <% }) %>
+              </ul>
+              <p class="rep-cc-detalle-total">Total operación: <strong><%= m.detalleOperacion.total %></strong></p>
+            </div>
+          </td>
+        </tr>
+        <% } %>
       <% }) %>
       </tbody>
     </table>

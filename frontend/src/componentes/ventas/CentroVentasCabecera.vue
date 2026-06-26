@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { CheckCircle2, HelpCircle, ShoppingCart } from 'lucide-vue-next';
+import { HelpCircle, ShoppingCart } from 'lucide-vue-next';
 import { usarCentroVentasContexto } from './centroVentasContexto';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 
 const descripcionPagina = obtenerDescripcionPagina('ventas-centro');
 
 const {
-  pedirLimpiar,
-  confirmarVenta,
-  puedeConfirmarVenta,
-  confirmandoVenta,
-  motivoNoConfirmarVenta,
   cantidadArticulos,
   totalTicket,
   reabrirOnboarding,
@@ -50,17 +45,6 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
       >
         <HelpCircle :size="17" stroke-width="2" aria-hidden="true" />
         Guía
-      </button>
-      <button type="button" class="cv-btn cv-btn--sec" @click="pedirLimpiar">Limpiar</button>
-      <button
-        type="button"
-        class="cv-btn cv-btn--prim cv-btn--confirmar"
-        :disabled="!puedeConfirmarVenta"
-        :title="motivoNoConfirmarVenta || undefined"
-        @click="confirmarVenta"
-      >
-        <CheckCircle2 :size="18" stroke-width="2" aria-hidden="true" />
-        {{ confirmandoVenta ? 'Registrando…' : 'Confirmar venta' }}
       </button>
     </div>
   </header>
@@ -113,30 +97,5 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 .cv-btn--sec:hover {
   color: var(--color-texto);
   background: var(--color-hover-neutro);
-}
-
-.cv-btn--prim {
-  color: var(--color-texto-sobre-acento);
-  background: linear-gradient(180deg, var(--color-acento) 0%, var(--color-acento-intenso) 100%);
-}
-
-.cv-btn--prim:hover:not(:disabled) {
-  background: linear-gradient(180deg, var(--color-acento-hover) 0%, var(--color-acento) 100%);
-}
-
-.cv-btn--prim:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-@media (max-width: 900px) {
-  .cv-btn--confirmar {
-    display: none;
-  }
-
-  .cv-cab-acciones {
-    width: 100%;
-    justify-content: flex-end;
-  }
 }
 </style>

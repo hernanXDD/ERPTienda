@@ -8,6 +8,33 @@ import {
 const ID_ESTILOS_VISTA_PREVIA = 'rep-vista-previa-estilos';
 const SELECTOR_DOCUMENTO_REPORTE = '.rep-doc';
 
+export interface OpcionesAperturaPdf {
+  /** Ventana abierta en el mismo tick del clic (evita bloqueo de popups tras awaits). */
+  ventanaDestino?: Window | null;
+}
+
+/**
+ * Reservá una pestaña en el instante del clic del usuario, antes de cualquier `await`.
+ * Pasala luego a las funciones de exportación PDF.
+ */
+export function reservarVentanaPdfParaExportacion(): Window | null {
+  try {
+    return window.open('about:blank', '_blank');
+  } catch {
+    return null;
+  }
+}
+
+function cerrarVentanaPdf(ventana: Window | null | undefined): void {
+  if (ventana && !ventana.closed) {
+    try {
+      ventana.close();
+    } catch {
+      /* ignorar */
+    }
+  }
+}
+
 function sanitizarNombreArchivo(nombre: string): string {
   return (
     nombre
@@ -130,37 +157,54 @@ function armarRaizCapturaConEstilos(elementoDocumento: HTMLElement): HTMLElement
   return raiz;
 }
 
+function descargarPdfDesdeUrl(url: string, nombreArchivo: string): void {
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = nombreArchivo.endsWith('.pdf') ? nombreArchivo : `${nombreArchivo}.pdf`;
+  enlace.style.display = 'none';
+  document.body.appendChild(enlace);
+  enlace.click();
+  document.body.removeChild(enlace);
+}
+
 /**
- * Abre una URL (blob del PDF) en una pestaña nueva. Sin `noopener` en window.open
- * para que el visor del navegador pueda cargar el recurso correctamente.
+ * Abre una URL (blob del PDF) en una pestaña nueva o la descarga como fallback.
  */
-function abrirUrlPdfEnNuevaPestana(url: string, revocarDespues?: () => void): void {
-  let abierto = false;
+function abrirUrlPdfEnNuevaPestana(
+  url: string,
+  nombreArchivo: string,
+  revocarDespues?: () => void,
+  opciones: OpcionesAperturaPdf = {},
+): void {
+  const ventanaReservada = opciones.ventanaDestino;
+
+  if (ventanaReservada && !ventanaReservada.closed) {
+    try {
+      ventanaReservada.location.href = url;
+      if (revocarDespues) window.setTimeout(revocarDespues, 120_000);
+      return;
+    } catch {
+      cerrarVentanaPdf(ventanaReservada);
+    }
+  }
 
   const ventana = window.open(url, '_blank');
-  if (ventana) abierto = true;
-
-  if (!abierto) {
-    const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.target = '_blank';
-    enlace.rel = 'noreferrer';
-    enlace.style.display = 'none';
-    document.body.appendChild(enlace);
-    enlace.click();
-    document.body.removeChild(enlace);
-    abierto = true;
+  if (ventana) {
+    if (revocarDespues) window.setTimeout(revocarDespues, 120_000);
+    return;
   }
 
-  if (!abierto) {
-    throw new Error(
-      'El navegador bloqueó la ventana emergente. Permití ventanas emergentes desde este sitio para ver el PDF.'
-    );
+  try {
+    descargarPdfDesdeUrl(url, nombreArchivo);
+    if (revocarDespues) window.setTimeout(revocarDespues, 120_000);
+    return;
+  } catch {
+    /* continuar */
   }
 
-  if (revocarDespues) {
-    window.setTimeout(revocarDespues, 120_000);
-  }
+  throw new Error(
+    'El navegador bloqueó la ventana emergente. Permití ventanas emergentes desde este sitio o revisá la carpeta de descargas.',
+  );
 }
 
 function prepararClonParaCapturaPdf(clon: HTMLElement): void {
@@ -206,7 +250,7 @@ function activarEstilosExportacionPdf(elementoReporte: HTMLElement): () => void 
   };
 }
 
-interface OpcionesCapturaPdf {
+interface OpcionesCapturaPdf extends OpcionesAperturaPdf {
   selectorDocumento?: string;
   prepararClon?: (clonDocumento: HTMLElement) => void;
   antesCaptura?: (clonDocumento: HTMLElement) => () => void;
@@ -256,7 +300,12 @@ async function capturarElementoComoPdf(
           URL.revokeObjectURL(urlPdf);
         };
 
-  abrirUrlPdfEnNuevaPestana(urlPdf, revocar);
+  abrirUrlPdfEnNuevaPestana(
+    urlPdf,
+    `${sanitizarNombreArchivo(nombreArchivo)}.pdf`,
+    revocar,
+    { ventanaDestino: opciones.ventanaDestino },
+  );
 }
 
 async function generarPdfDesdeDocumentoReporte(
@@ -328,8 +377,9 @@ export async function exportarHtmlRaizComoPdf(
 export async function exportarElementoReporteComoPdf(
   elementoReporte: HTMLElement,
   nombreArchivo: string,
+  opciones: OpcionesAperturaPdf = {},
 ): Promise<void> {
-  await generarPdfDesdeDocumentoReporte(elementoReporte, nombreArchivo);
+  await generarPdfDesdeDocumentoReporte(elementoReporte, nombreArchivo, opciones);
 }
 
 /**
@@ -338,6 +388,7 @@ export async function exportarElementoReporteComoPdf(
 export async function exportarReporteComoPdf(
   cuerpoHtml: string,
   nombreArchivo: string,
+  opciones: OpcionesAperturaPdf = {},
 ): Promise<void> {
   if (!cuerpoHtml.trim()) {
     throw new Error('No hay contenido de reporte para exportar.');
@@ -349,7 +400,7 @@ export async function exportarReporteComoPdf(
 
   try {
     const documento = resolverDocumentoEnRaiz(envoltorio, SELECTOR_DOCUMENTO_REPORTE);
-    await generarPdfDesdeDocumentoReporte(documento, nombreArchivo);
+    await generarPdfDesdeDocumentoReporte(documento, nombreArchivo, opciones);
   } finally {
     document.body.removeChild(envoltorio);
   }
@@ -362,7 +413,16 @@ export async function exportarReporteComoPdf(
 export async function exportarVistaReporteComoPdf(
   htmlReporte: string,
   nombreArchivo: string,
-  _contenedorVista?: HTMLElement | null,
+  contenedorVista?: HTMLElement | null,
+  opciones: OpcionesAperturaPdf = {},
 ): Promise<void> {
-  await exportarReporteComoPdf(htmlReporte, nombreArchivo);
+  const documentoDom = contenedorVista?.querySelector(SELECTOR_DOCUMENTO_REPORTE);
+  const vistaConEscalaMovil = contenedorVista?.closest('.rep-preview-escala--activa');
+
+  if (documentoDom instanceof HTMLElement && !vistaConEscalaMovil) {
+    await exportarElementoReporteComoPdf(documentoDom, nombreArchivo, opciones);
+    return;
+  }
+
+  await exportarReporteComoPdf(htmlReporte, nombreArchivo, opciones);
 }

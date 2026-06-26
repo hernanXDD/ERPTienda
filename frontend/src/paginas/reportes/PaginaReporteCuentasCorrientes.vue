@@ -13,11 +13,14 @@ import {
 import { plantillasReportes } from '../../modulos/reportes/plantillasReportes';
 import { useClientesStore } from '../../stores/clientes';
 import { useCuentaCorrienteStore } from '../../stores/cuentaCorriente';
+import { useVentasStore } from '../../stores/ventas';
 
 const clientesStore = useClientesStore();
 const cuentaCorrienteStore = useCuentaCorrienteStore();
+const ventasStore = useVentasStore();
 const { clientes } = storeToRefs(clientesStore);
 const { movimientos } = storeToRefs(cuentaCorrienteStore);
+const { ventas } = storeToRefs(ventasStore);
 
 const opcionesCliente = computed(() =>
   opcionesClientesParaReporte(clientes.value).filter((o) => o.id !== ID_CONSUMIDOR_FINAL_REPORTE)
@@ -26,16 +29,23 @@ const opcionesCliente = computed(() =>
 const { filtro, htmlReporte, errorFiltro, actualizarReporte } = useReporteConFiltros(
   plantillasReportes['cuentas-corrientes'],
   filtrosReporteVistaPorDefecto,
-  (f) => calcularReporteCuentasCorrientes(clientes.value, movimientos.value, f, opcionesCliente.value)
+  (f) => calcularReporteCuentasCorrientes(clientes.value, movimientos.value, f, opcionesCliente.value, ventas.value)
 );
+
+async function prepararExportacionPdf(): Promise<void> {
+  await ventasStore.asegurarVentasCargadas();
+  await actualizarReporte();
+}
 
 onMounted(() => {
   void (async () => {
     await clientesStore.asegurarCargado();
+    await ventasStore.asegurarVentasCargadas();
     const ids = clientesStore.clientes
       .filter((c) => c.habilitado && c.cuentaCorrienteHabilitada)
       .map((c) => c.id);
     await cuentaCorrienteStore.cargarMovimientosTodos(ids);
+    await actualizarReporte();
   })();
 });
 </script>
@@ -51,6 +61,7 @@ onMounted(() => {
     :error-filtro="errorFiltro"
     mostrar-filtro-cliente
     :opciones-cliente="opcionesCliente"
+    :preparar-exportacion-pdf="prepararExportacionPdf"
     @actualizar="actualizarReporte"
   />
 </template>

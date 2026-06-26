@@ -1,5 +1,11 @@
 import type { Proveedor } from '../../../tipos/proveedor';
 import type { MovimientoCuentaCorrienteProveedor } from '../../../tipos/cuentaCorrienteProveedor';
+import type { CompraRegistrada } from '../../../tipos/compraRegistrada';
+import {
+  indiceComprasPorNumero,
+  resolverDetalleOperacionProveedor,
+  type DetalleOperacionCcReporte,
+} from '../detalleOperacionCuentaCorriente';
 import { formatearFechaDiaMesAnio, obtenerDiaComparableDesdeValor } from '../../../utilidades/formatoFechaHora';
 import {
   etiquetaFiltroProveedorLegible,
@@ -21,6 +27,8 @@ export interface FilaMovimientoCcProveedorReporte {
   cargo: string;
   pago: string;
   saldo: string;
+  detalleOperacion: DetalleOperacionCcReporte | null;
+  tieneDetalleOperacion: boolean;
 }
 
 export interface FilaProveedorCcReporte {
@@ -46,6 +54,8 @@ export interface DatosReporteCuentasCorrientesProveedor {
   proveedoresConSaldo: string;
   proveedores: FilaProveedorCcReporte[];
   sinProveedores: boolean;
+  informeCuentaUnica?: boolean;
+  kpisCuentaUnica?: { etiqueta: string; valor: string }[];
 }
 
 export function calcularReporteCuentasCorrientesProveedor(
@@ -53,7 +63,9 @@ export function calcularReporteCuentasCorrientesProveedor(
   movimientos: MovimientoCuentaCorrienteProveedor[],
   filtro: FiltrosReporteConProveedor,
   opcionesProveedor: OpcionEntidadReporte[],
+  compras: CompraRegistrada[] = [],
 ): DatosReporteCuentasCorrientesProveedor {
+  const comprasPorNumero = indiceComprasPorNumero(compras);
   let proveedoresCc = proveedores.filter((p) => p.comprasCreditoHabilitadas);
 
   if (filtro.idProveedor.trim()) {
@@ -85,13 +97,23 @@ export function calcularReporteCuentasCorrientesProveedor(
       if (enPeriodo) {
         if (m.tipoMovimiento === 'cargo') cargosPeriodo += m.importe;
         else pagosPeriodo += m.importe;
+        const detalleOperacion = resolverDetalleOperacionProveedor(
+          m.descripcion,
+          m.tipoMovimiento,
+          proveedor.id,
+          comprasPorNumero,
+        );
+        const esCargo = m.tipoMovimiento === 'cargo';
+        const importeFormateado = formatearMonedaReporte(m.importe);
         movimientosPeriodo.push({
           fecha: formatearFechaDiaMesAnio(m.fecha),
-          tipo: m.tipoMovimiento === 'cargo' ? 'Cargo' : 'Pago',
+          tipo: esCargo ? 'Cargo' : 'Pago',
           descripcion: m.descripcion,
-          cargo: m.tipoMovimiento === 'cargo' ? formatearMonedaReporte(m.importe) : '—',
-          pago: m.tipoMovimiento === 'pagoRegistrado' ? formatearMonedaReporte(m.importe) : '—',
+          cargo: esCargo ? importeFormateado : '—',
+          pago: esCargo ? '—' : importeFormateado,
           saldo: formatearMonedaReporte(saldoAcum),
+          detalleOperacion,
+          tieneDetalleOperacion: detalleOperacion !== null,
         });
       }
     }

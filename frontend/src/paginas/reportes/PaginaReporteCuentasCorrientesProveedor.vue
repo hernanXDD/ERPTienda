@@ -12,11 +12,14 @@ import {
 import { plantillasReportes } from '../../modulos/reportes/plantillasReportes';
 import { useCuentaCorrienteProveedorStore } from '../../stores/cuentaCorrienteProveedor';
 import { useProveedoresStore } from '../../stores/proveedores';
+import { useRegistroComprasStore } from '../../stores/registroCompras';
 
 const proveedoresStore = useProveedoresStore();
 const cuentaCorrienteProveedorStore = useCuentaCorrienteProveedorStore();
+const registroComprasStore = useRegistroComprasStore();
 const { proveedores } = storeToRefs(proveedoresStore);
 const { movimientos } = storeToRefs(cuentaCorrienteProveedorStore);
+const { compras } = storeToRefs(registroComprasStore);
 
 const opcionesProveedor = computed(() => opcionesProveedoresParaReporte(proveedores.value));
 
@@ -29,16 +32,24 @@ const { filtro, htmlReporte, errorFiltro, actualizarReporte } = useReporteConFil
       movimientos.value,
       f,
       opcionesProveedor.value,
+      compras.value,
     ),
 );
+
+async function prepararExportacionPdf(): Promise<void> {
+  await registroComprasStore.asegurarCargado();
+  await actualizarReporte();
+}
 
 onMounted(() => {
   void (async () => {
     await proveedoresStore.asegurarCargado();
+    await registroComprasStore.asegurarCargado();
     const ids = proveedoresStore.proveedores
       .filter((p) => p.habilitado && p.comprasCreditoHabilitadas)
       .map((p) => p.id);
     await cuentaCorrienteProveedorStore.cargarMovimientosTodos(ids);
+    await actualizarReporte();
   })();
 });
 </script>
@@ -54,6 +65,7 @@ onMounted(() => {
     :error-filtro="errorFiltro"
     mostrar-filtro-proveedor
     :opciones-proveedor="opcionesProveedor"
+    :preparar-exportacion-pdf="prepararExportacionPdf"
     @actualizar="actualizarReporte"
   />
 </template>

@@ -1,5 +1,11 @@
 import type { Cliente } from '../../../tipos/cliente';
 import type { MovimientoCuentaCorriente } from '../../../tipos/cuentaCorriente';
+import type { VentaRegistrada } from '../../../tipos/venta';
+import {
+  indiceVentasPorNumero,
+  resolverDetalleOperacionCliente,
+  type DetalleOperacionCcReporte,
+} from '../detalleOperacionCuentaCorriente';
 import { formatearFechaDiaMesAnio } from '../../../utilidades/formatoFechaHora';
 import { obtenerDiaComparableDesdeValor } from '../../../utilidades/formatoFechaHora';
 import {
@@ -22,6 +28,8 @@ export interface FilaMovimientoCcReporte {
   cargo: string;
   pago: string;
   saldo: string;
+  detalleOperacion: DetalleOperacionCcReporte | null;
+  tieneDetalleOperacion: boolean;
 }
 
 export interface FilaClienteCcReporte {
@@ -47,14 +55,19 @@ export interface DatosReporteCuentasCorrientes {
   clientesConSaldo: string;
   clientes: FilaClienteCcReporte[];
   sinClientes: boolean;
+  /** PDF desde ficha de un cliente: KPIs y maquetación compacta. */
+  informeCuentaUnica?: boolean;
+  kpisCuentaUnica?: { etiqueta: string; valor: string }[];
 }
 
 export function calcularReporteCuentasCorrientes(
   clientes: Cliente[],
   movimientos: MovimientoCuentaCorriente[],
   filtro: FiltrosReporteConCliente,
-  opcionesCliente: OpcionEntidadReporte[]
+  opcionesCliente: OpcionEntidadReporte[],
+  ventas: VentaRegistrada[] = [],
 ): DatosReporteCuentasCorrientes {
+  const ventasPorNumero = indiceVentasPorNumero(ventas);
   let clientesCc = clientes.filter((c) => c.cuentaCorrienteHabilitada);
 
   if (filtro.idCliente.trim()) {
@@ -90,13 +103,23 @@ export function calcularReporteCuentasCorrientes(
       if (enPeriodo) {
         if (m.tipoMovimiento === 'cargo') cargosPeriodo += m.importe;
         else pagosPeriodo += m.importe;
+        const detalleOperacion = resolverDetalleOperacionCliente(
+          m.descripcion,
+          m.tipoMovimiento,
+          cliente.id,
+          ventasPorNumero,
+        );
+        const esCargo = m.tipoMovimiento === 'cargo';
+        const importeFormateado = formatearMonedaReporte(m.importe);
         movimientosPeriodo.push({
           fecha: formatearFechaDiaMesAnio(m.fecha),
-          tipo: m.tipoMovimiento === 'cargo' ? 'Cargo' : 'Pago',
+          tipo: esCargo ? 'Cargo' : 'Pago',
           descripcion: m.descripcion,
-          cargo: m.tipoMovimiento === 'cargo' ? formatearMonedaReporte(m.importe) : '—',
-          pago: m.tipoMovimiento === 'pagoRegistrado' ? formatearMonedaReporte(m.importe) : '—',
+          cargo: esCargo ? importeFormateado : '—',
+          pago: esCargo ? '—' : importeFormateado,
           saldo: formatearMonedaReporte(saldoAcum),
+          detalleOperacion,
+          tieneDetalleOperacion: detalleOperacion !== null,
         });
       }
     }

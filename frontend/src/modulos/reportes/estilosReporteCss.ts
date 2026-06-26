@@ -279,6 +279,81 @@ const estilosReporteCssPlantilla = `
   color: var(--rep-texto);
 }
 
+.rep-cc-detalle-fila td {
+  padding: 0 0 0.65rem !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.rep-cc-detalle {
+  margin: 0.15rem 0 0.35rem 0.35rem;
+  padding: 0.55rem 0.65rem 0.65rem;
+  border-left: 3px solid var(--rep-acento-borde-detalle);
+  border-radius: 0 8px 8px 0;
+  background: var(--rep-fondo-alt);
+}
+
+.rep-cc-detalle-tit {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--rep-texto-apagado);
+  text-transform: uppercase;
+}
+
+.rep-cc-productos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rep-cc-productos li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.22rem 0;
+  font-size: 0.78rem;
+  color: var(--rep-texto-suave);
+  border-top: 1px dashed rgba(15, 23, 42, 0.1);
+}
+
+.rep-cc-productos li:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.rep-cc-productos-nom {
+  flex: 1;
+  min-width: 0;
+}
+
+.rep-cc-productos-det {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rep-cc-productos-cant {
+  margin-right: 0.25rem;
+  color: var(--rep-texto-apagado);
+}
+
+.rep-cc-productos-importe {
+  font-weight: 600;
+  color: var(--rep-texto-medio);
+}
+
+.rep-cc-detalle-total {
+  margin: 0.45rem 0 0;
+  padding-top: 0.35rem;
+  font-size: 0.78rem;
+  text-align: right;
+  color: var(--rep-texto-suave);
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+}
+
 .rep-vacio {
   margin: 0;
   padding: 1rem;
@@ -453,12 +528,46 @@ const estilosReporteCssPlantilla = `
   width: 210mm !important;
   max-width: 210mm !important;
   min-width: 210mm !important;
+  min-height: auto !important;
   margin: 0 !important;
   padding: 0 10mm 10mm !important;
   box-sizing: border-box !important;
   font-size: 8.5pt !important;
   line-height: 1.35 !important;
   overflow: visible !important;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-enc-pro {
+  margin-bottom: 0.55rem !important;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-seccion {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  margin-bottom: 0.65rem !important;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-seccion--cuenta-unica {
+  margin-top: 0 !important;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-tabla {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-tabla tbody tr {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-cc-detalle-fila {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.rep-doc.rep-doc--exportacion-pdf .rep-pie-pagina {
+  display: none !important;
 }
 
 .rep-doc.rep-doc--exportacion-pdf .rep-kpis {

@@ -9,6 +9,7 @@ import { useEsMovil } from '../../composables/useEsMovil';
 import {
   exportarVistaReporteComoPdf,
   nombreArchivoReportePdf,
+  reservarVentanaPdfParaExportacion,
 } from '../../modulos/reportes/impresionReporte';
 import { generarEstilosReporteNegocio } from '../../modulos/reportes/estilosReporteCss';
 import { useNegocioStore } from '../../stores/negocio';
@@ -29,6 +30,8 @@ const props = withDefaults(
     opcionesCliente?: OpcionEntidadReporte[];
     opcionesProveedor?: OpcionEntidadReporte[];
     opcionesEstadoFacturacion?: OpcionEntidadReporte[];
+    /** Sincroniza datos (p. ej. ventas/compras) antes de generar el PDF. */
+    prepararExportacionPdf?: () => Promise<void>;
   }>(),
   {
     mostrarFiltroCliente: false,
@@ -184,17 +187,28 @@ onUnmounted(() => {
 async function exportarPdf(): Promise<void> {
   if (!props.htmlReporte.trim() || exportandoPdf.value) return;
 
+  const ventanaPdf = reservarVentanaPdfParaExportacion();
   exportandoPdf.value = true;
   errorExportacionPdf.value = '';
 
   try {
+    await props.prepararExportacionPdf?.();
+    await nextTick();
+
+    const htmlReporte = props.htmlReporte;
+    if (!htmlReporte.trim()) {
+      throw new Error('No hay contenido de reporte para exportar. Pulsá «Actualizar» e intentá de nuevo.');
+    }
+
     const nombreArchivo = nombreArchivoReportePdf(props.tituloImpresion, filtro.value);
     await exportarVistaReporteComoPdf(
-      props.htmlReporte,
+      htmlReporte,
       nombreArchivo,
-      refVistaReporte.value
+      refVistaReporte.value,
+      { ventanaDestino: ventanaPdf },
     );
   } catch (error: unknown) {
+    if (ventanaPdf && !ventanaPdf.closed) ventanaPdf.close();
     const mensaje =
       error instanceof Error ? error.message : 'No se pudo abrir el PDF en una nueva pestaña.';
     errorExportacionPdf.value = mensaje;

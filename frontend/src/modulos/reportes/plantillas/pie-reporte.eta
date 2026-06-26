@@ -1,4 +1,4 @@
-<footer class="rep-pie-pagina" data-rep-pie='<%~ it.repPieDatosJson %>'>
+<footer class="rep-pie-pagina" data-rep-pie="<%~ it.repPieDatosJsonHtml %>">
   <% if (it.tieneDatosContacto) { %>
   <div class="rep-pie-contacto">
     <% if (it.tieneDireccion) { %><p class="rep-pie-dir"><%= it.negocioDireccion %></p><% } %>

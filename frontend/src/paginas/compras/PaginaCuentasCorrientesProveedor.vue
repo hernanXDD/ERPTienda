@@ -5,8 +5,10 @@ import { storeToRefs } from 'pinia';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useProveedoresStore } from '../../stores/proveedores';
 import { useCuentaCorrienteProveedorStore, type MovimientoConSaldoProveedor } from '../../stores/cuentaCorrienteProveedor';
+import { useRegistroComprasStore } from '../../stores/registroCompras';
 import { exportarPdfCuentaCorrienteProveedor } from '../../modulos/compras/exportarPdfCuentaCorrienteProveedor';
 import { exportarReciboPagoCuentaCorrienteProveedorPdf } from '../../modulos/compras/impresionReciboPagoCuentaCorrienteProveedor';
+import { reservarVentanaPdfParaExportacion } from '../../modulos/reportes/impresionReporte';
 import { notificarError } from '../../utilidades/notificacion';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
 import { opcionesFormaPagoRegistroCuentaCorriente } from '../../modulos/clientes/formasPagoRegistroCuentaCorriente';
@@ -35,8 +37,10 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 
 const proveedoresStore = useProveedoresStore();
 const cuentaCorrienteProveedorStore = useCuentaCorrienteProveedorStore();
+const registroComprasStore = useRegistroComprasStore();
 const { proveedores } = storeToRefs(proveedoresStore);
 const { movimientos } = storeToRefs(cuentaCorrienteProveedorStore);
+const { compras } = storeToRefs(registroComprasStore);
 
 const refDialogoMovimientos = ref<HTMLDialogElement | null>(null);
 const refCuadroRegistrarPago = ref<HTMLDialogElement | null>(null);
@@ -47,6 +51,7 @@ const proveedorModal = ref<Proveedor | null>(null);
 const fechaFiltroDesde = ref('');
 const fechaFiltroHasta = ref('');
 const exportandoPdfCuenta = ref(false);
+const errorExportacionPdfCuenta = ref('');
 
 const busquedaNombre = ref('');
 /** '' = todos; con-deuda = saldo deudor > 0; sin-deuda = saldo <= 0 */
@@ -164,6 +169,7 @@ function abrirMovimientosProveedor(c: Proveedor): void {
   proveedorModal.value = c;
   fechaFiltroDesde.value = '';
   fechaFiltroHasta.value = '';
+  errorExportacionPdfCuenta.value = '';
   cerrarCuadroRegistrarPago();
   limpiarFormularioRegistrarPago();
   refDialogoMovimientos.value?.showModal();
@@ -275,6 +281,7 @@ async function ejecutarRegistroPago(): Promise<void> {
 onMounted(() => {
   void (async () => {
     await proveedoresStore.asegurarCargado();
+    await registroComprasStore.asegurarCargado();
     const ids = proveedoresStore.proveedores
       .filter((pr) => pr.habilitado && pr.comprasCreditoHabilitadas)
       .map((pr) => pr.id);
@@ -301,19 +308,32 @@ async function imprimirCuentaProveedor(): Promise<void> {
   const c = proveedorModal.value;
   if (!c || exportandoPdfCuenta.value) return;
 
+  const ventanaPdf = reservarVentanaPdfParaExportacion();
   exportandoPdfCuenta.value = true;
+  errorExportacionPdfCuenta.value = '';
+
   try {
+    try {
+      await registroComprasStore.asegurarCargado();
+    } catch {
+      /* El reporte se exporta igual; puede faltar detalle de productos. */
+    }
+
     await exportarPdfCuentaCorrienteProveedor({
       proveedor: c,
       proveedores: proveedores.value,
       movimientos: movimientos.value,
+      compras: compras.value,
       fechaDesde: fechaFiltroDesde.value || undefined,
       fechaHasta: fechaFiltroHasta.value || undefined,
+      ventanaPdfDestino: ventanaPdf,
     });
   } catch (error: unknown) {
-    notificarError(
-      error instanceof Error ? error.message : 'No se pudo exportar el reporte de cuenta corriente.',
-    );
+    if (ventanaPdf && !ventanaPdf.closed) ventanaPdf.close();
+    const mensaje =
+      error instanceof Error ? error.message : 'No se pudo exportar el reporte de cuenta corriente.';
+    errorExportacionPdfCuenta.value = mensaje;
+    notificarError(mensaje);
   } finally {
     exportandoPdfCuenta.value = false;
   }
@@ -571,6 +591,9 @@ async function imprimirCuentaProveedor(): Promise<void> {
               {{ exportandoPdfCuenta ? 'Generando PDF…' : 'Imprimir reporte' }}
             </button>
           </div>
+          <p v-if="errorExportacionPdfCuenta" class="cc-export-error" role="alert">
+            {{ errorExportacionPdfCuenta }}
+          </p>
         </div>
 
         <section class="cc-modal-tabla-cuerpo" aria-labelledby="cc-dlg-hist-tit">
@@ -964,6 +987,15 @@ async function imprimirCuentaProveedor(): Promise<void> {
 .cc-btn.imprimir:hover {
   border-color: var(--color-acento-borde);
   background: var(--color-acento-suave);
+}
+
+.cc-export-error {
+  margin: 0.55rem 0 0;
+  width: 100%;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--color-peligro);
+  text-align: left;
 }
 
 /* Modal cuenta corriente: ocupa mayor parte del viewport */

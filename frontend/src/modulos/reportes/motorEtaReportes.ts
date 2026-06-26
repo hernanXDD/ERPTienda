@@ -2,7 +2,7 @@ import { Eta } from 'eta/core';
 import { useNegocioStore } from '../../stores/negocio';
 import { obtenerEmisorNegocioReporte } from './emisorNegocioReporte';
 import { generarEstilosReporteNegocio } from './estilosReporteCss';
-import { armarDatosPiePaginaReporte } from './piePaginaReporte';
+import { armarDatosPiePaginaReporte, codificarJsonAtributoHtml } from './piePaginaReporte';
 import plantillaEmisorReporte from './plantillas/emisor-reporte.eta?raw';
 import plantillaPieReporte from './plantillas/pie-reporte.eta?raw';
 
@@ -27,7 +27,9 @@ function datosReporteCompletos(datos: object, estilosCss: string): Record<string
     ...datos,
     estilos: estilosCss,
   };
-  merged.repPieDatosJson = JSON.stringify(armarDatosPiePaginaReporte(merged));
+  const repPieDatosJson = JSON.stringify(armarDatosPiePaginaReporte(merged));
+  merged.repPieDatosJson = repPieDatosJson;
+  merged.repPieDatosJsonHtml = codificarJsonAtributoHtml(repPieDatosJson);
   return merged;
 }
 

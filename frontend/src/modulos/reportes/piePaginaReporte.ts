@@ -18,6 +18,11 @@ export interface DatosPiePaginaReporte {
   redesSociales: RedSocialPieReporte[];
 }
 
+/** Codifica JSON para usarlo en un atributo HTML entre comillas dobles. */
+export function codificarJsonAtributoHtml(json: string): string {
+  return json.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
 export function armarDatosPiePaginaReporte(datos: Record<string, unknown>): DatosPiePaginaReporte {
   const redes = Array.isArray(datos.redesSociales)
     ? (datos.redesSociales as RedSocialPieReporte[])

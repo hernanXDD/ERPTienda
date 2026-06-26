@@ -26,6 +26,7 @@ export function variablesCssReporte(tema: TemaClaroNegocio): Record<string, stri
     '--rep-acento-muy-intenso': acentoMuyIntenso,
     '--rep-borde': borde,
     '--rep-borde-claro': mezclarHex(borde, fondo, 0.45),
+    '--rep-acento-borde-detalle': mezclarHex(acento, borde, 0.55),
     '--rep-texto-sobre-acento': '#f8fafc',
     '--rep-sombra-enc': '0 2px 8px rgba(15, 23, 42, 0.06)',
     '--rep-gradiente-enc': `linear-gradient(180deg, ${superficie} 0%, ${fondo} 100%)`,

@@ -2,6 +2,10 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Cliente } from '../../../tipos/cliente';
 import type { MovimientoCuentaCorriente } from '../../../tipos/cuentaCorriente';
+import type { VentaRegistrada } from '../../../tipos/venta';
+import { renderizarPlantillaReporte } from '../motorEtaReportes';
+import { plantillasReportes } from '../plantillasReportes';
+import { useNegocioStore } from '../../../stores/negocio';
 import { calcularReporteCuentasCorrientes } from './calcularReporteCuentasCorrientes';
 
 function clienteBase(parcial: Partial<Cliente> = {}): Cliente {
@@ -111,5 +115,139 @@ describe('calcularReporteCuentasCorrientes', () => {
 
     expect(reporte.clientes[0]?.nombre).toBe('Mayor deuda');
     expect(reporte.clientes[1]?.nombre).toBe('Menor deuda');
+  });
+
+  it('incluye detalle de productos en cargos vinculados a ventas en cuenta corriente', () => {
+    const clientes = [clienteBase()];
+    const movimientos: MovimientoCuentaCorriente[] = [
+      {
+        id: '000002',
+        clienteId: '000010',
+        fecha: '2026-05-10T12:00:00.000Z',
+        tipoMovimiento: 'cargo',
+        importe: 15000,
+        descripcion: 'Venta V-00001',
+      },
+    ];
+    const ventas: VentaRegistrada[] = [
+      {
+        id: '000100',
+        numero: 'V-00001',
+        fecha: '2026-05-10T12:00:00.000Z',
+        clienteId: '000010',
+        nombreClienteMostrar: 'Cliente CC',
+        documentoClienteMostrar: '20123456789',
+        condicionIvaCliente: 'CONSUMIDOR_FINAL',
+        formaPago: 'CUENTA_CORRIENTE',
+        subtotal: 15000,
+        ajusteMonto: 0,
+        ajustePorcentaje: null,
+        total: 15000,
+        facturacion: '',
+        estadoFacturacion: { id: '000001', codigo: 'PENDIENTE', nombre: 'Pendiente' },
+        lineas: [
+          {
+            id: '000200',
+            varianteId: '000300',
+            nombre: 'Remera M',
+            cantidad: 2,
+            precioUnitario: 5000,
+            subtotal: 10000,
+          },
+          {
+            id: '000201',
+            varianteId: '000301',
+            nombre: 'Pantalón 42',
+            cantidad: 1,
+            precioUnitario: 5000,
+            subtotal: 5000,
+          },
+        ],
+        observaciones: '',
+        registradoPor: { idUsuario: null, etiquetaUsuario: 'admin' },
+      },
+    ];
+
+    const reporte = calcularReporteCuentasCorrientes(clientes, movimientos, filtro, [], ventas);
+    const movimiento = reporte.clientes[0]?.movimientos[0];
+
+    expect(movimiento?.tieneDetalleOperacion).toBe(true);
+    expect(movimiento?.detalleOperacion?.lineas).toHaveLength(2);
+    expect(movimiento?.detalleOperacion?.lineas[0]?.nombre).toBe('Remera M');
+    expect(movimiento?.detalleOperacion?.total).toContain('15.000');
+  });
+
+  it('renderiza la plantilla ETA con detalle de productos sin error', () => {
+    useNegocioStore().$patch({
+      negocio: {
+        nombre: 'Negocio Test',
+        cuit: '',
+        direccion: '',
+        ciudad: '',
+        provincia: '',
+        codigoPostal: '',
+        telefono: '',
+        correoElectronico: '',
+        tieneLogo: false,
+        logoVersion: 0,
+        instagram: '',
+        mostrarInstagram: false,
+        twitter: '',
+        mostrarTwitter: false,
+        tiktok: '',
+        mostrarTiktok: false,
+      } as import('../../../tipos/negocio').Negocio,
+    });
+
+    const clientes = [clienteBase()];
+    const movimientos: MovimientoCuentaCorriente[] = [
+      {
+        id: '000002',
+        clienteId: '000010',
+        fecha: '2026-05-10T12:00:00.000Z',
+        tipoMovimiento: 'cargo',
+        importe: 15000,
+        descripcion: 'Venta V-00001',
+      },
+    ];
+    const ventas: VentaRegistrada[] = [
+      {
+        id: '000100',
+        numero: 'V-00001',
+        fecha: '2026-05-10T12:00:00.000Z',
+        clienteId: '000010',
+        nombreClienteMostrar: 'Cliente CC',
+        documentoClienteMostrar: '20123456789',
+        condicionIvaCliente: 'CONSUMIDOR_FINAL',
+        formaPago: 'CUENTA_CORRIENTE',
+        subtotal: 15000,
+        ajusteMonto: 0,
+        ajustePorcentaje: null,
+        total: 15000,
+        facturacion: '',
+        estadoFacturacion: { id: '000001', codigo: 'PENDIENTE', nombre: 'Pendiente' },
+        lineas: [
+          {
+            id: '000200',
+            varianteId: '000300',
+            nombre: 'Remera & Co',
+            cantidad: 1,
+            precioUnitario: 15000,
+            subtotal: 15000,
+          },
+        ],
+        observaciones: '',
+        registradoPor: { idUsuario: null, etiquetaUsuario: 'admin' },
+      },
+    ];
+
+    const datos = calcularReporteCuentasCorrientes(clientes, movimientos, filtro, [], ventas);
+    const html = renderizarPlantillaReporte(plantillasReportes['cuentas-corrientes'], datos);
+
+    expect(html).toContain('Detalle de productos');
+    expect(html).toContain('rep-cc-productos');
+    expect(html).toContain('Remera &amp; Co');
+    expect(html).toContain('Cargo</th>');
+    expect(html).toContain('class="rep-doc"');
   });
 });

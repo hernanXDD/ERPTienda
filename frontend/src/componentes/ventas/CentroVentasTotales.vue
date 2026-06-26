@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usarCentroVentasContexto } from './centroVentasContexto';
+import CentroVentasAcciones from './CentroVentasAcciones.vue';
 
 const {
   subtotalTicket,
@@ -124,6 +125,8 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
           />
         </label>
       </div>
+
+      <CentroVentasAcciones />
 
       <div class="cv-total-bloque" aria-live="polite">
         <div class="cv-total-filas">
@@ -405,7 +408,7 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
 
 @media (min-width: 901px) {
   .cv-pie-grid {
-    grid-template-columns: 1fr min(18rem, 38%);
+    grid-template-columns: 1fr auto min(18rem, 38%);
     align-items: stretch;
   }
 }

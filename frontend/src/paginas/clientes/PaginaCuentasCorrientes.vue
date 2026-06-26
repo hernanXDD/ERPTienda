@@ -5,8 +5,10 @@ import { storeToRefs } from 'pinia';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useClientesStore } from '../../stores/clientes';
 import { useCuentaCorrienteStore, type MovimientoConSaldo } from '../../stores/cuentaCorriente';
+import { useVentasStore } from '../../stores/ventas';
 import { exportarPdfCuentaCorrienteCliente } from '../../modulos/clientes/exportarPdfCuentaCorrienteCliente';
 import { exportarReciboPagoCuentaCorrientePdf } from '../../modulos/clientes/impresionReciboPagoCuentaCorriente';
+import { reservarVentanaPdfParaExportacion } from '../../modulos/reportes/impresionReporte';
 import { notificarError } from '../../utilidades/notificacion';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
 import { opcionesFormaPagoRegistroCuentaCorriente } from '../../modulos/clientes/formasPagoRegistroCuentaCorriente';
@@ -39,8 +41,10 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
 
 const clientesStore = useClientesStore();
 const cuentaCorrienteStore = useCuentaCorrienteStore();
+const ventasStore = useVentasStore();
 const { clientes } = storeToRefs(clientesStore);
 const { movimientos } = storeToRefs(cuentaCorrienteStore);
+const { ventas } = storeToRefs(ventasStore);
 
 const refDialogoMovimientos = ref<HTMLDialogElement | null>(null);
 const refCuadroRegistrarPago = ref<HTMLDialogElement | null>(null);
@@ -51,6 +55,7 @@ const clienteModal = ref<Cliente | null>(null);
 const fechaFiltroDesde = ref('');
 const fechaFiltroHasta = ref('');
 const exportandoPdfCuenta = ref(false);
+const errorExportacionPdfCuenta = ref('');
 
 const busquedaNombre = ref('');
 /** '' = todos; con-deuda = saldo deudor > 0; sin-deuda = saldo <= 0 */
@@ -171,6 +176,7 @@ function abrirMovimientosCliente(c: Cliente): void {
   clienteModal.value = c;
   fechaFiltroDesde.value = '';
   fechaFiltroHasta.value = '';
+  errorExportacionPdfCuenta.value = '';
   cerrarCuadroRegistrarPago();
   limpiarFormularioRegistrarPago();
   refDialogoMovimientos.value?.showModal();
@@ -282,6 +288,7 @@ async function ejecutarRegistroPago(): Promise<void> {
 onMounted(() => {
   void (async () => {
     await clientesStore.asegurarCargado();
+    await ventasStore.asegurarVentasCargadas();
     const ids = clientesStore.clientes
       .filter((cl) => cl.habilitado && cl.cuentaCorrienteHabilitada)
       .map((cl) => cl.id);
@@ -308,19 +315,32 @@ async function imprimirCuentaCliente(): Promise<void> {
   const c = clienteModal.value;
   if (!c || exportandoPdfCuenta.value) return;
 
+  const ventanaPdf = reservarVentanaPdfParaExportacion();
   exportandoPdfCuenta.value = true;
+  errorExportacionPdfCuenta.value = '';
+
   try {
+    try {
+      await ventasStore.asegurarVentasCargadas();
+    } catch {
+      /* El reporte se exporta igual; puede faltar detalle de productos. */
+    }
+
     await exportarPdfCuentaCorrienteCliente({
       cliente: c,
       clientes: clientes.value,
       movimientos: movimientos.value,
+      ventas: ventas.value,
       fechaDesde: fechaFiltroDesde.value || undefined,
       fechaHasta: fechaFiltroHasta.value || undefined,
+      ventanaPdfDestino: ventanaPdf,
     });
   } catch (error: unknown) {
-    notificarError(
-      error instanceof Error ? error.message : 'No se pudo exportar el reporte de cuenta corriente.',
-    );
+    if (ventanaPdf && !ventanaPdf.closed) ventanaPdf.close();
+    const mensaje =
+      error instanceof Error ? error.message : 'No se pudo exportar el reporte de cuenta corriente.';
+    errorExportacionPdfCuenta.value = mensaje;
+    notificarError(mensaje);
   } finally {
     exportandoPdfCuenta.value = false;
   }
@@ -596,6 +616,9 @@ async function imprimirCuentaCliente(): Promise<void> {
               {{ exportandoPdfCuenta ? 'Generando PDF…' : 'Imprimir reporte' }}
             </button>
           </div>
+          <p v-if="errorExportacionPdfCuenta" class="cc-export-error" role="alert">
+            {{ errorExportacionPdfCuenta }}
+          </p>
         </div>
 
         <section class="cc-modal-tabla-cuerpo" aria-labelledby="cc-dlg-hist-tit">
@@ -1015,6 +1038,15 @@ async function imprimirCuentaCliente(): Promise<void> {
 .cc-btn.imprimir:hover {
   border-color: var(--color-acento-borde);
   background: var(--color-acento-suave);
+}
+
+.cc-export-error {
+  margin: 0.55rem 0 0;
+  width: 100%;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--color-peligro);
+  text-align: left;
 }
 
 /* Modal cuenta corriente: ocupa mayor parte del viewport */
