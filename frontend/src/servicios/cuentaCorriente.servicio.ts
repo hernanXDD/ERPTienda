@@ -42,3 +42,18 @@ export async function registrarPagoCuentaCorrienteApi(
   );
   return data.datos;
 }
+
+export async function registrarMovimientoManualCuentaCorrienteApi(
+  clienteId: string,
+  datos: {
+    tipoMovimiento: 'cargo' | 'pagoRegistrado';
+    importe: number;
+    descripcion: string;
+  },
+): Promise<MovimientoCuentaCorriente> {
+  const { data } = await clienteHttp.post<RespuestaApi<MovimientoCuentaCorriente>>(
+    `/clientes/${clienteId}/cuenta-corriente/movimiento-manual`,
+    datos,
+  );
+  return data.datos;
+}

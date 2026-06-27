@@ -20,16 +20,6 @@ enum RolUsuario {
   @@map("rol_usuario")
 }
 
-enum FormaPagoVenta {
-  EFECTIVO
-  DEBITO
-  CREDITO
-  TRANSFERENCIA
-  CUENTA_CORRIENTE
-
-  @@map("forma_pago_venta")
-}
-
 enum CondicionCompra {
   CONTADO
   CUENTA_PROVEEDOR
@@ -130,6 +120,30 @@ model Categoria {
   @@map("categoria")
 }
 
+enum TipoTalleCatalogo {
+  LETRA
+  NUMERO
+  OTRO
+}
+
+model TalleCatalogo {
+  id                 String            @id @db.Char(6)
+  codigo             String            @unique @db.VarChar(32)
+  nombre             String            @db.VarChar(100)
+  tipo               TipoTalleCatalogo @default(OTRO)
+  habilitado         Boolean           @default(true)
+  orden              Int               @default(0)
+  fechaCreacion      DateTime          @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime          @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  borrado            Boolean           @default(false)
+  fechaEliminacion   DateTime?         @map("fecha_eliminacion") @db.Timestamptz(3)
+
+  @@index([habilitado, orden])
+  @@index([tipo, habilitado, orden])
+  @@index([borrado])
+  @@map("talle_catalogo")
+}
+
 model Producto {
   id                 String    @id @db.Char(6)
   nombre             String    @db.VarChar(200)
@@ -178,9 +192,10 @@ model Variante {
 
 /// Saldo vigente por variante (una fila por SKU)
 model StockVariante {
-  varianteId         String   @id @map("variante_id") @db.Char(6)
-  cantidadActual     Int      @default(0) @map("cantidad_actual")
-  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  varianteId         String    @id @map("variante_id") @db.Char(6)
+  cantidadActual     Int       @default(0) @map("cantidad_actual")
+  fechaAgotado       DateTime? @map("fecha_agotado") @db.Timestamptz(3)
+  fechaActualizacion DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
 
   variante Variante @relation(fields: [varianteId], references: [id], onDelete: Cascade)
 
@@ -269,6 +284,7 @@ model Cliente {
   id                          String    @id @db.Char(6)
   nombre                      String    @db.VarChar(200)
   documento                   String    @db.VarChar(32)
+  documentoNormalizado        String    @map("documento_normalizado") @db.VarChar(32)
   correoElectronico           String    @default("") @map("correo_electronico") @db.VarChar(255)
   telefonoPrincipal           String    @default("") @map("telefono_principal") @db.VarChar(32)
   telefonoAlternativo         String    @default("") @map("telefono_alternativo") @db.VarChar(32)
@@ -289,6 +305,7 @@ model Cliente {
   @@index([habilitado])
   @@index([nombre])
   @@index([documento])
+  @@index([documentoNormalizado])
   @@index([borrado])
   @@map("cliente")
 }
@@ -296,6 +313,7 @@ model Cliente {
 model MovimientoCuentaCorriente {
   id                     String                        @id @db.Char(6)
   clienteId              String                        @map("cliente_id") @db.Char(6)
+  ventaId                String?                       @map("venta_id") @db.Char(6)
   fecha                  DateTime                      @default(now()) @db.Timestamptz(3)
   tipoMovimiento         TipoMovimientoCuentaCorriente @map("tipo_movimiento")
   importe                Decimal                       @db.Decimal(14, 2)
@@ -305,9 +323,11 @@ model MovimientoCuentaCorriente {
   fechaCreacion          DateTime                      @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
 
   cliente              Cliente  @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  venta                Venta?   @relation(fields: [ventaId], references: [id], onDelete: SetNull)
   registradoPorUsuario Usuario? @relation("MovimientoCcRegistradoPor", fields: [registradoPorUsuarioId], references: [id], onDelete: SetNull)
 
   @@index([clienteId, fecha(sort: Desc)])
+  @@index([ventaId])
   @@map("movimiento_cuenta_corriente")
 }
 
@@ -317,6 +337,7 @@ model Proveedor {
   id                        String    @id @db.Char(6)
   nombre                    String    @db.VarChar(200)
   documento                 String    @db.VarChar(32)
+  documentoNormalizado      String    @map("documento_normalizado") @db.VarChar(32)
   correoElectronico         String    @default("") @map("correo_electronico") @db.VarChar(255)
   telefonoPrincipal         String    @default("") @map("telefono_principal") @db.VarChar(32)
   telefonoAlternativo       String    @default("") @map("telefono_alternativo") @db.VarChar(32)
@@ -334,6 +355,7 @@ model Proveedor {
 
   @@index([habilitado])
   @@index([documento])
+  @@index([documentoNormalizado])
   @@index([borrado])
   @@map("proveedor")
 }
@@ -353,6 +375,7 @@ model Compra {
   lineas    CompraLinea[]
   auditoriasStock AuditoriaStock[]
   movimientosStock MovimientoStock[]
+  movimientosCuentaCorrienteProveedor MovimientoCuentaCorrienteProveedor[]
 
   @@index([fecha(sort: Desc)])
   @@index([proveedorId])
@@ -378,6 +401,7 @@ model CompraLinea {
 model MovimientoCuentaCorrienteProveedor {
   id                     String                        @id @db.Char(6)
   proveedorId            String                        @map("proveedor_id") @db.Char(6)
+  compraId               String?                       @map("compra_id") @db.Char(6)
   fecha                  DateTime                      @default(now()) @db.Timestamptz(3)
   tipoMovimiento         TipoMovimientoCuentaCorriente @map("tipo_movimiento")
   importe                Decimal                       @db.Decimal(14, 2)
@@ -387,13 +411,32 @@ model MovimientoCuentaCorrienteProveedor {
   fechaCreacion          DateTime                      @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
 
   proveedor            Proveedor @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  compra               Compra?   @relation(fields: [compraId], references: [id], onDelete: SetNull)
   registradoPorUsuario Usuario?  @relation("MovimientoCcProveedorRegistradoPor", fields: [registradoPorUsuarioId], references: [id], onDelete: SetNull)
 
   @@index([proveedorId, fecha(sort: Desc)])
+  @@index([compraId])
   @@map("movimiento_cuenta_corriente_proveedor")
 }
 
 // —— Ventas ——
+
+model FormaPago {
+  id                 String    @id @db.Char(6)
+  codigo             String    @unique @db.VarChar(32)
+  nombre             String    @db.VarChar(100)
+  facturar           Boolean   @default(true)
+  habilitado         Boolean   @default(true)
+  orden              Int       @default(0)
+  fechaCreacion      DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz(3)
+  fechaActualizacion DateTime  @updatedAt @map("fecha_actualizacion") @db.Timestamptz(3)
+  borrado            Boolean   @default(false)
+  fechaEliminacion     DateTime? @map("fecha_eliminacion") @db.Timestamptz(3)
+
+  @@index([habilitado, orden])
+  @@index([borrado])
+  @@map("forma_pago")
+}
 
 model EstadoFacturacion {
   id              String   @id @db.Char(6)
@@ -414,7 +457,7 @@ model Venta {
   nombreClienteMostrar    String              @map("nombre_cliente_mostrar") @db.VarChar(200)
   documentoClienteMostrar String              @default("") @map("documento_cliente_mostrar") @db.VarChar(32)
   condicionIvaCliente     CondicionIvaCliente @default(CONSUMIDOR_FINAL) @map("condicion_iva_cliente")
-  formaPago               FormaPagoVenta      @map("forma_pago")
+  formaPago               String              @map("forma_pago") @db.VarChar(32)
   subtotal                Decimal             @db.Decimal(14, 2)
   ajusteMonto             Decimal             @default(0) @map("ajuste_monto") @db.Decimal(14, 2)
   ajustePorcentaje        Decimal?            @map("ajuste_porcentaje") @db.Decimal(5, 2)
@@ -432,6 +475,7 @@ model Venta {
   movimientosStock  MovimientoStock[]
   auditoriasStock   AuditoriaStock[]
   devoluciones      Devolucion[]
+  movimientosCuentaCorriente MovimientoCuentaCorriente[]
 
   @@index([fecha(sort: Desc)])
   @@index([clienteId])
@@ -564,6 +608,7 @@ model ConfiguracionSistema {
   diasDeudaCuentaCorriente   Int      @default(30) @map("dias_deuda_cuenta_corriente")
   diasPlazoDevolucion        Int      @default(30) @map("dias_plazo_devolucion")
   stockMinimoAlerta          Int      @default(5) @map("stock_minimo_alerta")
+  diasDeshabilitarProductoStockCero Int @default(0) @map("dias_deshabilitar_producto_stock_cero")
   movimientoManualStockHabilitado Boolean @default(true) @map("movimiento_manual_stock_habilitado")
   plantillaCupon                 String   @default("clasica") @map("plantilla_cupon") @db.VarChar(16)
   fechaCreacion              DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz(3)

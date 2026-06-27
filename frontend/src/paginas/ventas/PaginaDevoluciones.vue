@@ -19,7 +19,7 @@ import ModalDetalleDevolucionHistorial from '../../componentes/ventas/ModalDetal
 import ModalVistaCupon from '../../componentes/ventas/ModalVistaCupon.vue';
 import ProcesoCambioDevolucion from '../../componentes/ventas/ProcesoCambioDevolucion.vue';
 import { useProcesoDevolucion } from '../../composables/useProcesoDevolucion';
-import { etiquetaFormaPago } from '../../datos/formasPago';
+import { useEtiquetaFormaPago } from '../../composables/useEtiquetaFormaPago';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 import { useCatalogoStore } from '../../stores/catalogo';
 import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema';
@@ -36,8 +36,10 @@ import {
   formatearHoraAmPm,
 } from '../../utilidades/formatoFechaHora';
 import { notificarOk } from '../../utilidades/notificacion';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const descripcionPagina = obtenerDescripcionPagina('ventas-devoluciones');
+const etiquetaFormaPago = useEtiquetaFormaPago();
 const ventasStore = useVentasStore();
 const catalogoStore = useCatalogoStore();
 const stockStore = useStockStore();
@@ -99,12 +101,6 @@ function cuponEmitidoPorDevolucion(devolucionId: string): string | null {
   return cuponPorDevolucionId.value.get(devolucionId) ?? null;
 }
 
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
-
 onMounted(() => {
   void ventasStore.cargarVentas({ forzar: true });
   void catalogoStore.cargar({ forzar: true });
@@ -127,10 +123,10 @@ function claseChipPago(id: IdFormaPago): string {
 
 function mensajeConfirmacionDevolucion(resultado: ResultadoOperacionDevolucion): string {
   const partes = [
-    `Devolución ${resultado.devolucion.numero} registrada por ${formatoPeso.format(resultado.devolucion.total)}.`,
+    `Devolución ${resultado.devolucion.numero} registrada por ${formatearMoneda(resultado.devolucion.total)}.`,
   ];
   if (resultado.ventaNueva) {
-    partes.push(`Nueva venta ${resultado.ventaNueva.numero} por ${formatoPeso.format(resultado.ventaNueva.total)}.`);
+    partes.push(`Nueva venta ${resultado.ventaNueva.numero} por ${formatearMoneda(resultado.ventaNueva.total)}.`);
   }
   if (resultado.cupon) {
     partes.push(`Cupón ${resultado.cupon.numero} emitido.`);
@@ -250,11 +246,11 @@ function cerrarVerCupon(): void {
             <ul class="dev-cartel-lista">
               <li>
                 Devolución <strong>{{ resultadoOperacion.devolucion.numero }}</strong>
-                · {{ formatoPeso.format(resultadoOperacion.devolucion.total) }}
+                · {{ formatearMoneda(resultadoOperacion.devolucion.total) }}
               </li>
               <li v-if="resultadoOperacion.ventaNueva">
                 Nueva venta <strong>{{ resultadoOperacion.ventaNueva.numero }}</strong>
-                · {{ formatoPeso.format(resultadoOperacion.ventaNueva.total) }}
+                · {{ formatearMoneda(resultadoOperacion.ventaNueva.total) }}
               </li>
               <li v-if="resultadoOperacion.cupon">
                 Cupón <strong>{{ resultadoOperacion.cupon.numero }}</strong>
@@ -428,7 +424,7 @@ function cerrarVerCupon(): void {
             <footer class="dev-venta-card-pie">
               <div class="dev-venta-card-total">
                 <span class="dev-venta-card-total-etiq">Total venta</span>
-                <strong class="lv-mono">{{ formatoPeso.format(v.total) }}</strong>
+                <strong class="lv-mono">{{ formatearMoneda(v.total) }}</strong>
               </div>
               <button
                 type="button"
@@ -497,7 +493,7 @@ function cerrarVerCupon(): void {
                     </span>
                     <span v-else class="dev-sin-cupon">—</span>
                   </td>
-                  <td class="pg-der lv-mono lv-cel-total">{{ formatoPeso.format(d.total) }}</td>
+                  <td class="pg-der lv-mono lv-cel-total">{{ formatearMoneda(d.total) }}</td>
                   <td class="pg-der lv-mono">
                     {{ d.lineas.reduce((acc, ln) => acc + ln.cantidad, 0) }}
                   </td>
@@ -603,7 +599,7 @@ function cerrarVerCupon(): void {
                 }}
               </span>
               <strong class="dev-dialog-resumen-monto lv-mono">
-                {{ formatoPeso.format(subtotalDialogoDevolucion) }}
+                {{ formatearMoneda(subtotalDialogoDevolucion) }}
               </strong>
             </div>
 
@@ -640,10 +636,10 @@ function cerrarVerCupon(): void {
                     <p class="dev-linea-nom">{{ ln.nombre }}</p>
                     <p class="dev-linea-meta lv-mono">
                       Disponible: {{ ln.cantidadDisponible }}
-                      · {{ formatoPeso.format(ln.precioUnitario) }} c/u
+                      · {{ formatearMoneda(ln.precioUnitario) }} c/u
                     </p>
                     <p v-if="ln.cantidad > 0" class="dev-linea-subtotal lv-mono">
-                      {{ formatoPeso.format(ln.cantidad * ln.precioUnitario) }}
+                      {{ formatearMoneda(ln.cantidad * ln.precioUnitario) }}
                     </p>
                   </div>
                   <div class="dev-cantidad" role="group" :aria-label="`Cantidad a devolver de ${ln.nombre}`">
@@ -689,7 +685,7 @@ function cerrarVerCupon(): void {
               />
               <span>
                 Emitir cupón por
-                <strong>{{ formatoPeso.format(subtotalDialogoDevolucion) }}</strong>
+                <strong>{{ formatearMoneda(subtotalDialogoDevolucion) }}</strong>
                 al confirmar
               </span>
             </label>

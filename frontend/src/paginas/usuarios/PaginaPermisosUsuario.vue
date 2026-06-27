@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { LayoutGrid, ShieldCheck } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
 import {
   menusVisiblesPorDefecto,
   menusVisiblesResueltos,
+  operadorTieneRolElevado,
   permisosPorDefectoSegunRol,
 } from '../../modulos/usuarios/permisosUsuario';
 import {
@@ -98,7 +99,7 @@ function redirigirSiSesionPerdioAccesoARutaActual() {
 }
 
 function iniciarEdicionPermisos(): void {
-  if (!usuarioSeleccionado.value) return;
+  if (!usuarioSeleccionado.value || !puedeEditarPermisos.value) return;
   sincronizarBorradorDesdeUsuarioEnStore();
   mensajeExito.value = '';
   modoEdicionPermisos.value = true;
@@ -119,6 +120,14 @@ const borradorPermisos = ref<PermisosOperativosUsuario>({
 });
 
 const sesionEsDueño = computed(() => sesionStore.usuario?.rol === 'DUEÑO');
+
+const puedeEditarPermisos = computed(() =>
+  operadorTieneRolElevado(sesionStore.usuario?.rol),
+);
+
+onMounted(() => {
+  void configuracionSistemaStore.cargar();
+});
 
 function esAdministradorOcultoParaSesionActual(usuarioGestor: UsuarioGestion): boolean {
   return sesionEsDueño.value && usuarioGestor.rol === 'ADMIN';
@@ -304,7 +313,7 @@ function guardarCambiosPermisos(): void {
               </option>
             </select>
           </div>
-          <div class="pg-barra-col pg-barra-col--accion">
+          <div v-if="puedeEditarPermisos" class="pg-barra-col pg-barra-col--accion">
             <span class="pg-filtro-etiq pg-sr">Acción</span>
             <button
               type="button"

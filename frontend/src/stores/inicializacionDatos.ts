@@ -8,6 +8,8 @@ import { useCuentaCorrienteProveedorStore } from './cuentaCorrienteProveedor';
 import { useGestionUsuariosStore } from './gestionUsuarios';
 import { useNegocioStore } from './negocio';
 import { useConfiguracionSistemaStore } from './configuracionSistema';
+import { useFormasPagoStore } from './formasPago';
+import { useTallesCatalogoStore } from './tallesCatalogo';
 import { useProveedoresStore } from './proveedores';
 import { useRegistroComprasStore } from './registroCompras';
 import { useSesionStore } from './sesion';
@@ -29,6 +31,8 @@ const ETIQUETAS_CARGA: Record<string, string> = {
   usuarios: 'usuarios',
   negocio: 'datos del negocio',
   configuracionSistema: 'configuración del sistema',
+  formasPago: 'formas de pago',
+  tallesCatalogo: 'talles del catálogo',
   cuentaCorriente: 'cuentas corrientes',
   cuentaCorrienteProveedor: 'cuentas corrientes proveedores',
 };
@@ -83,6 +87,8 @@ export async function cargarDatosMaestros(): Promise<void> {
     const cuentaCorrienteProveedor = useCuentaCorrienteProveedorStore();
     const negocio = useNegocioStore();
     const configuracionSistema = useConfiguracionSistemaStore();
+    const formasPago = useFormasPagoStore();
+    const tallesCatalogo = useTallesCatalogoStore();
 
     const tareas: Promise<void>[] = [];
 
@@ -92,6 +98,7 @@ export async function cargarDatosMaestros(): Promise<void> {
 
     if (requiereAlgunoMenu(menus, ['productos', 'ventas', 'compras', 'stock', 'reportes'])) {
       tareas.push(cargarConRegistro('catalogo', catalogo.cargar()));
+      tareas.push(cargarConRegistro('tallesCatalogo', tallesCatalogo.cargar()));
     }
 
     if (requiereAlgunoMenu(menus, ['stock', 'ventas', 'compras', 'reportes'])) {
@@ -115,7 +122,20 @@ export async function cargarDatosMaestros(): Promise<void> {
       tareas.push(cargarConRegistro('negocio', negocio.cargar()));
     }
 
-    if (menus.configuracion) {
+    if (requiereAlgunoMenu(menus, ['ventas', 'reportes', 'configuracion', 'compras', 'clientes'])) {
+      tareas.push(cargarConRegistro('formasPago', formasPago.cargar()));
+    }
+
+    if (
+      requiereAlgunoMenu(menus, [
+        'configuracion',
+        'ventas',
+        'reportes',
+        'stock',
+        'clientes',
+        'usuarios',
+      ])
+    ) {
       tareas.push(cargarConRegistro('configuracionSistema', configuracionSistema.cargar()));
     }
 

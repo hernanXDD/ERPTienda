@@ -12,6 +12,7 @@ import {
   ID_MOTIVO_ENTRADA_DEVOLUCION,
   ID_MOTIVO_SALIDA_VENTA,
 } from '../../comunes/constantes/ids-motivo-stock';
+import { crearFechaAgotadoInicial, resolverFechaAgotadoStock } from '../../comunes/utilidades/fecha-agotado-stock';
 import { armarNombreLineaComercial } from '../../comunes/utilidades/nombre-linea-comercial';
 import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
@@ -22,6 +23,7 @@ import { AjusteConteoDto } from './dto/ajuste-conteo.dto';
 import { EntradaManualDto } from './dto/entrada-manual.dto';
 import { ImportarConteoDto } from './dto/importar-conteo.dto';
 import { ListarAuditoriasDto } from './dto/listar-auditorias.dto';
+import { aplicarDeshabilitacionAutomaticaVariantes } from './utilidades/deshabilitacion-automatica-stock';
 
 export interface FaltaStockLineaApi {
   varianteId: string;
@@ -249,6 +251,8 @@ export class StockService {
   }
 
   async obtenerResumen(): Promise<ResumenStockVarianteApi[]> {
+    await this.aplicarDeshabilitacionAutomaticaSiCorresponde();
+
     const filas = await this.prisma.stockVariante.findMany({
       include: {
         variante: {
@@ -383,10 +387,7 @@ export class StockService {
       if (nuevo < 0) {
         throw new ConflictException('Stock insuficiente para completar la venta.');
       }
-      await tx.stockVariante.update({
-        where: { varianteId: ln.varianteId },
-        data: { cantidadActual: nuevo },
-      });
+      await this.actualizarCantidadStock(tx, ln.varianteId, stock.cantidadActual, nuevo);
       const idMovimiento = await this.idSecuencia.siguienteMovimientoStock(tx);
       await tx.movimientoStock.create({
         data: {
@@ -405,6 +406,7 @@ export class StockService {
     }
 
     await this.actualizarResumenAuditoria(tx, idAuditoria);
+    await this.aplicarDeshabilitacionAutomaticaSiCorresponde(tx);
   }
 
   async aplicarEntradaPorDevolucion(
@@ -432,10 +434,7 @@ export class StockService {
       await this.asegurarStockVariante(tx, ln.varianteId);
       const stock = await tx.stockVariante.findUniqueOrThrow({ where: { varianteId: ln.varianteId } });
       const nuevo = stock.cantidadActual + unidades;
-      await tx.stockVariante.update({
-        where: { varianteId: ln.varianteId },
-        data: { cantidadActual: nuevo },
-      });
+      await this.actualizarCantidadStock(tx, ln.varianteId, stock.cantidadActual, nuevo);
       const idMovimiento = await this.idSecuencia.siguienteMovimientoStock(tx);
       await tx.movimientoStock.create({
         data: {
@@ -454,6 +453,7 @@ export class StockService {
     }
 
     await this.actualizarResumenAuditoria(tx, idAuditoria);
+    await this.aplicarDeshabilitacionAutomaticaSiCorresponde(tx);
   }
 
   async aplicarEntradaPorCompra(
@@ -470,10 +470,7 @@ export class StockService {
     await this.asegurarStockVariante(tx, varianteId);
     const stock = await tx.stockVariante.findUniqueOrThrow({ where: { varianteId } });
     const nuevo = stock.cantidadActual + unidades;
-    await tx.stockVariante.update({
-      where: { varianteId },
-      data: { cantidadActual: nuevo },
-    });
+    await this.actualizarCantidadStock(tx, varianteId, stock.cantidadActual, nuevo);
     const idMotivoCompra = ID_MOTIVO_ENTRADA_COMPRA;
     const idMovimiento = await this.idSecuencia.siguienteMovimientoStock(tx);
     await tx.movimientoStock.create({
@@ -519,10 +516,7 @@ export class StockService {
       const anterior = stock.cantidadActual;
       const nuevo = datos.cantidadFisicaContada;
       const delta = nuevo - anterior;
-      await tx.stockVariante.update({
-        where: { varianteId: datos.varianteId },
-        data: { cantidadActual: nuevo },
-      });
+      await this.actualizarCantidadStock(tx, datos.varianteId, anterior, nuevo);
       const idMovimiento = await this.idSecuencia.siguienteMovimientoStock(tx);
       await tx.movimientoStock.create({
         data: {
@@ -539,6 +533,7 @@ export class StockService {
       });
 
       await this.actualizarResumenAuditoria(tx, idAuditoria);
+      await this.aplicarDeshabilitacionAutomaticaSiCorresponde(tx);
       return { anterior, nuevo, delta };
     });
   }
@@ -613,10 +608,10 @@ export class StockService {
       for (let i = 0; i < pendientes.length; i += 1) {
         const fila = pendientes[i];
         await this.asegurarStockVariante(tx, fila.varianteId);
-        await tx.stockVariante.update({
+        const stockFila = await tx.stockVariante.findUniqueOrThrow({
           where: { varianteId: fila.varianteId },
-          data: { cantidadActual: fila.nuevo },
         });
+        await this.actualizarCantidadStock(tx, fila.varianteId, stockFila.cantidadActual, fila.nuevo);
         await tx.movimientoStock.create({
           data: {
             id: idsMovimientos[i],
@@ -633,6 +628,7 @@ export class StockService {
       }
 
       await this.actualizarResumenAuditoria(tx, idAuditoria);
+      await this.aplicarDeshabilitacionAutomaticaSiCorresponde(tx);
 
       return {
         lineasProcesadas: pendientes.length,
@@ -671,10 +667,7 @@ export class StockService {
       });
       const anterior = stock.cantidadActual;
       const nuevo = anterior + datos.cantidad;
-      await tx.stockVariante.update({
-        where: { varianteId: datos.varianteId },
-        data: { cantidadActual: nuevo },
-      });
+      await this.actualizarCantidadStock(tx, datos.varianteId, anterior, nuevo);
       const idMovimiento = await this.idSecuencia.siguienteMovimientoStock(tx);
       await tx.movimientoStock.create({
         data: {
@@ -691,6 +684,7 @@ export class StockService {
       });
 
       await this.actualizarResumenAuditoria(tx, idAuditoria);
+      await this.aplicarDeshabilitacionAutomaticaSiCorresponde(tx);
       return { cantidadAnterior: anterior, cantidadNueva: nuevo };
     });
   }
@@ -821,8 +815,34 @@ export class StockService {
   private async asegurarStockVariante(tx: ClienteTx, varianteId: string): Promise<void> {
     await tx.stockVariante.upsert({
       where: { varianteId },
-      create: { varianteId, cantidadActual: 0 },
+      create: { varianteId, cantidadActual: 0, fechaAgotado: crearFechaAgotadoInicial() },
       update: {},
     });
+  }
+
+  private async actualizarCantidadStock(
+    tx: ClienteTx,
+    varianteId: string,
+    cantidadAnterior: number,
+    cantidadNueva: number,
+  ): Promise<void> {
+    const stock = await tx.stockVariante.findUniqueOrThrow({ where: { varianteId } });
+    const fechaAgotado = resolverFechaAgotadoStock(
+      cantidadAnterior,
+      cantidadNueva,
+      stock.fechaAgotado,
+    );
+    await tx.stockVariante.update({
+      where: { varianteId },
+      data: { cantidadActual: cantidadNueva, fechaAgotado },
+    });
+  }
+
+  async aplicarDeshabilitacionAutomaticaSiCorresponde(tx: ClienteTx = this.prisma): Promise<void> {
+    const configuracion = await this.configuracionSistemaService.obtener();
+    await aplicarDeshabilitacionAutomaticaVariantes(
+      tx,
+      configuracion.diasDeshabilitarProductoStockCero,
+    );
   }
 }

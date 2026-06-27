@@ -12,12 +12,15 @@ import {
 } from '../../modulos/reportes/filtroEntidadReporte';
 import { plantillasReportes } from '../../modulos/reportes/plantillasReportes';
 import { useClientesStore } from '../../stores/clientes';
+import { useFormasPagoStore } from '../../stores/formasPago';
 import { useVentasStore } from '../../stores/ventas';
 
 const ventasStore = useVentasStore();
 const clientesStore = useClientesStore();
+const formasPagoStore = useFormasPagoStore();
 const { ventas } = storeToRefs(ventasStore);
 const { clientes } = storeToRefs(clientesStore);
+const { formas: formasPago } = storeToRefs(formasPagoStore);
 
 const opcionesCliente = computed(() => opcionesClientesParaReporte(clientes.value));
 const opcionesEstadoFacturacion = opcionesEstadoFacturacionParaReporte();
@@ -25,7 +28,7 @@ const opcionesEstadoFacturacion = opcionesEstadoFacturacionParaReporte();
 const { filtro, htmlReporte, errorFiltro, actualizarReporte } = useReporteConFiltros(
   plantillasReportes['ventas-diario'],
   filtrosReporteVentasDiarioPorDefecto,
-  (f) => calcularReporteVentasDiario(ventas.value, f, opcionesCliente.value),
+  (f) => calcularReporteVentasDiario(ventas.value, f, opcionesCliente.value, formasPago.value),
 );
 </script>
 

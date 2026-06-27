@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { TicketPercent } from 'lucide-vue-next';
-import { FORMAS_PAGO } from '../../datos/formasPago';
-import { usarCentroVentasContexto } from './centroVentasContexto';
+import { computed } from 'vue';
+import { esFormaPagoCuentaCorriente } from '../../datos/formasPago';
+import { useFormasPagoStore } from '../../stores/formasPago';
 import { etiquetaValorDescuentoCupon } from '../../tipos/cuponDescuento';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
+import { usarCentroVentasContexto } from './centroVentasContexto';
+
+const formasPagoStore = useFormasPagoStore();
+const opcionesFormaPago = computed(() => formasPagoStore.opcionesSelector);
 
 const {
   cuponAplicado,
@@ -31,12 +37,6 @@ const {
   abrirModalEscanearCupon,
   quitarCuponAplicado,
 } = usarCentroVentasContexto();
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 let idCierreDesplegable: ReturnType<typeof setTimeout> | null = null;
 
@@ -190,10 +190,10 @@ function alPegarDocumento(event: ClipboardEvent) {
           <span class="cv-campo-etiq">Forma de pago</span>
           <select id="cv-sel-pago" v-model="formaPago" class="cv-inp cv-sel">
             <option
-              v-for="fp in FORMAS_PAGO"
+              v-for="fp in opcionesFormaPago"
               :key="fp.id"
               :value="fp.id"
-              :disabled="fp.id === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente"
+              :disabled="esFormaPagoCuentaCorriente(fp.id) && !puedeCuentaCorriente"
             >
               {{ fp.etiqueta }}
             </option>
@@ -205,18 +205,18 @@ function alPegarDocumento(event: ClipboardEvent) {
         </p>
 
         <div
-          v-else-if="formaPago === 'CUENTA_CORRIENTE' && tieneLimiteCuentaCorriente"
+          v-else-if="esFormaPagoCuentaCorriente(formaPago) && tieneLimiteCuentaCorriente"
           class="cv-credito"
           :class="{ 'cv-credito--alerta': excedeCreditoCuentaCorriente }"
           role="status"
         >
           <div class="cv-credito-item">
             <span class="cv-credito-etiq">Saldo deudor</span>
-            <span class="cv-credito-val">{{ formatoPeso.format(saldoDeudorClienteSeleccionado) }}</span>
+            <span class="cv-credito-val">{{ formatearMoneda(saldoDeudorClienteSeleccionado) }}</span>
           </div>
           <div class="cv-credito-item">
             <span class="cv-credito-etiq">Crédito disponible</span>
-            <span class="cv-credito-val">{{ formatoPeso.format(creditoDisponibleCliente ?? 0) }}</span>
+            <span class="cv-credito-val">{{ formatearMoneda(creditoDisponibleCliente ?? 0) }}</span>
           </div>
           <p v-if="excedeCreditoCuentaCorriente" class="cv-credito-alerta">
             El total del ticket supera el crédito disponible del cliente.

@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { formatearMoneda, formatearNumeroConDecimales } from '../../../utilidades/formatoMoneda';
 import {
   COLUMNAS_REPORTE_VENTAS_FACTURACION,
   type DatosReporteVentasFacturacion,
@@ -97,7 +98,7 @@ export async function exportarExcelVentasFacturacion(
 
   hoja.mergeCells('A3:J3');
   const meta = hoja.getCell('A3');
-  meta.value = `Generado el ${datos.generadoEl} · ${datos.cantidadOperaciones} operaciones · Total ${datos.totalImporte.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}`;
+  meta.value = `Generado el ${datos.generadoEl} · ${datos.cantidadOperaciones} operaciones · Total ${formatearMoneda(datos.totalImporte)}`;
   meta.font = { name: 'Segoe UI', size: 9, italic: true, color: { argb: COLOR_TEXTO_APAGADO } };
   meta.alignment = { vertical: 'middle', horizontal: 'left' };
 
@@ -173,7 +174,7 @@ export async function exportarExcelVentasFacturacion(
 
   hoja.mergeCells(`F${filaPie}:J${filaPie}`);
   const celdaTotal = hoja.getCell(`F${filaPie}`);
-  celdaTotal.value = `Total período: ${datos.totalImporte.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${datos.filas[0]?.moneda ?? 'ARS'}`;
+  celdaTotal.value = `Total período: ${formatearNumeroConDecimales(datos.totalImporte)} ${datos.filas[0]?.moneda ?? 'ARS'}`;
   celdaTotal.font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: COLOR_MARCA } };
   celdaTotal.alignment = { horizontal: 'right' };
   celdaTotal.fill = {

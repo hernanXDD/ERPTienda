@@ -4,8 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FormaPagoVenta, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { ID_CONFIGURACION_SISTEMA } from '../../comunes/constantes/id-configuracion-sistema';
+import { esFormaPagoCuentaCorriente } from '../../comunes/constantes/forma-pago';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { siguienteNumeroComprobante } from '../../comunes/utilidades/numero-comprobante';
 import { ventaDentroPlazoDevolucion } from '../../comunes/utilidades/plazo-devolucion';
@@ -168,7 +169,7 @@ export class DevolucionesService {
         operador.id,
       );
 
-      if (venta.formaPago === FormaPagoVenta.CUENTA_CORRIENTE && venta.clienteId) {
+      if (esFormaPagoCuentaCorriente(venta.formaPago) && venta.clienteId) {
         await this.cuentaCorrienteService.registrarCreditoPorDevolucion(
           venta.clienteId,
           totalDevolucion,

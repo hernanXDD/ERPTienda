@@ -13,6 +13,7 @@ export interface ConfiguracionSistemaApi {
   diasDeudaCuentaCorriente: number;
   diasPlazoDevolucion: number;
   stockMinimoAlerta: number;
+  diasDeshabilitarProductoStockCero: number;
   movimientoManualStockHabilitado: boolean;
   plantillaCupon: PlantillaCupon;
 }
@@ -28,6 +29,7 @@ export class ConfiguracionSistemaService {
     diasDeudaCuentaCorriente: number;
     diasPlazoDevolucion: number;
     stockMinimoAlerta: number;
+    diasDeshabilitarProductoStockCero: number;
     movimientoManualStockHabilitado: boolean;
     plantillaCupon: string;
   }): ConfiguracionSistemaApi {
@@ -38,6 +40,7 @@ export class ConfiguracionSistemaService {
       diasDeudaCuentaCorriente: registro.diasDeudaCuentaCorriente,
       diasPlazoDevolucion: registro.diasPlazoDevolucion,
       stockMinimoAlerta: registro.stockMinimoAlerta,
+      diasDeshabilitarProductoStockCero: registro.diasDeshabilitarProductoStockCero,
       movimientoManualStockHabilitado: registro.movimientoManualStockHabilitado,
       plantillaCupon: registro.plantillaCupon as PlantillaCupon,
     };
@@ -64,6 +67,7 @@ export class ConfiguracionSistemaService {
         diasDeudaCuentaCorriente: datos.diasDeudaCuentaCorriente,
         diasPlazoDevolucion: datos.diasPlazoDevolucion,
         stockMinimoAlerta: datos.stockMinimoAlerta,
+        diasDeshabilitarProductoStockCero: datos.diasDeshabilitarProductoStockCero,
         movimientoManualStockHabilitado: datos.movimientoManualStockHabilitado,
         plantillaCupon: datos.plantillaCupon,
       },

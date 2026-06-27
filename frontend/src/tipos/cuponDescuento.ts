@@ -39,11 +39,7 @@ export interface DatosCrearCuponDescuento {
   observaciones?: string;
 }
 
-const formatoPesoCupon = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
+import { formatearMoneda } from '../utilidades/formatoMoneda';
 
 export function formatearPorcentajeCupon(valor: number): string {
   return `${valor % 1 === 0 ? valor.toFixed(0) : valor.toFixed(2).replace(/\.?0+$/, '')}%`;
@@ -53,7 +49,7 @@ export function etiquetaValorDescuentoCupon(
   cupon: Pick<CuponDescuentoRegistrado, 'tipoDescuento' | 'porcentajeDescuento' | 'montoDescuento'>,
 ): string {
   if (cupon.tipoDescuento === 'monto_fijo' && cupon.montoDescuento != null) {
-    return formatoPesoCupon.format(cupon.montoDescuento);
+    return formatearMoneda(cupon.montoDescuento);
   }
   if (cupon.porcentajeDescuento != null) {
     return formatearPorcentajeCupon(cupon.porcentajeDescuento);

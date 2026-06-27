@@ -6,9 +6,10 @@ import {
 } from '@nestjs/common';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { permisosPorDefectoSegunRol } from '../../comunes/tipos/permisos-usuario';
-import { CondicionIvaCliente, FormaPagoVenta, RolUsuario } from '@prisma/client';
+import { CondicionIvaCliente, RolUsuario } from '@prisma/client';
 import { CuponesDescuentoService } from '../cupones-descuento/cupones-descuento.service';
 import { CuentaCorrienteService } from '../cuenta-corriente/cuenta-corriente.service';
+import { FormasPagoService } from '../formas-pago/formas-pago.service';
 import { StockService } from '../stock/stock.service';
 import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -46,6 +47,10 @@ describe('VentasService', () => {
     validarYAplicarCuponEnVenta: jest.fn(),
   };
 
+  const formasPagoService = {
+    validarCodigoParaVenta: jest.fn(),
+  };
+
   const idSecuencia = {
     siguienteVenta: jest.fn(),
     siguientesVentaLinea: jest.fn(),
@@ -60,6 +65,7 @@ describe('VentasService', () => {
         { provide: StockService, useValue: stockService },
         { provide: CuentaCorrienteService, useValue: cuentaCorrienteService },
         { provide: CuponesDescuentoService, useValue: cuponesDescuentoService },
+        { provide: FormasPagoService, useValue: formasPagoService },
       ],
     }).compile();
 
@@ -82,7 +88,7 @@ describe('VentasService', () => {
           {
             clienteId: null,
             nombreClienteMostrar: 'Consumidor final',
-            formaPago: FormaPagoVenta.EFECTIVO,
+            formaPago: 'EFECTIVO',
             total: 1500,
             lineas: [lineaValida],
             observaciones: '',
@@ -100,7 +106,7 @@ describe('VentasService', () => {
           {
             clienteId: null,
             nombreClienteMostrar: 'Sin cliente',
-            formaPago: FormaPagoVenta.CUENTA_CORRIENTE,
+            formaPago: 'CUENTA_CORRIENTE',
             total: 1000,
             lineas: [lineaValida],
             observaciones: '',
@@ -118,7 +124,7 @@ describe('VentasService', () => {
           {
             clienteId: '000010',
             nombreClienteMostrar: 'Cliente X',
-            formaPago: FormaPagoVenta.CUENTA_CORRIENTE,
+            formaPago: 'CUENTA_CORRIENTE',
             total: 1000,
             lineas: [lineaValida],
             observaciones: '',
@@ -143,7 +149,7 @@ describe('VentasService', () => {
           {
             clienteId: '000010',
             nombreClienteMostrar: 'Cliente X',
-            formaPago: FormaPagoVenta.CUENTA_CORRIENTE,
+            formaPago: 'CUENTA_CORRIENTE',
             total: 1000,
             lineas: [lineaValida],
             observaciones: '',
@@ -166,7 +172,7 @@ describe('VentasService', () => {
           {
             clienteId: null,
             nombreClienteMostrar: 'Consumidor final',
-            formaPago: FormaPagoVenta.EFECTIVO,
+            formaPago: 'EFECTIVO',
             total: 1000,
             lineas: [lineaValida],
             observaciones: '',

@@ -13,6 +13,11 @@ export interface ConfiguracionSistema {
   diasPlazoDevolucion: number;
   /** Existencias iguales o por debajo generan alerta de stock bajo o crítico. */
   stockMinimoAlerta: number;
+  /**
+   * Días con stock en cero antes de desactivar la variante automáticamente.
+   * 0 desactiva esta función.
+   */
+  diasDeshabilitarProductoStockCero: number;
   /** Habilita entradas manuales de stock (además del permiso por usuario). */
   movimientoManualStockHabilitado: boolean;
   /** Diseño visual de los cupones de descuento impresos o compartidos. */
@@ -31,6 +36,7 @@ export const configuracionSistemaPorDefecto = (): ConfiguracionSistemaEditable =
   diasDeudaCuentaCorriente: 30,
   diasPlazoDevolucion: 30,
   stockMinimoAlerta: 5,
+  diasDeshabilitarProductoStockCero: 0,
   movimientoManualStockHabilitado: true,
   plantillaCupon: PLANTILLA_CUPON_POR_DEFECTO,
 });

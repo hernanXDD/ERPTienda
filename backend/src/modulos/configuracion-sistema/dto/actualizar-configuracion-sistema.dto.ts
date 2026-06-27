@@ -36,6 +36,12 @@ export class ActualizarConfiguracionSistemaDto {
   @Max(9999)
   stockMinimoAlerta!: number;
 
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(3650)
+  diasDeshabilitarProductoStockCero!: number;
+
   @IsBoolean()
   movimientoManualStockHabilitado!: boolean;
 

@@ -1,9 +1,7 @@
-import { FormaPagoVenta } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
-  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -48,8 +46,10 @@ export class RegistrarVentaDto {
   @MaxLength(200)
   nombreClienteMostrar!: string;
 
-  @IsEnum(FormaPagoVenta)
-  formaPago!: FormaPagoVenta;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(32)
+  formaPago!: string;
 
   @IsOptional()
   @IsNumber()

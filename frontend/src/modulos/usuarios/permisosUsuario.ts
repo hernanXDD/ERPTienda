@@ -5,6 +5,10 @@ function rolEsElevado(rol: RolUsuario): boolean {
   return rol === 'ADMIN' || rol === 'DUEÑO';
 }
 
+export function operadorTieneRolElevado(rol: RolUsuario | undefined): boolean {
+  return rol != null && rolEsElevado(rol);
+}
+
 export function menusVisiblesPorDefecto(): MenusVisiblesUsuario {
   return {
     clientes: true,

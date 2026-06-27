@@ -13,9 +13,10 @@ import {
   UserRound,
   X,
 } from 'lucide-vue-next';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 import { computed, ref, useTemplateRef, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
-import { etiquetaFormaPago } from '../../datos/formasPago';
+import { useEtiquetaFormaPago } from '../../composables/useEtiquetaFormaPago';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import {
   parsearArchivoFacturacionesExcel,
@@ -37,14 +38,9 @@ const descripcionPagina = obtenerDescripcionPagina('ventas-historial');
 const { tienePermiso } = usePermisosOperador();
 const puedeCargarFacturaciones = computed(() => tienePermiso('puedeCargarFacturaciones'));
 
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
-
 const ventasStore = useVentasStore();
 const { ventas, cargandoVentas, errorVentas } = storeToRefs(ventasStore);
+const etiquetaFormaPago = useEtiquetaFormaPago();
 
 onMounted(() => {
   void ventasStore.cargarVentas({ forzar: true });
@@ -323,7 +319,7 @@ function limpiarFiltros() {
         {{ ventas.length }} ventas
       </span>
       <span v-if="ventasFiltradas.length" class="lv-resumen-total">
-        Total filtrado: <strong>{{ formatoPeso.format(totalFiltrado) }}</strong>
+        Total filtrado: <strong>{{ formatearMoneda(totalFiltrado) }}</strong>
       </span>
     </p>
 
@@ -357,7 +353,7 @@ function limpiarFiltros() {
             </p>
             <div class="lv-venta-tarjeta-total">
               <span class="lv-venta-tarjeta-total-etiq">Total</span>
-              <strong class="lv-mono">{{ formatoPeso.format(v.total) }}</strong>
+              <strong class="lv-mono">{{ formatearMoneda(v.total) }}</strong>
             </div>
           </button>
         </li>
@@ -422,7 +418,7 @@ function limpiarFiltros() {
               <span :class="claseEstadoFacturacion(v)">{{ v.estadoFacturacion.nombre }}</span>
             </td>
             <td class="lv-mono lv-cel-fact">{{ v.facturacion.trim() || '—' }}</td>
-            <td class="lv-der lv-mono lv-cel-total">{{ formatoPeso.format(v.total) }}</td>
+            <td class="lv-der lv-mono lv-cel-total">{{ formatearMoneda(v.total) }}</td>
             <td class="lv-col-acc">
               <button
                 type="button"
@@ -560,11 +556,11 @@ function limpiarFiltros() {
                     <p class="lv-linea-calc lv-mono">
                       <span class="lv-linea-cant">{{ ln.cantidad }}</span>
                       <span class="lv-linea-x" aria-hidden="true">×</span>
-                      <span>{{ formatoPeso.format(ln.precioUnitario) }}</span>
+                      <span>{{ formatearMoneda(ln.precioUnitario) }}</span>
                       <span class="lv-linea-igual" aria-hidden="true">=</span>
                     </p>
                   </div>
-                  <p class="lv-linea-importe lv-mono">{{ formatoPeso.format(ln.subtotal) }}</p>
+                  <p class="lv-linea-importe lv-mono">{{ formatearMoneda(ln.subtotal) }}</p>
                 </div>
               </li>
             </ol>
@@ -582,11 +578,11 @@ function limpiarFiltros() {
           <aside class="lv-doc-totales" aria-label="Resumen de importes">
             <div class="lv-doc-totales-fila">
               <span>Subtotal ítems</span>
-              <span class="lv-mono">{{ formatoPeso.format(ventaDetalle.total) }}</span>
+              <span class="lv-mono">{{ formatearMoneda(ventaDetalle.total) }}</span>
             </div>
             <div class="lv-doc-totales-fila lv-doc-totales-fila--final">
               <span>Total de la venta</span>
-              <strong class="lv-mono">{{ formatoPeso.format(ventaDetalle.total) }}</strong>
+              <strong class="lv-mono">{{ formatearMoneda(ventaDetalle.total) }}</strong>
             </div>
           </aside>
         </div>

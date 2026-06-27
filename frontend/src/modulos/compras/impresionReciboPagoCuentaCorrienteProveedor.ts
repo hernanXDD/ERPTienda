@@ -9,6 +9,7 @@ import {
   claseExportacionPdfResumenVenta,
   estilosResumenVentaCss,
 } from '../ventas/estilosResumenVentaCss';
+import { sanitizarNombreArchivo } from '../../utilidades/nombresArchivo';
 import { calcularDatosReciboPagoCcProveedorImpresion } from './calcularDatosReciboPagoCcProveedorImpresion';
 import { plantillasCuentaCorrienteProveedor } from './plantillasCuentaCorrienteProveedor';
 
@@ -17,20 +18,8 @@ export interface DatosImpresionReciboPagoProveedor {
   movimiento: MovimientoCuentaCorrienteProveedor;
 }
 
-function sanitizarNombreArchivo(nombre: string): string {
-  return (
-    nombre
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9._-]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 120) || 'comprobante-pago'
-  );
-}
-
 function nombreArchivoReciboPago(codigoRecibo: string): string {
-  return sanitizarNombreArchivo(`pago-proveedor-${codigoRecibo}`);
+  return sanitizarNombreArchivo(`pago-proveedor-${codigoRecibo}`, 'comprobante-pago');
 }
 
 export async function exportarReciboPagoCuentaCorrienteProveedorPdf(

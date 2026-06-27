@@ -12,6 +12,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { RegistrarCargoProveedorDto } from './dto/registrar-cargo-proveedor.dto';
 import { RegistrarPagoProveedorDto } from './dto/registrar-pago-proveedor.dto';
+import { RegistrarMovimientoManualDto } from '../cuenta-corriente/dto/registrar-movimiento-manual.dto';
+
+export interface OpcionesRegistrarCargoCuentaCorrienteProveedor {
+  compraId?: string;
+}
 
 export interface AuditoriaPagoCuentaCorrienteProveedorApi {
   marcaTiempoUtcRegistroCliente: string;
@@ -160,11 +165,33 @@ export class CuentaCorrienteProveedorService {
     return this.mapearMovimiento(movimiento);
   }
 
+  async registrarMovimientoManual(
+    proveedorId: string,
+    datos: RegistrarMovimientoManualDto,
+    operador: UsuarioSesion,
+  ): Promise<MovimientoCuentaCorrienteProveedorApi> {
+    await this.validarProveedorExiste(proveedorId);
+
+    const id = await this.idSecuencia.siguienteMovimientoCuentaCorrienteProveedor();
+    const movimiento = await this.prisma.movimientoCuentaCorrienteProveedor.create({
+      data: {
+        id,
+        proveedorId,
+        tipoMovimiento: datos.tipoMovimiento,
+        importe: new Prisma.Decimal(datos.importe),
+        descripcion: datos.descripcion.trim(),
+        registradoPorUsuarioId: operador.id,
+      },
+    });
+    return this.mapearMovimiento(movimiento);
+  }
+
   async registrarCargo(
     proveedorId: string,
     datos: RegistrarCargoProveedorDto,
     registradoPorUsuarioId?: string,
     tx?: ClienteTx,
+    opciones?: OpcionesRegistrarCargoCuentaCorrienteProveedor,
   ): Promise<MovimientoCuentaCorrienteProveedorApi> {
     const prisma = tx ?? this.prisma;
     if (!tx) await this.validarProveedorExiste(proveedorId);
@@ -174,6 +201,7 @@ export class CuentaCorrienteProveedorService {
       data: {
         id,
         proveedorId,
+        compraId: opciones?.compraId ?? null,
         tipoMovimiento: TipoMovimientoCuentaCorriente.cargo,
         importe: new Prisma.Decimal(datos.importe),
         descripcion: datos.descripcion?.trim() || 'Cargo en cuenta corriente',

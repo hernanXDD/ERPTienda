@@ -11,8 +11,10 @@ import { exportarReciboPagoCuentaCorrienteProveedorPdf } from '../../modulos/com
 import { reservarVentanaPdfParaExportacion } from '../../modulos/reportes/impresionReporte';
 import { notificarError } from '../../utilidades/notificacion';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
-import { opcionesFormaPagoRegistroCuentaCorriente } from '../../modulos/clientes/formasPagoRegistroCuentaCorriente';
+import { opcionesFormaPagoCobroCuentaCorriente } from '../../modulos/clientes/opcionesFormaPagoCobroCuentaCorriente';
+import { useFormasPagoStore } from '../../stores/formasPago';
 import type { Proveedor } from '../../tipos/proveedor';
+import type { TipoMovimientoCuentaCorrienteProveedor } from '../../tipos/cuentaCorrienteProveedor';
 import {
   formatearFechaDiaMesAnio,
   formatearFechaYHora,
@@ -24,26 +26,29 @@ import { calcularCreditoDisponible } from '../../utilidades/cuentaCorriente';
 import ModalConfirmarRegistroPago, {
   type DatosConfirmacionRegistroPago,
 } from '../../componentes/cuentaCorriente/ModalConfirmarRegistroPago.vue';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
+import { normalizarImporteArgentino } from '../../utilidades/importeArgentino';
 
 const descripcionPagina = obtenerDescripcionPagina('compras-cuentas-corrientes-proveedor');
 const { tienePermiso } = usePermisosOperador();
 const puedeGestionarCuentaCorrienteProveedor = computed(() => tienePermiso('puedeGestionarCuentaCorrienteProveedor'));
 
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
-
 const proveedoresStore = useProveedoresStore();
 const cuentaCorrienteProveedorStore = useCuentaCorrienteProveedorStore();
 const registroComprasStore = useRegistroComprasStore();
+const formasPagoStore = useFormasPagoStore();
 const { proveedores } = storeToRefs(proveedoresStore);
 const { movimientos } = storeToRefs(cuentaCorrienteProveedorStore);
 const { compras } = storeToRefs(registroComprasStore);
+const { formas: formasPago } = storeToRefs(formasPagoStore);
+
+const opcionesFormaPagoCobro = computed(() =>
+  opcionesFormaPagoCobroCuentaCorriente(formasPago.value),
+);
 
 const refDialogoMovimientos = ref<HTMLDialogElement | null>(null);
 const refCuadroRegistrarPago = ref<HTMLDialogElement | null>(null);
+const refCuadroMovimientoManual = ref<HTMLDialogElement | null>(null);
 const refConfirmarRegistroPago = ref<InstanceType<typeof ModalConfirmarRegistroPago> | null>(null);
 const pagoPendienteConfirmacion = ref<DatosConfirmacionRegistroPago | null>(null);
 const registrandoPago = ref(false);
@@ -64,13 +69,20 @@ const opcionesFiltroDeuda = [
 ];
 
 const refImportePago = ref<HTMLInputElement | null>(null);
+const refImporteMovimientoManual = ref<HTMLInputElement | null>(null);
 
 const fechaPago = ref('');
 const importePagoTexto = ref('');
 const descripcionPago = ref('');
-const formaPagoEtiqueta = ref(opcionesFormaPagoRegistroCuentaCorriente[0]?.etiqueta ?? '');
+const formaPagoEtiqueta = ref('');
 const referenciaPagoTexto = ref('');
 const errorFormularioPago = ref('');
+
+const tipoMovimientoManual = ref<TipoMovimientoCuentaCorrienteProveedor>('cargo');
+const importeMovimientoManualTexto = ref('');
+const descripcionMovimientoManual = ref('');
+const errorFormularioMovimientoManual = ref('');
+const registrandoMovimientoManual = ref(false);
 
 function estaMovimientoEnRangoFecha(m: MovimientoConSaldoProveedor): boolean {
   const comparable = obtenerDiaComparableDesdeValor(m.fecha);
@@ -153,10 +165,29 @@ function cerrarCuadroRegistrarPago(): void {
   refCuadroRegistrarPago.value?.close();
 }
 
+function cerrarCuadroMovimientoManual(): void {
+  refCuadroMovimientoManual.value?.close();
+}
+
+function limpiarFormularioMovimientoManual(): void {
+  tipoMovimientoManual.value = 'cargo';
+  importeMovimientoManualTexto.value = '';
+  descripcionMovimientoManual.value = '';
+  errorFormularioMovimientoManual.value = '';
+}
+
+function alCerrarCuadroMovimientoManual(): void {
+  limpiarFormularioMovimientoManual();
+}
+
+function formaPagoCobroPorDefecto(): string {
+  return opcionesFormaPagoCobro.value[0]?.etiqueta ?? '';
+}
+
 function limpiarFormularioRegistrarPago(): void {
   importePagoTexto.value = '';
   descripcionPago.value = '';
-  formaPagoEtiqueta.value = opcionesFormaPagoRegistroCuentaCorriente[0]?.etiqueta ?? '';
+  formaPagoEtiqueta.value = formaPagoCobroPorDefecto();
   referenciaPagoTexto.value = '';
   errorFormularioPago.value = '';
 }
@@ -171,14 +202,18 @@ function abrirMovimientosProveedor(c: Proveedor): void {
   fechaFiltroHasta.value = '';
   errorExportacionPdfCuenta.value = '';
   cerrarCuadroRegistrarPago();
+  cerrarCuadroMovimientoManual();
   limpiarFormularioRegistrarPago();
+  limpiarFormularioMovimientoManual();
   refDialogoMovimientos.value?.showModal();
 }
 
 function alCerrarDialogoMovimientos(): void {
   cerrarCuadroRegistrarPago();
+  cerrarCuadroMovimientoManual();
   proveedorModal.value = null;
   limpiarFormularioRegistrarPago();
+  limpiarFormularioMovimientoManual();
 }
 
 function cerrarDialogoMovimientos(): void {
@@ -187,6 +222,7 @@ function cerrarDialogoMovimientos(): void {
 
 function abrirFormularioPago(): void {
   if (!proveedorModal.value) return;
+  cerrarCuadroMovimientoManual();
   errorFormularioPago.value = '';
   const hoy = new Date();
   const y = hoy.getFullYear();
@@ -195,16 +231,55 @@ function abrirFormularioPago(): void {
   fechaPago.value = `${y}-${m}-${d}`;
   importePagoTexto.value = '';
   descripcionPago.value = '';
-  formaPagoEtiqueta.value = opcionesFormaPagoRegistroCuentaCorriente[0]?.etiqueta ?? '';
+  formaPagoEtiqueta.value = formaPagoCobroPorDefecto();
   referenciaPagoTexto.value = '';
   refCuadroRegistrarPago.value?.showModal();
   requestAnimationFrame(() => refImportePago.value?.focus());
 }
 
-function normalizarImporteArgentino(texto: string): number {
-  const limpio = texto.replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-  const n = Number.parseFloat(limpio);
-  return Number.isFinite(n) ? n : Number.NaN;
+function abrirFormularioMovimientoManual(): void {
+  if (!proveedorModal.value) return;
+  cerrarCuadroRegistrarPago();
+  limpiarFormularioMovimientoManual();
+  refCuadroMovimientoManual.value?.showModal();
+  requestAnimationFrame(() => refImporteMovimientoManual.value?.focus());
+}
+
+async function registrarMovimientoManual(): Promise<void> {
+  const c = proveedorModal.value;
+  if (!c || registrandoMovimientoManual.value) return;
+
+  const importe = normalizarImporteArgentino(importeMovimientoManualTexto.value);
+  const descripcion = descripcionMovimientoManual.value.trim();
+
+  if (!descripcion) {
+    errorFormularioMovimientoManual.value = 'La descripción es obligatoria.';
+    return;
+  }
+  if (!Number.isFinite(importe) || importe <= 0) {
+    errorFormularioMovimientoManual.value = 'Ingresá un importe válido mayor a cero.';
+    return;
+  }
+
+  errorFormularioMovimientoManual.value = '';
+  registrandoMovimientoManual.value = true;
+
+  try {
+    await cuentaCorrienteProveedorStore.agregarMovimientoManual(
+      c.id,
+      tipoMovimientoManual.value,
+      importe,
+      descripcion,
+    );
+    cerrarCuadroMovimientoManual();
+  } catch (error: unknown) {
+    errorFormularioMovimientoManual.value = mensajeErrorHttp(
+      error,
+      'No se pudo registrar el movimiento manual.',
+    );
+  } finally {
+    registrandoMovimientoManual.value = false;
+  }
 }
 
 function solicitarRegistroPago(): void {
@@ -280,8 +355,14 @@ async function ejecutarRegistroPago(): Promise<void> {
 
 onMounted(() => {
   void (async () => {
-    await proveedoresStore.asegurarCargado();
-    await registroComprasStore.asegurarCargado();
+    await Promise.all([
+      proveedoresStore.asegurarCargado(),
+      registroComprasStore.asegurarCargado(),
+      formasPagoStore.asegurarCargado(),
+    ]);
+    if (!formaPagoEtiqueta.value) {
+      formaPagoEtiqueta.value = formaPagoCobroPorDefecto();
+    }
     const ids = proveedoresStore.proveedores
       .filter((pr) => pr.habilitado && pr.comprasCreditoHabilitadas)
       .map((pr) => pr.id);
@@ -356,11 +437,11 @@ async function imprimirCuentaProveedor(): Promise<void> {
           </div>
           <div class="pg-kpi">
             <span class="pg-kpi-etiq">Límite combinado</span>
-            <span class="pg-kpi-valor pg-mono">{{ formatoPeso.format(limiteTotalProveedores) }}</span>
+            <span class="pg-kpi-valor pg-mono">{{ formatearMoneda(limiteTotalProveedores) }}</span>
           </div>
           <div class="pg-kpi pg-kpi--peligro">
             <span class="pg-kpi-etiq">Deuda total</span>
-            <span class="pg-kpi-valor pg-mono">{{ formatoPeso.format(saldoTotalDeuda) }}</span>
+            <span class="pg-kpi-valor pg-mono">{{ formatearMoneda(saldoTotalDeuda) }}</span>
           </div>
         </div>
       </header>
@@ -437,17 +518,17 @@ async function imprimirCuentaProveedor(): Promise<void> {
               <dl class="cc-cartera-tarjeta-montos">
                 <div class="cc-cartera-tarjeta-monto">
                   <dt>Límite CC</dt>
-                  <dd class="pg-mono">{{ formatoPeso.format(c.limiteCreditoCompras) }}</dd>
+                  <dd class="pg-mono">{{ formatearMoneda(c.limiteCreditoCompras) }}</dd>
                 </div>
                 <div class="cc-cartera-tarjeta-monto cc-cartera-tarjeta-monto--saldo">
                   <dt>Saldo actual</dt>
                   <dd class="pg-mono">
-                    {{ formatoPeso.format(cuentaCorrienteProveedorStore.saldoProveedorCacheado(c.id)) }}
+                    {{ formatearMoneda(cuentaCorrienteProveedorStore.saldoProveedorCacheado(c.id)) }}
                   </dd>
                 </div>
                 <div class="cc-cartera-tarjeta-monto">
                   <dt>Disponible</dt>
-                  <dd class="pg-mono cc-cel-disponible">{{ formatoPeso.format(creditoDisponible(c)) }}</dd>
+                  <dd class="pg-mono cc-cel-disponible">{{ formatearMoneda(creditoDisponible(c)) }}</dd>
                 </div>
               </dl>
             </button>
@@ -490,13 +571,13 @@ async function imprimirCuentaProveedor(): Promise<void> {
                 <td class="cc-cel-cliente">{{ c.nombre }}</td>
                 <td class="pg-mono cc-col-documento cc-col-oculta-movil">{{ c.documento }}</td>
                 <td class="pg-der pg-mono cc-col-monto-lista cc-col-limite cc-col-oculta-movil">
-                  {{ formatoPeso.format(c.limiteCreditoCompras) }}
+                  {{ formatearMoneda(c.limiteCreditoCompras) }}
                 </td>
                 <td class="pg-der pg-mono cc-col-monto-lista cc-col-saldo-actual">
-                  {{ formatoPeso.format(cuentaCorrienteProveedorStore.saldoProveedorCacheado(c.id)) }}
+                  {{ formatearMoneda(cuentaCorrienteProveedorStore.saldoProveedorCacheado(c.id)) }}
                 </td>
                 <td class="pg-der pg-mono cc-col-monto-lista cc-col-disponible cc-cel-disponible cc-col-oculta-movil">
-                  {{ formatoPeso.format(creditoDisponible(c)) }}
+                  {{ formatearMoneda(creditoDisponible(c)) }}
                 </td>
                 <td class="pg-acc cc-col-acciones">
                   <button
@@ -549,12 +630,12 @@ async function imprimirCuentaProveedor(): Promise<void> {
             <div class="pg-kpi">
               <span class="pg-kpi-etiq">Saldo actual</span>
               <span class="pg-kpi-valor pg-mono">{{
-                formatoPeso.format(cuentaCorrienteProveedorStore.saldoProveedorCacheado(proveedorModal.id))
+                formatearMoneda(cuentaCorrienteProveedorStore.saldoProveedorCacheado(proveedorModal.id))
               }}</span>
             </div>
             <div class="pg-kpi pg-kpi--acento">
               <span class="pg-kpi-etiq">Disponible para compras</span>
-              <span class="pg-kpi-valor pg-mono">{{ formatoPeso.format(creditoDisponible(proveedorModal)) }}</span>
+              <span class="pg-kpi-valor pg-mono">{{ formatearMoneda(creditoDisponible(proveedorModal)) }}</span>
             </div>
           </div>
           <button type="button" class="cc-modal-x" aria-label="Cerrar" @click="cerrarDialogoMovimientos"></button>
@@ -580,6 +661,14 @@ async function imprimirCuentaProveedor(): Promise<void> {
               @click="abrirFormularioPago"
             >
               Registrar pago
+            </button>
+            <button
+              v-if="puedeGestionarCuentaCorrienteProveedor"
+              type="button"
+              class="cc-btn manual cc-btn--lg"
+              @click="abrirFormularioMovimientoManual"
+            >
+              Movimiento manual
             </button>
             <button
               type="button"
@@ -637,20 +726,20 @@ async function imprimirCuentaProveedor(): Promise<void> {
                 <div class="cc-mov-tarjeta-monto">
                   <dt>Debe</dt>
                   <dd class="cc-mono">
-                    {{ m.tipoMovimiento === 'cargo' ? formatoPeso.format(m.importe) : '—' }}
+                    {{ m.tipoMovimiento === 'cargo' ? formatearMoneda(m.importe) : '—' }}
                   </dd>
                 </div>
                 <div class="cc-mov-tarjeta-monto">
                   <dt>Haber</dt>
                   <dd class="cc-mono">
                     {{
-                      m.tipoMovimiento === 'pagoRegistrado' ? formatoPeso.format(m.importe) : '—'
+                      m.tipoMovimiento === 'pagoRegistrado' ? formatearMoneda(m.importe) : '—'
                     }}
                   </dd>
                 </div>
                 <div class="cc-mov-tarjeta-monto cc-mov-tarjeta-monto--saldo">
                   <dt>Saldo</dt>
-                  <dd class="cc-mono">{{ formatoPeso.format(m.saldoTrasMovimiento) }}</dd>
+                  <dd class="cc-mono">{{ formatearMoneda(m.saldoTrasMovimiento) }}</dd>
                 </div>
               </dl>
               <div v-if="m.tipoMovimiento === 'pagoRegistrado'" class="cc-mov-tarjeta-recibo">
@@ -726,12 +815,12 @@ async function imprimirCuentaProveedor(): Promise<void> {
                     <template v-else>—</template>
                   </td>
                   <td class="cc-der cc-mono cc-col-monto">
-                    {{ m.tipoMovimiento === 'cargo' ? formatoPeso.format(m.importe) : '—' }}
+                    {{ m.tipoMovimiento === 'cargo' ? formatearMoneda(m.importe) : '—' }}
                   </td>
                   <td class="cc-der cc-mono cc-col-monto">
-                    {{ m.tipoMovimiento === 'pagoRegistrado' ? formatoPeso.format(m.importe) : '—' }}
+                    {{ m.tipoMovimiento === 'pagoRegistrado' ? formatearMoneda(m.importe) : '—' }}
                   </td>
-                  <td class="cc-der cc-mono cc-col-saldo">{{ formatoPeso.format(m.saldoTrasMovimiento) }}</td>
+                  <td class="cc-der cc-mono cc-col-saldo">{{ formatearMoneda(m.saldoTrasMovimiento) }}</td>
                 </tr>
                 <tr v-if="movimientosFiltradosModal.length === 0">
                   <td colspan="7" class="cc-vacio-inner">No hay movimientos en el rango de fechas elegido.</td>
@@ -771,19 +860,19 @@ async function imprimirCuentaProveedor(): Promise<void> {
               class="cc-reg-pago-resumen-val cc-mono"
               :class="{ 'cc-reg-pago-resumen-val--deuda': saldoDeudorModal > 0 }"
             >
-              {{ formatoPeso.format(saldoDeudorModal) }}
+              {{ formatearMoneda(saldoDeudorModal) }}
             </span>
           </div>
           <div class="cc-reg-pago-resumen-item">
             <span class="cc-reg-pago-resumen-etiq">Límite CC</span>
             <span class="cc-reg-pago-resumen-val cc-mono">{{
-              formatoPeso.format(proveedorModal.limiteCreditoCompras)
+              formatearMoneda(proveedorModal.limiteCreditoCompras)
             }}</span>
           </div>
           <div class="cc-reg-pago-resumen-item cc-reg-pago-resumen-item--acento">
             <span class="cc-reg-pago-resumen-etiq">Disponible para compras</span>
             <span class="cc-reg-pago-resumen-val cc-mono">{{
-              formatoPeso.format(creditoDisponible(proveedorModal))
+              formatearMoneda(creditoDisponible(proveedorModal))
             }}</span>
           </div>
         </div>
@@ -818,7 +907,7 @@ async function imprimirCuentaProveedor(): Promise<void> {
                     class="cc-reg-saldo-deudor-val cc-mono"
                     :class="{ 'cc-reg-saldo-deudor-val--deuda': saldoDeudorModal > 0 }"
                   >
-                    {{ formatoPeso.format(saldoDeudorModal) }}
+                    {{ formatearMoneda(saldoDeudorModal) }}
                   </span>
                   <p class="cc-reg-saldo-deudor-ayuda">Deuda pendiente antes de aplicar este pago.</p>
                 </div>
@@ -828,7 +917,7 @@ async function imprimirCuentaProveedor(): Promise<void> {
                 <span class="cc-inp-lab">Forma de pago</span>
                 <select v-model="formaPagoEtiqueta" class="cc-inp" required autocomplete="off">
                   <option
-                    v-for="opcionFormaDePago in opcionesFormaPagoRegistroCuentaCorriente"
+                    v-for="opcionFormaDePago in opcionesFormaPagoCobro"
                     :key="opcionFormaDePago.etiqueta"
                     :value="opcionFormaDePago.etiqueta"
                   >
@@ -864,6 +953,143 @@ async function imprimirCuentaProveedor(): Promise<void> {
           <div class="cc-reg-pago-acciones">
             <button type="button" class="cc-btn ghost cc-btn--lg" @click="cerrarCuadroRegistrarPago">Cancelar</button>
             <button type="submit" class="cc-btn accent cc-btn--lg">Registrar pago y ver recibo</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <dialog
+      ref="refCuadroMovimientoManual"
+      class="cc-modal cc-modal-registro-pago"
+      aria-labelledby="cc-dlg-mov-manual-tit"
+      aria-modal="true"
+      @close="alCerrarCuadroMovimientoManual"
+    >
+      <div v-if="proveedorModal" class="cc-reg-pago-panel" @click.stop>
+        <header class="cc-reg-pago-cab">
+          <div class="cc-reg-pago-cab-bloque-pr">
+            <p class="cc-modal-eyebrow">Ajuste de cuenta</p>
+            <h2 id="cc-dlg-mov-manual-tit" class="cc-modal-tit">Movimiento manual</h2>
+            <p class="cc-modal-sub">
+              <span class="cc-modal-sub-nombre">{{ proveedorModal.nombre }}</span>
+              <span class="cc-modal-sub-sep" aria-hidden="true">·</span>
+              <span class="cc-mono">{{ proveedorModal.documento }}</span>
+            </p>
+          </div>
+          <button
+            type="button"
+            class="cc-modal-x"
+            aria-label="Cerrar"
+            @click="cerrarCuadroMovimientoManual"
+          ></button>
+        </header>
+
+        <div class="cc-reg-pago-resumen" aria-label="Resumen de la cuenta">
+          <div class="cc-reg-pago-resumen-item">
+            <span class="cc-reg-pago-resumen-etiq">Saldo deudor</span>
+            <span
+              class="cc-reg-pago-resumen-val cc-mono"
+              :class="{ 'cc-reg-pago-resumen-val--deuda': saldoDeudorModal > 0 }"
+            >
+              {{ formatearMoneda(saldoDeudorModal) }}
+            </span>
+          </div>
+          <div class="cc-reg-pago-resumen-item cc-reg-pago-resumen-item--acento">
+            <span class="cc-reg-pago-resumen-etiq">Disponible para compras</span>
+            <span class="cc-reg-pago-resumen-val cc-mono">{{
+              formatearMoneda(creditoDisponible(proveedorModal))
+            }}</span>
+          </div>
+        </div>
+
+        <form class="cc-reg-pago-form" @submit.prevent="registrarMovimientoManual">
+          <p v-if="errorFormularioMovimientoManual" class="cc-form-error" role="alert">
+            {{ errorFormularioMovimientoManual }}
+          </p>
+
+          <div
+            role="group"
+            aria-labelledby="cc-mov-manual-leyenda"
+            class="cc-reg-datos-recuadro cc-reg-datos-recuadro--neutro"
+          >
+            <h3 id="cc-mov-manual-leyenda" class="cc-reg-seccion-tit">Datos del movimiento</h3>
+            <p class="cc-mov-manual-ayuda">
+              Usá <strong>Cargo</strong> para aumentar la deuda (facturas pendientes de carga,
+              intereses, ajustes). Usá <strong>Abono</strong> para descontar (pagos fuera del flujo
+              habitual, correcciones).
+            </p>
+
+            <div class="cc-form-grid">
+              <div class="cc-inp-wrap cc-inp-span2">
+                <span class="cc-inp-lab">Tipo de movimiento</span>
+                <div class="cc-tipo-mov" role="radiogroup" aria-label="Cargo o abono">
+                  <label
+                    class="cc-tipo-mov-op"
+                    :class="{ 'cc-tipo-mov-op--activa': tipoMovimientoManual === 'cargo' }"
+                  >
+                    <input
+                      v-model="tipoMovimientoManual"
+                      type="radio"
+                      class="pg-sr"
+                      value="cargo"
+                    />
+                    Cargo
+                  </label>
+                  <label
+                    class="cc-tipo-mov-op"
+                    :class="{ 'cc-tipo-mov-op--activa': tipoMovimientoManual === 'pagoRegistrado' }"
+                  >
+                    <input
+                      v-model="tipoMovimientoManual"
+                      type="radio"
+                      class="pg-sr"
+                      value="pagoRegistrado"
+                    />
+                    Abono
+                  </label>
+                </div>
+              </div>
+
+              <label class="cc-inp-wrap cc-inp-span2">
+                <span class="cc-inp-lab">Importe</span>
+                <input
+                  ref="refImporteMovimientoManual"
+                  v-model="importeMovimientoManualTexto"
+                  type="text"
+                  class="cc-inp cc-inp--importe"
+                  inputmode="decimal"
+                  placeholder="Ej. 15000 o 15.000"
+                  autocomplete="off"
+                />
+              </label>
+
+              <label class="cc-inp-wrap cc-inp-span2">
+                <span class="cc-inp-lab">Descripción</span>
+                <input
+                  v-model="descripcionMovimientoManual"
+                  type="text"
+                  class="cc-inp"
+                  maxlength="500"
+                  placeholder="Ej. Saldo inicial al 01/03, Intereses marzo…"
+                  autocomplete="off"
+                  required
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="cc-reg-pago-acciones">
+            <button
+              type="button"
+              class="cc-btn ghost cc-btn--lg"
+              :disabled="registrandoMovimientoManual"
+              @click="cerrarCuadroMovimientoManual"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="cc-btn accent cc-btn--lg" :disabled="registrandoMovimientoManual">
+              {{ registrandoMovimientoManual ? 'Registrando…' : 'Registrar movimiento' }}
+            </button>
           </div>
         </form>
       </div>
@@ -996,6 +1222,63 @@ async function imprimirCuentaProveedor(): Promise<void> {
   line-height: 1.4;
   color: var(--color-peligro);
   text-align: left;
+}
+
+.cc-btn.manual {
+  border: 1px solid var(--color-borde);
+  background: var(--color-hover-neutro);
+}
+
+.cc-btn.manual:hover {
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
+}
+
+.cc-reg-datos-recuadro--neutro {
+  border-color: var(--color-borde);
+  background: var(--color-fondo-elevado);
+}
+
+.cc-mov-manual-ayuda {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--color-texto-suave);
+}
+
+.cc-tipo-mov {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.cc-tipo-mov-op {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.45rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 9px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-cabecera);
+  color: var(--color-texto-suave);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.cc-tipo-mov-op:hover {
+  border-color: var(--color-acento-borde);
+}
+
+.cc-tipo-mov-op--activa {
+  border-color: var(--color-acento-borde);
+  background: var(--color-acento-suave);
+  color: var(--color-texto);
 }
 
 /* Modal cuenta corriente: ocupa mayor parte del viewport */

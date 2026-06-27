@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import {
   listarMovimientosCuentaCorrienteApi,
   obtenerSaldoCuentaCorrienteApi,
+  registrarMovimientoManualCuentaCorrienteApi,
   registrarPagoCuentaCorrienteApi,
 } from '../servicios/cuentaCorriente.servicio';
 import type { MovimientoCuentaCorriente } from '../tipos/cuentaCorriente';
@@ -107,6 +108,21 @@ export const useCuentaCorrienteStore = defineStore('cuentaCorriente', () => {
     return movimiento;
   }
 
+  async function agregarMovimientoManual(
+    clienteId: string,
+    tipoMovimiento: 'cargo' | 'pagoRegistrado',
+    importe: number,
+    descripcion: string,
+  ): Promise<MovimientoCuentaCorriente> {
+    const movimiento = await registrarMovimientoManualCuentaCorrienteApi(clienteId, {
+      tipoMovimiento,
+      importe,
+      descripcion: descripcion.trim(),
+    });
+    await cargarMovimientosCliente(clienteId);
+    return movimiento;
+  }
+
   const mapaSaldoCliente = computed(() => {
     const mapa = new Map<string, number>();
     for (const [id, saldo] of Object.entries(saldosPorClienteId.value)) {
@@ -135,5 +151,6 @@ export const useCuentaCorrienteStore = defineStore('cuentaCorriente', () => {
     saldoClienteCacheado,
     movimientosConSaldoCliente,
     agregarPagoRegistrado,
+    agregarMovimientoManual,
   };
 });

@@ -18,6 +18,7 @@ import { etiquetaMotivoMovimientoStock } from '../../modulos/inventario/etiqueta
 import {
   calcularAlertasStock,
   calcularKpisVentasDia,
+  contarVariantesInactivasStockCero,
   filtrarVentasDelDia,
   formatearFechaTituloInicio,
 } from '../../modulos/inicio/calcularResumenInicio';
@@ -41,14 +42,9 @@ import {
   obtenerDiaComparableDesdeValor,
 } from '../../utilidades/formatoFechaHora';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const descripcionPagina = obtenerDescripcionPagina('inicio');
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 const CANTIDAD_ACTIVIDAD_RECIENTE = 5;
 
@@ -107,6 +103,17 @@ const alertasStock = computed(() =>
   )
 );
 
+const autoDeshabilitacionStockActiva = computed(
+  () => parametrosSistema.value.diasDeshabilitarProductoStockCero > 0,
+);
+
+const variantesInactivasStockCero = computed(() => {
+  if (!autoDeshabilitacionStockActiva.value) return 0;
+  return contarVariantesInactivasStockCero(variantes.value, (id) =>
+    stockStore.cantidadActual(id),
+  );
+});
+
 const clientesConDeuda = computed(() =>
   contarClientesEnDeudaPorPlazo(
     clientes.value,
@@ -120,8 +127,10 @@ const hayAlertasOperativas = computed(() => {
   const alertaStock =
     puedeVerStock.value &&
     (alertasStock.value.variantesAgotadas > 0 || alertasStock.value.variantesStockBajo > 0);
+  const alertaVariantesInactivas =
+    puedeVerStock.value && variantesInactivasStockCero.value > 0;
   const alertaCc = puedeVerClientes.value && clientesConDeuda.value > 0;
-  return alertaStock || alertaCc;
+  return alertaStock || alertaVariantesInactivas || alertaCc;
 });
 
 const ultimasVentas = computed(() => ventas.value.slice(0, CANTIDAD_ACTIVIDAD_RECIENTE));
@@ -188,14 +197,14 @@ const etiquetaRolSesion = computed(() => {
         <article class="pg-kpi pg-kpi--acento" role="listitem">
           <span class="pg-kpi-etiq">Total facturado</span>
           <span class="pg-kpi-valor ini-mono">{{
-            formatoPeso.format(kpisVentas.totalImporte)
+            formatearMoneda(kpisVentas.totalImporte)
           }}</span>
         </article>
         <article class="pg-kpi" role="listitem">
           <span class="pg-kpi-etiq">Ticket promedio</span>
           <span class="pg-kpi-valor ini-mono">{{
             kpisVentas.cantidadVentas
-              ? formatoPeso.format(kpisVentas.ticketPromedio)
+              ? formatearMoneda(kpisVentas.ticketPromedio)
               : '—'
           }}</span>
         </article>
@@ -261,6 +270,29 @@ const etiquetaRolSesion = computed(() => {
           </RouterLink>
         </div>
 
+        <div
+          v-if="puedeVerStock && variantesInactivasStockCero > 0"
+          class="ini-alerta ini-alerta--adv"
+        >
+          <div class="ini-alerta-txt">
+            <span class="ini-alerta-tit">Variantes desactivadas por stock</span>
+            <span class="ini-alerta-det">
+              {{ variantesInactivasStockCero }}
+              {{
+                variantesInactivasStockCero === 1
+                  ? 'variante inactiva con stock en cero'
+                  : 'variantes inactivas con stock en cero'
+              }}
+              (auto-deshabilitación tras
+              {{ parametrosSistema.diasDeshabilitarProductoStockCero }} días sin unidades).
+            </span>
+          </div>
+          <RouterLink class="ini-alerta-link" :to="{ name: 'productos-catalogo' }">
+            Ver catálogo
+            <ArrowRight :size="15" stroke-width="2" aria-hidden="true" />
+          </RouterLink>
+        </div>
+
         <div v-if="puedeVerClientes && clientesConDeuda > 0" class="ini-alerta ini-alerta--cc">
           <div class="ini-alerta-txt">
             <span class="ini-alerta-tit">Deuda en cuenta corriente</span>
@@ -321,7 +353,7 @@ const etiquetaRolSesion = computed(() => {
                   {{ v.nombreClienteMostrar }}
                 </span>
               </span>
-              <span class="ini-item-der ini-mono">{{ formatoPeso.format(v.total) }}</span>
+              <span class="ini-item-der ini-mono">{{ formatearMoneda(v.total) }}</span>
             </RouterLink>
           </li>
         </ul>

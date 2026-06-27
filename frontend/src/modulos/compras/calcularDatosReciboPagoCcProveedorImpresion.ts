@@ -2,12 +2,7 @@ import type { Proveedor } from '../../tipos/proveedor';
 import type { MovimientoCuentaCorrienteProveedor } from '../../tipos/cuentaCorrienteProveedor';
 import { formatearFechaDiaMesAnio, formatearFechaYHora } from '../../utilidades/formatoFechaHora';
 import { obtenerEmisorNegocioReporte, type EmisorNegocioReporte } from '../reportes/emisorNegocioReporte';
-
-const formatoMoneda = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 export interface DatosReciboPagoCcProveedorImpresion extends EmisorNegocioReporte {
   tituloDocumento: string;
@@ -51,7 +46,7 @@ export function calcularDatosReciboPagoCcProveedorImpresion(
     codigoRecibo,
     proveedorNombre: proveedor.nombre,
     proveedorDocumento: proveedor.documento,
-    importe: formatoMoneda.format(movimiento.importe),
+    importe: formatearMoneda(movimiento.importe),
     fechaPago: formatearFechaDiaMesAnio(movimiento.fecha),
     formaPago: formaPagoCruda && formaPagoCruda.length > 0 ? formaPagoCruda : '—',
     concepto: movimiento.descripcion.trim() || 'Pago registrado',

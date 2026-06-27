@@ -14,6 +14,9 @@ import { ActualizarProductoDto } from './dto/actualizar-producto.dto';
 import { ActualizarVarianteDto } from './dto/actualizar-variante.dto';
 import { CrearProductoDto } from './dto/crear-producto.dto';
 import { CrearVarianteDto } from './dto/crear-variante.dto';
+import { crearFechaAgotadoInicial } from '../../comunes/utilidades/fecha-agotado-stock';
+import { ConfiguracionSistemaService } from '../configuracion-sistema/configuracion-sistema.service';
+import { aplicarDeshabilitacionAutomaticaVariantes } from '../stock/utilidades/deshabilitacion-automatica-stock';
 
 export interface ProductoApi {
   id: string;
@@ -42,6 +45,7 @@ export class CatalogoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly idSecuencia: IdSecuenciaService,
+    private readonly configuracionSistemaService: ConfiguracionSistemaService,
   ) {}
 
   async nombreLineaComercial(varianteId: string): Promise<string> {
@@ -58,6 +62,8 @@ export class CatalogoService {
   }
 
   async listarProductos(): Promise<ProductoConCategoriaApi[]> {
+    await this.ejecutarDeshabilitacionAutomaticaSiCorresponde();
+
     const filas = await this.prisma.producto.findMany({
       where: filtroNoBorrado,
       include: { categoria: true },
@@ -150,6 +156,8 @@ export class CatalogoService {
   }
 
   async listarVariantes(productoId?: string): Promise<VarianteApi[]> {
+    await this.ejecutarDeshabilitacionAutomaticaSiCorresponde();
+
     if (productoId) {
       const producto = await this.prisma.producto.findFirst({
         where: { id: productoId, ...filtroNoBorrado },
@@ -187,7 +195,7 @@ export class CatalogoService {
         },
       });
       await tx.stockVariante.create({
-        data: { varianteId: creada.id, cantidadActual: 0 },
+        data: { varianteId: creada.id, cantidadActual: 0, fechaAgotado: crearFechaAgotadoInicial() },
       });
       return creada;
     });
@@ -247,6 +255,14 @@ export class CatalogoService {
       where: { id },
       data: datosMarcarBorrado(),
     });
+  }
+
+  private async ejecutarDeshabilitacionAutomaticaSiCorresponde(): Promise<void> {
+    const configuracion = await this.configuracionSistemaService.obtener();
+    await aplicarDeshabilitacionAutomaticaVariantes(
+      this.prisma,
+      configuracion.diasDeshabilitarProductoStockCero,
+    );
   }
 
   private mapearVariante(variante: {

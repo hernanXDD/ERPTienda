@@ -25,6 +25,12 @@ export function normalizarStockMinimoAlerta(valor: number): number {
   return Math.floor(valor);
 }
 
+export function normalizarDiasDeshabilitarProductoStockCero(valor: number): number {
+  if (!Number.isFinite(valor) || valor < 0) return 0;
+  if (valor > 3650) return 3650;
+  return Math.floor(valor);
+}
+
 export function normalizarConfiguracionSistemaEditable(
   datos: ConfiguracionSistemaEditable,
 ): ConfiguracionSistemaEditable {
@@ -34,6 +40,9 @@ export function normalizarConfiguracionSistemaEditable(
     diasDeudaCuentaCorriente: normalizarDiasDeudaCuentaCorriente(datos.diasDeudaCuentaCorriente),
     diasPlazoDevolucion: normalizarDiasPlazoDevolucion(datos.diasPlazoDevolucion),
     stockMinimoAlerta: normalizarStockMinimoAlerta(datos.stockMinimoAlerta),
+    diasDeshabilitarProductoStockCero: normalizarDiasDeshabilitarProductoStockCero(
+      datos.diasDeshabilitarProductoStockCero,
+    ),
     movimientoManualStockHabilitado: datos.movimientoManualStockHabilitado === true,
     plantillaCupon: normalizarPlantillaCupon(datos.plantillaCupon),
   };

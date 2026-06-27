@@ -13,14 +13,9 @@ import {
 } from '../../utilidades/formatoFechaHora';
 import FormularioNuevaCompra from './FormularioNuevaCompra.vue';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const descripcionPagina = obtenerDescripcionPagina('compras-registro');
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 const registroStore = useRegistroComprasStore();
 const { compras } = storeToRefs(registroStore);
@@ -175,7 +170,7 @@ function alCerrarDialogoRegistrar() {
             </div>
             <div class="rcp-compra-tarjeta-total">
               <span class="rcp-compra-tarjeta-total-etiq">Total</span>
-              <strong class="rcp-mono">{{ formatoPeso.format(compra.total) }}</strong>
+              <strong class="rcp-mono">{{ formatearMoneda(compra.total) }}</strong>
             </div>
           </button>
         </li>
@@ -202,7 +197,7 @@ function alCerrarDialogoRegistrar() {
               <td class="rcp-mono">{{ compra.numero }}</td>
               <td>{{ compra.nombreProveedorMostrar }}</td>
               <td>{{ etiquetaCondicionCompra(compra.condicionCompra) }}</td>
-              <td class="rcp-der rcp-mono">{{ formatoPeso.format(compra.total) }}</td>
+              <td class="rcp-der rcp-mono">{{ formatearMoneda(compra.total) }}</td>
               <td class="rcp-col-acc">
                 <button type="button" class="rcp-det" @click="abrirDetalleCompra(compra)">
                   Ver detalle
@@ -263,15 +258,15 @@ function alCerrarDialogoRegistrar() {
               <tr v-for="(ln, indiceLinea) in compraDetalleSeleccionada.lineas" :key="indiceLinea">
                 <td>{{ ln.nombre }}</td>
                 <td class="rcp-der rcp-mono">{{ ln.cantidad }}</td>
-                <td class="rcp-der rcp-mono">{{ formatoPeso.format(ln.costoUnitario) }}</td>
-                <td class="rcp-der rcp-mono">{{ formatoPeso.format(ln.subtotal) }}</td>
+                <td class="rcp-der rcp-mono">{{ formatearMoneda(ln.costoUnitario) }}</td>
+                <td class="rcp-der rcp-mono">{{ formatearMoneda(ln.subtotal) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
         <div class="rcp-modal-total">
           <span>Total</span>
-          <strong>{{ formatoPeso.format(compraDetalleSeleccionada.total) }}</strong>
+          <strong>{{ formatearMoneda(compraDetalleSeleccionada.total) }}</strong>
         </div>
         <p v-if="compraDetalleSeleccionada.observaciones.trim()" class="rcp-modal-obs">
           <strong>Observaciones:</strong>
@@ -607,12 +602,29 @@ function alCerrarDialogoRegistrar() {
 .rcp-dlg-caja {
   max-height: min(94dvh, 56rem);
   overflow: auto;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 @media (max-width: 480px) {
   .rcp-dlg-overlay {
-    width: calc(100vw - 1rem);
-    max-height: 95dvh;
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .rcp-dlg-caja {
+    max-height: 100dvh;
+    overflow: auto;
+    overflow-x: hidden;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

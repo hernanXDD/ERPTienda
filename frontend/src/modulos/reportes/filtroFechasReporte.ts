@@ -47,3 +47,30 @@ export function formatearRangoFechasLegible(filtro: FiltroFechasReporte): string
   const hasta = formatearFechaDiaMesAnio(`${filtro.fechaHasta}T12:00:00`);
   return `${desde} — ${hasta}`;
 }
+
+/**
+ * Arma el rango para exportar PDF de cuenta corriente desde filtros opcionales
+ * y las fechas de los movimientos de la entidad.
+ */
+export function armarFiltroFechasReporteDesdeMovimientos(
+  fechaDesde: string | undefined,
+  fechaHasta: string | undefined,
+  fechasIsoMovimientos: string[],
+): FiltroFechasReporte {
+  const diasMovs = fechasIsoMovimientos
+    .map((fecha) => obtenerDiaComparableDesdeValor(fecha))
+    .filter((d): d is string => Boolean(d))
+    .sort();
+
+  const hoy = diaComparableHoy();
+  const minMov = diasMovs[0] ?? hoy;
+  const maxMov = diasMovs[diasMovs.length - 1] ?? hoy;
+
+  const desdeTrim = fechaDesde?.trim() ?? '';
+  const hastaTrim = fechaHasta?.trim() ?? '';
+
+  return {
+    fechaDesde: desdeTrim || minMov,
+    fechaHasta: hastaTrim || (desdeTrim ? hoy : maxMov),
+  };
+}

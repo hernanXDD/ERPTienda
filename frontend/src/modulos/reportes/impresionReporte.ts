@@ -4,6 +4,7 @@ import {
   dibujarPieEnTodasLasPaginasPdf,
   leerDatosPieDesdeDocumento,
 } from './piePaginaReporte';
+import { sanitizarNombreArchivo } from '../../utilidades/nombresArchivo';
 
 const ID_ESTILOS_VISTA_PREVIA = 'rep-vista-previa-estilos';
 const SELECTOR_DOCUMENTO_REPORTE = '.rep-doc';
@@ -35,21 +36,9 @@ function cerrarVentanaPdf(ventana: Window | null | undefined): void {
   }
 }
 
-function sanitizarNombreArchivo(nombre: string): string {
-  return (
-    nombre
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9._-]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 120) || 'reporte'
-  );
-}
-
 /** Nombre de archivo (sin extensión) según título y rango de fechas del filtro activo. */
 export function nombreArchivoReportePdf(tituloBase: string, filtro: FiltroFechasReporte): string {
-  const base = sanitizarNombreArchivo(tituloBase);
+  const base = sanitizarNombreArchivo(tituloBase, 'reporte');
   return `${base}_${filtro.fechaDesde}_${filtro.fechaHasta}`;
 }
 

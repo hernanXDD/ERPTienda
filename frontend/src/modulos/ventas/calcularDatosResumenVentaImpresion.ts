@@ -1,4 +1,5 @@
 import { etiquetaFormaPago } from '../../datos/formasPago';
+import type { FormaPago } from '../../tipos/formaPago';
 import type { VentaRegistrada } from '../../tipos/venta';
 import {
   formatearFechaDiaMesAnio,
@@ -6,12 +7,7 @@ import {
   formatearHoraAmPm,
 } from '../../utilidades/formatoFechaHora';
 import { obtenerEmisorNegocioReporte, type EmisorNegocioReporte } from '../reportes/emisorNegocioReporte';
-
-const formatoMoneda = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 export interface LineaResumenVentaImpresion {
   nombre: string;
@@ -50,6 +46,7 @@ function etiquetaAtendidoPor(etiqueta: string): string {
 /** Arma el objeto de datos para la plantilla Eta del comprobante de compra. */
 export function calcularDatosResumenVentaImpresion(
   venta: VentaRegistrada,
+  formasPago?: FormaPago[],
 ): DatosResumenVentaImpresion {
   const unidades = venta.lineas.reduce((acc, ln) => acc + ln.cantidad, 0);
   const lineas = venta.lineas.length;
@@ -81,16 +78,16 @@ export function calcularDatosResumenVentaImpresion(
     lineas: venta.lineas.map((ln) => ({
       nombre: ln.nombre,
       cantidad: String(ln.cantidad),
-      precioUnitario: formatoMoneda.format(ln.precioUnitario),
-      importe: formatoMoneda.format(ln.subtotal),
+      precioUnitario: formatearMoneda(ln.precioUnitario),
+      importe: formatearMoneda(ln.subtotal),
     })),
-    subtotalLineas: formatoMoneda.format(subtotal),
+    subtotalLineas: formatearMoneda(subtotal),
     tieneAjuste,
     etiquetaAjuste,
-    montoAjuste: formatoMoneda.format(Math.abs(ajusteMonto)),
+    montoAjuste: formatearMoneda(Math.abs(ajusteMonto)),
     ajusteEsDescuento,
-    totalPagado: formatoMoneda.format(venta.total),
-    metodoPago: etiquetaFormaPago(venta.formaPago),
+    totalPagado: formatearMoneda(venta.total),
+    metodoPago: etiquetaFormaPago(venta.formaPago, formasPago),
     cantidadArticulos: `${unidades} ${unidades === 1 ? 'unidad' : 'unidades'}`,
     cantidadLineas: `${lineas} ${lineas === 1 ? 'producto' : 'productos'}`,
     atendidoPor: atendido,

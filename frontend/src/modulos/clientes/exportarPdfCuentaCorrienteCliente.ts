@@ -1,13 +1,11 @@
 import type { Cliente } from '../../tipos/cliente';
 import type { MovimientoCuentaCorriente } from '../../tipos/cuentaCorriente';
 import type { VentaRegistrada } from '../../tipos/venta';
-import { obtenerDiaComparableDesdeValor } from '../../utilidades/formatoFechaHora';
 import { calcularReporteCuentasCorrientes } from '../reportes/calcular/calcularReporteCuentasCorrientes';
 import { opcionesClientesParaReporte } from '../reportes/filtroEntidadReporte';
 import {
-  diaComparableHoy,
+  armarFiltroFechasReporteDesdeMovimientos,
   esRangoFechasValido,
-  type FiltroFechasReporte,
 } from '../reportes/filtroFechasReporte';
 import {
   exportarReporteComoPdf,
@@ -29,29 +27,6 @@ export interface ParametrosExportarPdfCuentaCorrienteCliente {
   ventanaPdfDestino?: Window | null;
 }
 
-function armarFiltroFechasReporte(
-  fechaDesde: string | undefined,
-  fechaHasta: string | undefined,
-  movimientosCliente: MovimientoCuentaCorriente[],
-): FiltroFechasReporte {
-  const diasMovs = movimientosCliente
-    .map((m) => obtenerDiaComparableDesdeValor(m.fecha))
-    .filter((d): d is string => Boolean(d))
-    .sort();
-
-  const hoy = diaComparableHoy();
-  const minMov = diasMovs[0] ?? hoy;
-  const maxMov = diasMovs[diasMovs.length - 1] ?? hoy;
-
-  const desdeTrim = fechaDesde?.trim() ?? '';
-  const hastaTrim = fechaHasta?.trim() ?? '';
-
-  return {
-    fechaDesde: desdeTrim || minMov,
-    fechaHasta: hastaTrim || (desdeTrim ? hoy : maxMov),
-  };
-}
-
 /**
  * Genera y abre en una nueva pestaña el PDF de cuenta corriente del cliente,
  * usando la plantilla ETA estándar de reportes.
@@ -63,7 +38,11 @@ export async function exportarPdfCuentaCorrienteCliente(
     parametros;
 
   const movimientosCliente = movimientos.filter((m) => m.clienteId === cliente.id);
-  const filtroFechas = armarFiltroFechasReporte(fechaDesde, fechaHasta, movimientosCliente);
+  const filtroFechas = armarFiltroFechasReporteDesdeMovimientos(
+    fechaDesde,
+    fechaHasta,
+    movimientosCliente.map((m) => m.fecha),
+  );
 
   if (!esRangoFechasValido(filtroFechas)) {
     throw new Error('El rango de fechas no es válido. Revise «Desde» y «Hasta».');

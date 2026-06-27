@@ -76,13 +76,15 @@ export class ProveedoresService {
 
   async crear(datos: CrearProveedorDto): Promise<ProveedorApi> {
     const documento = datos.documento.trim();
-    await this.validarDocumentoUnico(documento);
+    const documentoNormalizado = normalizarDocumento(documento);
+    await this.validarDocumentoUnico(documentoNormalizado);
     const id = await this.idSecuencia.siguienteProveedor();
     const creado = await this.prisma.proveedor.create({
       data: {
         id,
         nombre: datos.nombre.trim(),
         documento,
+        documentoNormalizado,
         correoElectronico: datos.correoElectronico?.trim() ?? '',
         telefonoPrincipal: datos.telefonoPrincipal?.trim() ?? '',
         telefonoAlternativo: datos.telefonoAlternativo?.trim() ?? '',
@@ -98,12 +100,14 @@ export class ProveedoresService {
   async actualizar(id: string, datos: ActualizarProveedorDto): Promise<ProveedorApi> {
     await this.obtenerPorId(id);
     const documento = datos.documento.trim();
-    await this.validarDocumentoUnico(documento, id);
+    const documentoNormalizado = normalizarDocumento(documento);
+    await this.validarDocumentoUnico(documentoNormalizado, id);
     const actualizado = await this.prisma.proveedor.update({
       where: { id },
       data: {
         nombre: datos.nombre.trim(),
         documento,
+        documentoNormalizado,
         correoElectronico: datos.correoElectronico?.trim() ?? '',
         telefonoPrincipal: datos.telefonoPrincipal?.trim() ?? '',
         telefonoAlternativo: datos.telefonoAlternativo?.trim() ?? '',
@@ -133,16 +137,21 @@ export class ProveedoresService {
     });
   }
 
-  private async validarDocumentoUnico(documento: string, exceptoId?: string): Promise<void> {
-    const clave = normalizarDocumento(documento);
-    if (!clave) throw new ConflictException('El documento es obligatorio.');
-    const proveedores = await this.prisma.proveedor.findMany({
-      where: filtroNoBorrado,
-      select: { id: true, documento: true },
+  private async validarDocumentoUnico(
+    documentoNormalizado: string,
+    exceptoId?: string,
+  ): Promise<void> {
+    if (!documentoNormalizado) {
+      throw new ConflictException('El documento es obligatorio.');
+    }
+    const duplicado = await this.prisma.proveedor.findFirst({
+      where: {
+        documentoNormalizado,
+        ...filtroNoBorrado,
+        ...(exceptoId ? { NOT: { id: exceptoId } } : {}),
+      },
+      select: { id: true },
     });
-    const duplicado = proveedores.some(
-      (p) => p.id !== exceptoId && normalizarDocumento(p.documento) === clave,
-    );
     if (duplicado) {
       throw new ConflictException('Ya existe un proveedor con ese documento.');
     }

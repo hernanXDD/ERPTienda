@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { CuentaCorrienteService } from './cuenta-corriente.service';
+import { RegistrarMovimientoManualDto } from './dto/registrar-movimiento-manual.dto';
 import { RegistrarPagoDto } from './dto/registrar-pago.dto';
 
 @Controller('clientes/:clienteId/cuenta-corriente')
@@ -37,5 +38,20 @@ export class CuentaCorrienteController {
   ) {
     const movimiento = await this.cuentaCorrienteService.registrarPago(clienteId, datos, operador);
     return respuestaOk(movimiento, 'Pago registrado correctamente.');
+  }
+
+  @Post('movimiento-manual')
+  @RequierePermiso('puedeGestionarCuentaCorriente')
+  async registrarMovimientoManual(
+    @Param('clienteId') clienteId: string,
+    @Body() datos: RegistrarMovimientoManualDto,
+    @UsuarioSesionActual() operador: UsuarioSesion,
+  ) {
+    const movimiento = await this.cuentaCorrienteService.registrarMovimientoManual(
+      clienteId,
+      datos,
+      operador,
+    );
+    return respuestaOk(movimiento, 'Movimiento manual registrado correctamente.');
   }
 }

@@ -5,6 +5,7 @@ import {
   normalizarConfiguracionSistemaEditable,
   normalizarDiasDeudaCuentaCorriente,
   normalizarDiasPlazoDevolucion,
+  normalizarDiasDeshabilitarProductoStockCero,
   normalizarPorcentajeGananciaSugerida,
   normalizarStockMinimoAlerta,
 } from '../../modulos/configuracion/normalizarConfiguracionSistema';
@@ -15,6 +16,8 @@ import type { ConfiguracionSistemaEditable } from '../../tipos/configuracionSist
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
 import SelectorPlantillaCupon from '../../componentes/configuracion/SelectorPlantillaCupon.vue';
+import TablaFormasPago from '../../componentes/configuracion/TablaFormasPago.vue';
+import TablaTallesCatalogo from '../../componentes/configuracion/TablaTallesCatalogo.vue';
 import '../../estilos/formularioConfiguracion.css';
 
 const descripcionPagina = obtenerDescripcionPagina('configuracion-sistema');
@@ -80,6 +83,12 @@ function alPerderFocoStockMinimo(): void {
   borrador.value.stockMinimoAlerta = normalizarStockMinimoAlerta(borrador.value.stockMinimoAlerta);
 }
 
+function alPerderFocoDiasDeshabilitarStockCero(): void {
+  borrador.value.diasDeshabilitarProductoStockCero = normalizarDiasDeshabilitarProductoStockCero(
+    borrador.value.diasDeshabilitarProductoStockCero,
+  );
+}
+
 function iniciarEdicion(): void {
   mensajeExito.value = '';
   mensajeError.value = '';
@@ -106,6 +115,7 @@ async function guardarConfiguracion(): Promise<void> {
   alPerderFocoDias();
   alPerderFocoDiasDevolucion();
   alPerderFocoStockMinimo();
+  alPerderFocoDiasDeshabilitarStockCero();
 
   const datos = normalizarConfiguracionSistemaEditable(borrador.value);
 
@@ -151,7 +161,7 @@ async function guardarConfiguracion(): Promise<void> {
           <div class="perm-ficha-ident">
             <p class="perm-ficha-nombre">Preferencias operativas del negocio</p>
             <p class="perm-ficha-login">
-              Cuentas corrientes, devoluciones, cupones, alertas de stock y márgenes sugeridos en catálogo.
+              Cuentas corrientes, devoluciones, formas de pago, cupones, alertas de stock y márgenes sugeridos en catálogo.
             </p>
           </div>
           <div class="perm-ficha-chips">
@@ -188,11 +198,11 @@ async function guardarConfiguracion(): Promise<void> {
 
         <fieldset
           v-else
-          class="perm-cuerpo perm-cuerpo--dos-bloques"
+          class="perm-cuerpo perm-cuerpo--sistema"
           :class="{ 'perm-cuerpo--solo-lectura': !modoEdicion }"
           :disabled="!modoEdicion || guardando"
         >
-          <section class="perm-bloque" aria-labelledby="cfg-sys-sec-cc">
+          <section class="perm-bloque cfg-sys-sec-cc" aria-labelledby="cfg-sys-sec-cc">
             <header class="perm-bloque-enc">
               <span class="perm-bloque-ico" aria-hidden="true">
                 <Wallet :size="16" stroke-width="2" />
@@ -251,7 +261,7 @@ async function guardarConfiguracion(): Promise<void> {
                 </div>
               </section>
 
-              <section class="perm-bloque" aria-labelledby="cfg-sys-sec-devoluciones">
+              <section class="perm-bloque cfg-sys-sec-devoluciones" aria-labelledby="cfg-sys-sec-devoluciones">
                 <header class="perm-bloque-enc">
                   <span class="perm-bloque-ico" aria-hidden="true">
                     <Undo2 :size="16" stroke-width="2" />
@@ -287,7 +297,7 @@ async function guardarConfiguracion(): Promise<void> {
                 </div>
               </section>
 
-              <section class="perm-bloque" aria-labelledby="cfg-sys-sec-operacion">
+              <section class="perm-bloque cfg-sys-sec-inventario" aria-labelledby="cfg-sys-sec-operacion">
                 <header class="perm-bloque-enc">
                   <span class="perm-bloque-ico" aria-hidden="true">
                     <Package :size="16" stroke-width="2" />
@@ -319,6 +329,32 @@ async function guardarConfiguracion(): Promise<void> {
                         @blur="alPerderFocoStockMinimo"
                       />
                       <span class="cfg-ficha-inp-sufijo" aria-hidden="true">unid.</span>
+                    </div>
+                  </div>
+
+                  <div class="cfg-ficha-campo">
+                    <label class="cfg-ficha-etiq" for="cfg-dias-deshabilitar-stock">
+                      Días en cero para desactivar
+                    </label>
+                    <p class="cfg-ficha-ayuda">
+                      Si una variante lleva ese tiempo sin stock, se desactiva y deja de
+                      aparecer en ventas. Con 0 días no se desactiva nada.
+                    </p>
+                    <div class="cfg-ficha-inp-grupo cfg-ficha-inp-grupo--corto">
+                      <input
+                        id="cfg-dias-deshabilitar-stock"
+                        v-model.number="borrador.diasDeshabilitarProductoStockCero"
+                        type="number"
+                        class="cfg-ficha-inp cfg-ficha-inp-mono cfg-ficha-inp--sufijo"
+                        min="0"
+                        max="3650"
+                        step="1"
+                        inputmode="numeric"
+                        placeholder="0"
+                        :disabled="!modoEdicion || guardando"
+                        @blur="alPerderFocoDiasDeshabilitarStockCero"
+                      />
+                      <span class="cfg-ficha-inp-sufijo" aria-hidden="true">días</span>
                     </div>
                   </div>
 
@@ -407,7 +443,20 @@ async function guardarConfiguracion(): Promise<void> {
                 </div>
               </section>
 
-              <section class="perm-bloque perm-bloque--ancho" aria-labelledby="cfg-sys-sec-cupones">
+              <TablaFormasPago
+                class="cfg-sys-sec-formas-pago"
+                :puede-editar="puedeEditarConfiguracionSistema"
+              />
+
+              <TablaTallesCatalogo
+                class="cfg-sys-sec-talles"
+                :puede-editar="puedeEditarConfiguracionSistema"
+              />
+
+              <section
+                class="perm-bloque perm-bloque--ancho cfg-sys-sec-cupones"
+                aria-labelledby="cfg-sys-sec-cupones"
+              >
                 <header class="perm-bloque-enc">
                   <span class="perm-bloque-ico" aria-hidden="true">
                     <Tag :size="16" stroke-width="2" />

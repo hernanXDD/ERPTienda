@@ -68,11 +68,12 @@ export const useCatalogoStore = defineStore('catalogo', () => {
       const generacion = sincronizador.generacionAlIniciarCarga();
       cargando.value = true;
       try {
-        const [cats, prods, vars] = await Promise.all([
+        const [cats, prods] = await Promise.all([
           listarCategoriasApi(),
           listarProductosApi(),
-          listarVariantesApi(),
         ]);
+        if (sincronizador.esRespuestaObsoleta(generacion)) return;
+        const vars = await listarVariantesApi();
         if (sincronizador.esRespuestaObsoleta(generacion)) return;
         categorias.value = cats;
         productos.value = prods;

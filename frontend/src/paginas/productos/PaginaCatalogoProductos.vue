@@ -9,14 +9,9 @@ import { useCatalogoStore } from '../../stores/catalogo';
 import { useStockStore } from '../../stores/stock';
 import type { Producto } from '../../tipos/catalogo';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const descripcionPagina = obtenerDescripcionPagina('productos-catalogo');
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 const catalogo = useCatalogoStore();
 const stockStore = useStockStore();
@@ -264,7 +259,7 @@ onMounted(() => {
                   {{ cantidadVariantesProducto(p.id) }}
                   {{ cantidadVariantesProducto(p.id) === 1 ? 'variante' : 'variantes' }}
                 </span>
-                <strong class="pg-mono">{{ formatoPeso.format(p.precioVenta) }}</strong>
+                <strong class="pg-mono">{{ formatearMoneda(p.precioVenta) }}</strong>
               </div>
             </button>
             <article v-else class="cat-prod-tarjeta cat-prod-tarjeta--lectura">
@@ -292,7 +287,7 @@ onMounted(() => {
                   {{ cantidadVariantesProducto(p.id) }}
                   {{ cantidadVariantesProducto(p.id) === 1 ? 'variante' : 'variantes' }}
                 </span>
-                <strong class="pg-mono">{{ formatoPeso.format(p.precioVenta) }}</strong>
+                <strong class="pg-mono">{{ formatearMoneda(p.precioVenta) }}</strong>
               </div>
             </article>
           </li>
@@ -321,7 +316,7 @@ onMounted(() => {
               <div class="pg-card-cuerpo pg-card-cuerpo--resumida">
                 <header class="pg-card-cab">
                   <h2 class="pg-card-nom">{{ p.nombre }}</h2>
-                  <span class="pg-card-precio">{{ formatoPeso.format(p.precioVenta) }}</span>
+                  <span class="pg-card-precio">{{ formatearMoneda(p.precioVenta) }}</span>
                 </header>
                 <p v-if="p.marca.trim()" class="pg-card-sub">{{ p.marca }}</p>
                 <div class="pg-card-estados">

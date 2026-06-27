@@ -216,6 +216,26 @@ export class IdSecuenciaService {
     return ids;
   }
 
+  siguienteFormaPago(cliente: ClienteTransaccion = this.prisma) {
+    return obtenerSiguienteIdEntidad(async () => {
+      const fila = await cliente.formaPago.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true },
+      });
+      return fila?.id ?? null;
+    });
+  }
+
+  siguienteTalleCatalogo(cliente: ClienteTransaccion = this.prisma) {
+    return obtenerSiguienteIdEntidad(async () => {
+      const fila = await cliente.talleCatalogo.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true },
+      });
+      return fila?.id ?? null;
+    });
+  }
+
   siguienteCuponDescuento(cliente: ClienteTransaccion = this.prisma) {
     return obtenerSiguienteIdEntidad(async () => {
       const fila = await cliente.cuponDescuento.findFirst({

@@ -153,6 +153,7 @@ export class ComprasService {
       }
 
       await this.stockService.finalizarAuditoriaStock(tx, idAuditoria);
+      await this.stockService.aplicarDeshabilitacionAutomaticaSiCorresponde(tx);
 
       if (datos.condicionCompra === CondicionCompra.CUENTA_PROVEEDOR) {
         await this.cuentaCorrienteProveedorService.registrarCargo(
@@ -160,6 +161,7 @@ export class ComprasService {
           { importe: totalCalculado, descripcion: `Compra ${numero}` },
           operador.id,
           tx,
+          { compraId: idCompra },
         );
       }
 

@@ -7,7 +7,9 @@ import { useVentasStore } from '../stores/ventas';
 import type { Producto, Variante } from '../tipos/catalogo';
 import type { Cliente } from '../tipos/cliente';
 import type { IdFormaPago, VentaRegistrada } from '../tipos/venta';
+import { esFormaPagoCuentaCorriente } from '../datos/formasPago';
 import { formatearDocumentoClienteAlEscribir } from '../modulos/clientes/formateadorDocumentoCliente';
+import { formatearMoneda } from '../utilidades/formatoMoneda';
 import { exportarComprobanteVentaPdf } from '../modulos/ventas/impresionResumenVenta';
 import {
   calcularAjusteTicketDesdePorcentaje,
@@ -358,7 +360,7 @@ export function useCentroVentas() {
   );
 
   const excedeCreditoCuentaCorriente = computed(() => {
-    if (formaPago.value !== 'CUENTA_CORRIENTE') return false;
+    if (!esFormaPagoCuentaCorriente(formaPago.value)) return false;
     if (!tieneLimiteCuentaCorriente.value) return false;
     return totalTicket.value > (creditoDisponibleCliente.value ?? 0) + 0.001;
   });
@@ -368,7 +370,7 @@ export function useCentroVentas() {
       tienePermiso('puedeRegistrarVentas') &&
       !confirmandoVenta.value &&
       lineas.value.length > 0 &&
-      (formaPago.value !== 'CUENTA_CORRIENTE' || puedeCuentaCorriente.value) &&
+      (!esFormaPagoCuentaCorriente(formaPago.value) || puedeCuentaCorriente.value) &&
       !excedeCreditoCuentaCorriente.value,
   );
 
@@ -378,12 +380,12 @@ export function useCentroVentas() {
     }
     if (confirmandoVenta.value) return 'Registrando la venta…';
     if (lineas.value.length === 0) return 'Agregá al menos un producto al ticket.';
-    if (formaPago.value === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente.value) {
+    if (esFormaPagoCuentaCorriente(formaPago.value) && !puedeCuentaCorriente.value) {
       return 'Elegí un cliente con cuenta corriente habilitada.';
     }
     if (excedeCreditoCuentaCorriente.value) {
       const disponible = creditoDisponibleCliente.value ?? 0;
-      return `El total supera el crédito disponible (${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(disponible)}).`;
+      return `El total supera el crédito disponible (${formatearMoneda(disponible)}).`;
     }
     return '';
   });
@@ -395,7 +397,7 @@ export function useCentroVentas() {
         void cuentaCorrienteStore.cargarSaldos([id]);
       }
     }
-    if (formaPago.value === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente.value) {
+    if (esFormaPagoCuentaCorriente(formaPago.value) && !puedeCuentaCorriente.value) {
       formaPago.value = 'EFECTIVO';
     }
     if (cuponAplicado.value?.clienteId && cuponAplicado.value.clienteId !== (id || null)) {
@@ -682,7 +684,7 @@ export function useCentroVentas() {
   }
 
   function elegirFormaPago(id: IdFormaPago) {
-    if (id === 'CUENTA_CORRIENTE' && !puedeCuentaCorriente.value) return;
+    if (esFormaPagoCuentaCorriente(id) && !puedeCuentaCorriente.value) return;
     formaPago.value = id;
   }
 
@@ -726,7 +728,7 @@ export function useCentroVentas() {
       mostrarToast('Agregá al menos un producto al ticket.', 4000);
       return;
     }
-    if (formaPago.value === 'CUENTA_CORRIENTE') {
+    if (esFormaPagoCuentaCorriente(formaPago.value)) {
       if (!clienteId.value) {
         mostrarToast('Para cuenta corriente elegí un cliente con crédito habilitado.', 4000);
         return;
@@ -739,7 +741,7 @@ export function useCentroVentas() {
       if (excedeCreditoCuentaCorriente.value) {
         const disponible = creditoDisponibleCliente.value ?? 0;
         mostrarToast(
-          `El total supera el crédito disponible (${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(disponible)}).`,
+          `El total supera el crédito disponible (${formatearMoneda(disponible)}).`,
           5200,
         );
         return;
@@ -772,7 +774,7 @@ export function useCentroVentas() {
       });
 
       await stockStore.cargar({ forzar: true });
-      if (registrada.formaPago === 'CUENTA_CORRIENTE' && registrada.clienteId) {
+      if (esFormaPagoCuentaCorriente(registrada.formaPago) && registrada.clienteId) {
         await cuentaCorrienteStore.cargarMovimientosCliente(registrada.clienteId);
       }
 

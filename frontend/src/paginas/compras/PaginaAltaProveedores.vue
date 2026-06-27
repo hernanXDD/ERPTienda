@@ -5,12 +5,12 @@ import {
   recolectarErroresFormatoCliente,
   type CampoValidacionFormatoCliente,
   type ErroresFormatoCliente,
-} from '../../modulos/clientes/validadoresCliente';
-import { formatearDocumentoClienteAlEscribir } from '../../modulos/clientes/formateadorDocumentoCliente';
+} from '../../modulos/nucleo/validadoresContacto';
+import { formatearDocumentoClienteAlEscribir } from '../../modulos/nucleo/formateadorDocumentoContacto';
 import {
   formatearTelefonoClienteAlPerderFoco,
   normalizarCorreoClienteAlPerderFoco,
-} from '../../modulos/clientes/formateadorEntradaCliente';
+} from '../../modulos/nucleo/formateadorEntradaContacto';
 import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useProveedoresStore } from '../../stores/proveedores';
 import type { Proveedor } from '../../tipos/proveedor';

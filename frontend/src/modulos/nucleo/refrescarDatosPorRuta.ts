@@ -4,6 +4,8 @@ import { useClientesStore } from '../../stores/clientes';
 import { useCuentaCorrienteStore } from '../../stores/cuentaCorriente';
 import { useCuentaCorrienteProveedorStore } from '../../stores/cuentaCorrienteProveedor';
 import { useGestionUsuariosStore } from '../../stores/gestionUsuarios';
+import { useFormasPagoStore } from '../../stores/formasPago';
+import { useTallesCatalogoStore } from '../../stores/tallesCatalogo';
 import { useProveedoresStore } from '../../stores/proveedores';
 import { useRegistroComprasStore } from '../../stores/registroCompras';
 import { useStockStore } from '../../stores/stock';
@@ -23,6 +25,9 @@ export function refrescarDatosPorRuta(
       void useVentasStore().cargarVentas({ forzar: true });
       void useStockStore().cargar({ forzar: true });
       void useClientesStore().cargar({ forzar: true });
+      void useCatalogoStore().cargar({ forzar: true });
+      void useTallesCatalogoStore().cargar();
+      void useConfiguracionSistemaStore().cargar();
       break;
     case 'clientes-alta':
     case 'clientes-cuentas-corrientes':
@@ -33,6 +38,7 @@ export function refrescarDatosPorRuta(
       break;
     case 'ventas-centro':
       void useCatalogoStore().cargar({ forzar: true });
+      void useTallesCatalogoStore().cargar();
       void useClientesStore().cargar({ forzar: true });
       void useStockStore().cargar({ forzar: true });
       break;
@@ -49,6 +55,7 @@ export function refrescarDatosPorRuta(
       break;
     case 'ventas-historial':
       void useVentasStore().cargarVentas({ forzar: true });
+      void useFormasPagoStore().cargar();
       break;
     case 'compras-proveedores':
     case 'compras-cuentas-corrientes-proveedor':
@@ -60,15 +67,18 @@ export function refrescarDatosPorRuta(
     case 'compras-registro':
       void useProveedoresStore().cargar({ forzar: true });
       void useRegistroComprasStore().cargar({ forzar: true });
+      void useTallesCatalogoStore().cargar();
       break;
     case 'productos-catalogo':
     case 'productos-categorias':
       void useCatalogoStore().cargar({ forzar: true });
+      void useTallesCatalogoStore().cargar();
       break;
     case 'stock-actual':
     case 'stock-auditorias':
       void useCatalogoStore().cargar({ forzar: true });
       void useStockStore().cargar({ forzar: true });
+      void useConfiguracionSistemaStore().cargar();
       if (nombre === 'stock-auditorias') {
         void useStockStore().cargarAuditorias(undefined, { forzar: true });
       }
@@ -76,6 +86,11 @@ export function refrescarDatosPorRuta(
     case 'usuarios-alta':
     case 'usuarios-permisos':
       void useGestionUsuariosStore().cargar({ forzar: true });
+      break;
+    case 'configuracion-sistema':
+      void useConfiguracionSistemaStore().cargar();
+      void useFormasPagoStore().cargar();
+      void useTallesCatalogoStore().cargar();
       break;
     default:
       if (nombre.startsWith('reportes-')) {
@@ -85,6 +100,17 @@ export function refrescarDatosPorRuta(
         void useStockStore().cargar({ forzar: true });
         void useProveedoresStore().cargar({ forzar: true });
         void useRegistroComprasStore().cargar({ forzar: true });
+        void useFormasPagoStore().cargar();
+        void useConfiguracionSistemaStore().cargar();
+        if (
+          nombre === 'reportes-cuentas-corrientes' ||
+          nombre === 'reportes-ventas-facturacion'
+        ) {
+          void recargarCuentasCorrientes();
+        }
+        if (nombre === 'reportes-cuentas-corrientes-proveedor') {
+          void recargarCuentasCorrientesProveedor();
+        }
       }
       break;
   }

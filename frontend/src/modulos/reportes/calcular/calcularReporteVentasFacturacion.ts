@@ -1,6 +1,8 @@
 import type { Cliente } from '../../../tipos/cliente';
+import type { MovimientoCuentaCorriente } from '../../../tipos/cuentaCorriente';
+import type { FormaPago } from '../../../tipos/formaPago';
 import type { VentaRegistrada } from '../../../tipos/venta';
-import { etiquetaFormaPago } from '../../../datos/formasPago';
+import { esFormaPagoCuentaCorriente, etiquetaFormaPago } from '../../../datos/formasPago';
 import {
   etiquetaCondicionIva,
   etiquetaEstadoFacturacion,
@@ -19,6 +21,7 @@ import {
 } from '../filtroEntidadReporte';
 import { estaEnRangoFechas } from '../filtroFechasReporte';
 import { metadatosComunesReporte } from '../metadatosReporte';
+import { calcularVentasCcCobradasParaFacturacion } from './ventasCcCobradasFacturacion';
 
 export const COLUMNAS_REPORTE_VENTAS_FACTURACION = {
   fechaHora: 'Fecha y hora',
@@ -81,11 +84,38 @@ function resolverCondicionIvaVenta(venta: VentaRegistrada, cliente?: Cliente): s
   return etiquetaCondicionIva(condicion);
 }
 
+function mapearFilaVentaFacturacion(
+  venta: VentaRegistrada,
+  clientesPorId: Map<string, Cliente>,
+  fechaMostrar: string,
+  formaPagoEtiqueta: string,
+): FilaReporteVentasFacturacion {
+  const cliente = venta.clienteId ? clientesPorId.get(venta.clienteId) : undefined;
+  const documento = resolverDocumentoVenta(venta, cliente);
+  const facturacion = venta.facturacion?.trim() ?? '';
+
+  return {
+    fechaHora: formatearFechaYHora(fechaMostrar),
+    numeroVenta: venta.numero,
+    cliente: venta.nombreClienteMostrar,
+    documento,
+    condicionIva: resolverCondicionIvaVenta(venta, cliente),
+    importeNeto: venta.total,
+    moneda: MONEDA_OPERATIVA,
+    formaPago: formaPagoEtiqueta,
+    estadoFacturacion: etiquetaEstadoFacturacion(venta.estadoFacturacion),
+    facturacion,
+  };
+}
+
 export function calcularReporteVentasFacturacion(
   ventas: VentaRegistrada[],
   clientes: Cliente[],
   filtro: FiltrosReporteVista,
   opcionesCliente: OpcionEntidadReporte[],
+  incluirVentaEnFacturacion: (codigoFormaPago: string) => boolean = () => true,
+  movimientosCc: MovimientoCuentaCorriente[] = [],
+  formasPago: FormaPago[] = [],
 ): DatosReporteVentasFacturacion {
   const clientesPorId = new Map(clientes.map((c) => [c.id, c]));
   const filtroClienteLegible = etiquetaFiltroClienteLegible(filtro.idCliente, opcionesCliente);
@@ -98,30 +128,38 @@ export function calcularReporteVentasFacturacion(
   const enPeriodo = ventas
     .filter(
       (v) =>
+        !esFormaPagoCuentaCorriente(v.formaPago) &&
         estaEnRangoFechas(v.fecha, filtro) &&
         cumpleFiltroCliente(filtro.idCliente, v.clienteId) &&
-        cumpleFiltroEstadoFacturacion(filtro.idEstadoFacturacion, v.estadoFacturacion),
+        cumpleFiltroEstadoFacturacion(filtro.idEstadoFacturacion, v.estadoFacturacion) &&
+        incluirVentaEnFacturacion(v.formaPago),
     )
     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
-  const filas: FilaReporteVentasFacturacion[] = enPeriodo.map((venta) => {
-    const cliente = venta.clienteId ? clientesPorId.get(venta.clienteId) : undefined;
-    const documento = resolverDocumentoVenta(venta, cliente);
-    const facturacion = venta.facturacion?.trim() ?? '';
+  const ventasCcCobradas = calcularVentasCcCobradasParaFacturacion(
+    ventas,
+    movimientosCc,
+    filtro,
+    formasPago,
+    incluirVentaEnFacturacion,
+  );
 
-    return {
-      fechaHora: formatearFechaYHora(venta.fecha),
-      numeroVenta: venta.numero,
-      cliente: venta.nombreClienteMostrar,
-      documento,
-      condicionIva: resolverCondicionIvaVenta(venta, cliente),
-      importeNeto: venta.total,
-      moneda: MONEDA_OPERATIVA,
-      formaPago: etiquetaFormaPago(venta.formaPago),
-      estadoFacturacion: etiquetaEstadoFacturacion(venta.estadoFacturacion),
-      facturacion,
-    };
-  });
+  const filasPendientes = [
+    ...enPeriodo.map((venta) => ({
+      venta,
+      fechaOrden: venta.fecha,
+      formaPagoEtiqueta: etiquetaFormaPago(venta.formaPago, formasPago),
+    })),
+    ...ventasCcCobradas.map(({ venta, fechaCobro, formaPagoCobroEtiqueta }) => ({
+      venta,
+      fechaOrden: fechaCobro,
+      formaPagoEtiqueta: formaPagoCobroEtiqueta,
+    })),
+  ].sort((a, b) => new Date(b.fechaOrden).getTime() - new Date(a.fechaOrden).getTime());
+
+  const filas = filasPendientes.map(({ venta, fechaOrden, formaPagoEtiqueta }) =>
+    mapearFilaVentaFacturacion(venta, clientesPorId, fechaOrden, formaPagoEtiqueta),
+  );
 
   const totalImporte = filas.reduce((acc, fila) => acc + fila.importeNeto, 0);
 

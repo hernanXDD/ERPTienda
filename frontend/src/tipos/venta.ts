@@ -7,12 +7,7 @@ export interface EstadoFacturacionVenta {
   nombre: string;
 }
 
-export type IdFormaPago =
-  | 'EFECTIVO'
-  | 'DEBITO'
-  | 'CREDITO'
-  | 'TRANSFERENCIA'
-  | 'CUENTA_CORRIENTE';
+export type IdFormaPago = string;
 
 export interface LineaVentaRegistro {
   id?: string;

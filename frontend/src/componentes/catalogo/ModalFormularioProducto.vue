@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Barcode, Layers, Trash2, X } from 'lucide-vue-next';
-import { computed, onMounted, reactive, ref, useTemplateRef } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, useTemplateRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import { usePermisosOperador } from '../../composables/usePermisosOperador';
 import {
@@ -11,13 +11,14 @@ import {
 import { etiquetaTalle } from '../../modulos/catalogo/catalogoPresentacion';
 import {
   COLOR_VARIANTE_VACIO,
-  crearTallesBorradorVacios,
+  crearTallesBorradorAltaRapidaCompra,
+  crearTallesBorradorDesdeCatalogo,
   normalizarTalle,
-  TALLES_LETRA,
-  TALLES_NUMERO,
+  resolverCodigoTalleUnicoAltaCompra,
   tallesBorradorDesdeVariantes,
   type BorradorTalle,
 } from '../../modulos/catalogo/tallesCatalogo';
+import { TALLES_CATALOGO_SEMILLA } from '../../datos/tallesCatalogo';
 import {
   codigoBarrasDesdeIdVariante,
   generarCodigoBarrasNuevoVariante,
@@ -27,7 +28,9 @@ import { useCatalogoStore } from '../../stores/catalogo';
 import { useConfiguracionSistemaStore } from '../../stores/configuracionSistema';
 import { useRegistroComprasStore } from '../../stores/registroCompras';
 import { useStockStore } from '../../stores/stock';
+import { useTallesCatalogoStore } from '../../stores/tallesCatalogo';
 import type { Producto, Variante } from '../../tipos/catalogo';
+import { formatearDecimal, formatearMoneda } from '../../utilidades/formatoMoneda';
 
 export interface OpcionesAltaProducto {
   nombre?: string;
@@ -48,21 +51,11 @@ const emit = defineEmits<{
   ];
 }>();
 
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
-
-const formatoPorcentaje = new Intl.NumberFormat('es-AR', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 1,
-});
-
-const catalogo = useCatalogoStore();
 const configuracionSistemaStore = useConfiguracionSistemaStore();
+const catalogo = useCatalogoStore();
 const stockStore = useStockStore();
 const registroCompras = useRegistroComprasStore();
+const tallesCatalogoStore = useTallesCatalogoStore();
 const { tienePermiso } = usePermisosOperador();
 const puedeGestionarCatalogo = computed(() => tienePermiso('puedeGestionarCatalogoProductos'));
 const { categorias, variantes } = storeToRefs(catalogo);
@@ -70,6 +63,7 @@ const { compras } = storeToRefs(registroCompras);
 const { parametros: parametrosSistema } = storeToRefs(configuracionSistemaStore);
 
 const refDialogo = useTemplateRef<HTMLDialogElement>('refDialogo');
+const refInputNombre = useTemplateRef<HTMLInputElement>('refInputNombre');
 const refDialogoTalles = useTemplateRef<HTMLDialogElement>('refDialogoTalles');
 const refDialogoReemplazarCb = useTemplateRef<HTMLDialogElement>('refDialogoReemplazarCb');
 const filaPendienteGenerarCb = ref<BorradorTalle | null>(null);
@@ -84,7 +78,7 @@ const formulario = reactive({
   precioVenta: '' as string | number,
 });
 
-const tallesBorrador = ref<BorradorTalle[]>(crearTallesBorradorVacios());
+const tallesBorrador = ref<BorradorTalle[]>(crearTallesBorradorDesdeCatalogo());
 const idEdicion = ref<string | null>(null);
 const desdeCompraActivo = ref(false);
 const costoCompraReferenciaExterno = ref<number | null>(null);
@@ -131,14 +125,14 @@ const porcentajeGananciaReferencia = computed(() =>
 const textoPrecioCompraReferencia = computed(() => {
   const costo = precioCompraReferencia.value;
   if (costo === null) return 'Sin compras';
-  return formatoPeso.format(costo);
+  return formatearMoneda(costo);
 });
 
 const textoPorcentajeGanancia = computed(() => {
   const pct = porcentajeGananciaReferencia.value;
   if (pct === null) return '—';
   const prefijo = pct > 0 ? '+' : '';
-  return `${prefijo}${formatoPorcentaje.format(pct)} %`;
+  return `${prefijo}${formatearDecimal(pct)} %`;
 });
 
 const clasePorcentajeGanancia = computed(() => {
@@ -159,12 +153,36 @@ const precioVentaSugerido = computed(() =>
 const textoPrecioVentaSugerido = computed(() => {
   const sugerido = precioVentaSugerido.value;
   if (sugerido === null) return 'Sin costo de compra';
-  return formatoPeso.format(sugerido);
+  return formatearMoneda(sugerido);
 });
 
 const puedeAplicarPrecioSugerido = computed(
   () => precioVentaSugerido.value !== null && puedeGestionarCatalogo.value,
 );
+
+function catalogoTallesParaBorrador(): typeof TALLES_CATALOGO_SEMILLA {
+  return tallesCatalogoStore.talles.length > 0
+    ? tallesCatalogoStore.talles
+    : TALLES_CATALOGO_SEMILLA;
+}
+
+function catalogoTallesHabilitadosParaAlta(): typeof TALLES_CATALOGO_SEMILLA {
+  return tallesCatalogoStore.habilitados.length > 0
+    ? tallesCatalogoStore.habilitados
+    : TALLES_CATALOGO_SEMILLA.filter((t) => t.habilitado);
+}
+
+function etiquetaTalleModal(codigo: string): string {
+  return etiquetaTalle(codigo, catalogoTallesParaBorrador());
+}
+
+const etiquetaTalleUnicoPorDefecto = computed(() =>
+  etiquetaTalleModal(resolverCodigoTalleUnicoAltaCompra(catalogoTallesHabilitadosParaAlta())),
+);
+
+function reiniciarTallesBorradorNuevo(): void {
+  tallesBorrador.value = crearTallesBorradorDesdeCatalogo(catalogoTallesHabilitadosParaAlta());
+}
 
 function resetFormulario(): void {
   formulario.nombre = '';
@@ -173,7 +191,7 @@ function resetFormulario(): void {
   formulario.categoriaId = categorias.value[0]?.id ?? '';
   formulario.precioCompra = '';
   formulario.precioVenta = '';
-  tallesBorrador.value = crearTallesBorradorVacios();
+  reiniciarTallesBorradorNuevo();
   tallePersonalizadoNuevo.value = '';
   idEdicion.value = null;
   desdeCompraActivo.value = false;
@@ -182,7 +200,16 @@ function resetFormulario(): void {
 }
 
 function tituloModal(): string {
-  return idEdicion.value ? 'Modificar producto' : 'Nuevo producto';
+  if (idEdicion.value) return 'Modificar producto';
+  if (desdeCompraActivo.value) return 'Alta rápida para compra';
+  return 'Nuevo producto';
+}
+
+function textoAyudaModal(): string {
+  if (desdeCompraActivo.value) {
+    return 'Completá lo mínimo para cargar el ítem en esta compra. Podés ajustar talles y códigos de barras después en el catálogo.';
+  }
+  return 'Completá los datos del artículo. El color o modelo va en el nombre (ej. «remera negra»); habilitá los talles que vendés.';
 }
 
 function aplicarPrecioVentaSugerido(): void {
@@ -193,12 +220,29 @@ function aplicarPrecioVentaSugerido(): void {
 
 const tallesHabilitados = computed(() => tallesBorrador.value.filter((f) => f.habilitado));
 
+const mapaTipoTalleCatalogo = computed(
+  () =>
+    new Map(
+      catalogoTallesParaBorrador().map((talle) => [
+        talle.codigo.trim().toLowerCase(),
+        talle.tipo,
+      ]),
+    ),
+);
+
 const tallesPredefinidosLetra = computed(() =>
-  tallesBorrador.value.filter((f) => !f.esPersonalizado && TALLES_LETRA.includes(f.talle as (typeof TALLES_LETRA)[number])),
+  tallesBorrador.value.filter(
+    (fila) =>
+      !fila.esPersonalizado && mapaTipoTalleCatalogo.value.get(fila.talle.toLowerCase()) === 'LETRA',
+  ),
 );
 
 const tallesPredefinidosNumero = computed(() =>
-  tallesBorrador.value.filter((f) => !f.esPersonalizado && TALLES_NUMERO.includes(f.talle as (typeof TALLES_NUMERO)[number])),
+  tallesBorrador.value.filter(
+    (fila) =>
+      !fila.esPersonalizado &&
+      mapaTipoTalleCatalogo.value.get(fila.talle.toLowerCase()) === 'NUMERO',
+  ),
 );
 
 const tallesPersonalizados = computed(() => tallesBorrador.value.filter((f) => f.esPersonalizado));
@@ -368,9 +412,10 @@ function validarTallesBorrador(): BorradorTalle[] | null {
   }));
 }
 
-async function persistirVariantes(productoId: string, filas: BorradorTalle[]): Promise<boolean> {
+async function persistirVariantes(productoId: string, filas: BorradorTalle[]): Promise<Variante[] | null> {
   const actuales = catalogo.todasVariantesDeProducto(productoId);
   const idsActivos = new Set<string>();
+  const guardadas: Variante[] = [];
 
   try {
     for (const fila of filas) {
@@ -385,15 +430,22 @@ async function persistirVariantes(productoId: string, filas: BorradorTalle[]): P
         const ok = await catalogo.actualizarVariante(fila.id, datos);
         if (!ok) {
           mensajeError.value = 'Ya existe otra variante con ese talle.';
-          return false;
+          return null;
         }
+        const actualizada = catalogo.variantePorId(fila.id);
+        if (!actualizada) {
+          mensajeError.value = 'No se pudo actualizar un talle del producto.';
+          return null;
+        }
+        guardadas.push(actualizada);
         idsActivos.add(fila.id);
       } else {
         const creada = await catalogo.agregarVariante(datos);
         if (!creada) {
           mensajeError.value = 'Ya existe una variante con ese talle.';
-          return false;
+          return null;
         }
+        guardadas.push(creada);
         idsActivos.add(creada.id);
       }
     }
@@ -409,14 +461,14 @@ async function persistirVariantes(productoId: string, filas: BorradorTalle[]): P
       });
       if (!ok) {
         mensajeError.value = 'No se pudo desactivar un talle del producto.';
-        return false;
+        return null;
       }
     }
 
-    return true;
+    return guardadas;
   } catch (error) {
     mensajeError.value = mensajeErrorHttp(error, 'No se pudieron guardar los talles.');
-    return false;
+    return null;
   }
 }
 
@@ -424,7 +476,7 @@ async function guardar(): Promise<void> {
   mensajeError.value = '';
 
   const nombre = formulario.nombre.trim();
-  const marca = formulario.marca.trim();
+  const marca = formulario.marca.trim() || (desdeCompraActivo.value ? 'Genérica' : '');
   if (!nombre || !marca) {
     mensajeError.value = 'Completá nombre y marca.';
     return;
@@ -456,37 +508,41 @@ async function guardar(): Promise<void> {
   guardando.value = true;
   try {
     let producto: Producto;
+    let variantesGuardadas: Variante[] = [];
     const modo: 'crear' | 'editar' = idEdicion.value ? 'editar' : 'crear';
 
     if (idEdicion.value) {
       await catalogo.actualizarProducto(idEdicion.value, datosProducto);
-      if (!(await persistirVariantes(idEdicion.value, filasTalle))) return;
+      const variantesPersistidas = await persistirVariantes(idEdicion.value, filasTalle);
+      if (!variantesPersistidas) return;
+      variantesGuardadas = variantesPersistidas;
       const actualizado = catalogo.productoPorId(idEdicion.value);
       if (!actualizado) return;
       producto = actualizado;
     } else {
       producto = await catalogo.agregarProducto(datosProducto);
-      if (!(await persistirVariantes(producto.id, filasTalle))) {
+      const variantesPersistidas = await persistirVariantes(producto.id, filasTalle);
+      if (!variantesPersistidas) {
         await catalogo.eliminarProducto(producto.id);
         stockStore.quitarVariantes(
           catalogo.todasVariantesDeProducto(producto.id).map((v) => v.id),
         );
         return;
       }
+      variantesGuardadas = variantesPersistidas;
     }
 
-    await stockStore.cargar();
-    const variantesGuardadas = catalogo.todasVariantesDeProducto(producto.id);
     const precioCompra =
       desdeCompraActivo.value ? parsearPrecioEntero(formulario.precioCompra) : null;
-    cerrarModal();
     emit('guardado', {
       producto,
       variantes: variantesGuardadas,
       modo,
       ...(precioCompra !== null ? { precioCompra } : {}),
     });
+    cerrarModal();
     resetFormulario();
+    void stockStore.cargar({ forzar: true });
   } catch (error) {
     mensajeError.value = mensajeErrorHttp(error, 'No se pudo guardar el producto.');
   } finally {
@@ -513,6 +569,9 @@ function abrirNuevo(opciones?: OpcionesAltaProducto): void {
   }
 
   if (desdeCompraActivo.value) {
+    formulario.marca = 'Genérica';
+    tallesBorrador.value = crearTallesBorradorAltaRapidaCompra(catalogoTallesHabilitadosParaAlta());
+
     const costoInicial = opciones?.costoCompraReferencia;
     if (
       costoInicial !== undefined &&
@@ -521,6 +580,9 @@ function abrirNuevo(opciones?: OpcionesAltaProducto): void {
     ) {
       formulario.precioCompra = String(Math.round(costoInicial));
       aplicarPrecioVentaSugeridoDesdeCosto(Math.round(costoInicial));
+    } else {
+      formulario.precioCompra = '0';
+      aplicarPrecioVentaSugeridoDesdeCosto(0);
     }
   } else if (
     opciones?.costoCompraReferencia !== undefined &&
@@ -532,6 +594,10 @@ function abrirNuevo(opciones?: OpcionesAltaProducto): void {
   }
 
   refDialogo.value?.showModal();
+
+  if (desdeCompraActivo.value) {
+    void nextTick(() => refInputNombre.value?.focus());
+  }
 }
 
 function abrirEdicion(productoId: string): void {
@@ -546,7 +612,7 @@ function abrirEdicion(productoId: string): void {
   formulario.categoriaId = p.categoriaId;
   formulario.precioVenta = p.precioVenta;
   const existentes = catalogo.todasVariantesDeProducto(p.id);
-  tallesBorrador.value = tallesBorradorDesdeVariantes(existentes);
+  tallesBorrador.value = tallesBorradorDesdeVariantes(existentes, catalogoTallesParaBorrador());
   refDialogo.value?.showModal();
 }
 
@@ -557,6 +623,7 @@ onMounted(() => {
     catalogo.asegurarCargado(),
     configuracionSistemaStore.asegurarCargado(),
     registroCompras.asegurarCargado(),
+    tallesCatalogoStore.asegurarCargado(),
   ]);
 });
 </script>
@@ -568,10 +635,7 @@ onMounted(() => {
         <header class="cat-prod-modal-cap">
           <div>
             <h2 id="titulo-modal-prod" class="cat-prod-modal-titulo">{{ tituloModal() }}</h2>
-            <p class="cat-prod-modal-sub">
-              Completá los datos del artículo. El color o modelo va en el nombre (ej. «remera negra»);
-              habilitá los talles que vendés.
-            </p>
+            <p class="cat-prod-modal-sub">{{ textoAyudaModal() }}</p>
           </div>
           <button type="button" class="cat-prod-modal-x" aria-label="Cerrar" @click="cerrarModal">
             <X :size="20" aria-hidden="true" />
@@ -595,6 +659,7 @@ onMounted(() => {
                   <label class="pg-filtro-etiq" for="modal-prod-nombre">Nombre</label>
                   <input
                     id="modal-prod-nombre"
+                    ref="refInputNombre"
                     v-model="formulario.nombre"
                     type="text"
                     class="pg-filtro-inp"
@@ -613,6 +678,7 @@ onMounted(() => {
                     class="pg-filtro-inp"
                     required
                     maxlength="120"
+                    :placeholder="desdeCompraActivo ? 'Opcional: Genérica si queda vacío' : undefined"
                   />
                 </div>
                 <div class="cat-prod-campo">
@@ -709,7 +775,7 @@ onMounted(() => {
                   </div>
                 </div>
               </div>
-              <div class="cat-prod-campo cat-prod-campo--ancho">
+              <div v-if="!desdeCompraActivo" class="cat-prod-campo cat-prod-campo--ancho">
                 <label class="pg-filtro-etiq" for="modal-prod-desc">Descripción</label>
                 <textarea
                   id="modal-prod-desc"
@@ -727,8 +793,14 @@ onMounted(() => {
                 <div>
                   <h3 id="cat-prod-sec-var" class="cat-prod-seccion-tit">Talles</h3>
                   <p class="cat-prod-seccion-ayuda">
-                    Elegí qué talles vendés. Cada uno tiene stock propio; el precio de compra es
-                    unitario para todo el producto.
+                    <template v-if="desdeCompraActivo">
+                      Por defecto se usa talle <strong>{{ etiquetaTalleUnicoPorDefecto }}</strong>.
+                      Cambialo si el artículo tiene varios talles.
+                    </template>
+                    <template v-else>
+                      Elegí qué talles vendés. Cada uno tiene stock propio; el precio de compra es
+                      unitario para todo el producto.
+                    </template>
                   </p>
                 </div>
               </div>
@@ -745,7 +817,7 @@ onMounted(() => {
                       :key="`badge-${fila.talle}`"
                       class="cat-prod-talle-badge"
                     >
-                      {{ fila.talle }}
+                      {{ etiquetaTalleModal(fila.talle) }}
                     </span>
                   </div>
                 </div>
@@ -763,7 +835,7 @@ onMounted(() => {
               </div>
 
               <div
-                v-if="tallesHabilitados.length > 0"
+                v-if="!desdeCompraActivo && tallesHabilitados.length > 0"
                 class="cat-prod-var-tabla cat-prod-var-tabla--cb"
                 role="group"
                 aria-label="Códigos de barras por talle"
@@ -785,7 +857,7 @@ onMounted(() => {
                   :key="`cb-${fila.talle}-${fila.id ?? 'nuevo'}`"
                   class="cat-prod-var-fila cat-prod-var-fila--solo-talle"
                 >
-                  <span class="cat-prod-talle-etiq">{{ etiquetaTalle(fila.talle) }}</span>
+                  <span class="cat-prod-talle-etiq">{{ etiquetaTalleModal(fila.talle) }}</span>
                   <div class="cat-prod-var-lab cat-prod-var-lab--cb">
                     <span class="pg-sr">Código de barras talle {{ indice + 1 }}</span>
                     <input
@@ -803,7 +875,7 @@ onMounted(() => {
                       type="button"
                       class="cat-prod-var-accion cat-prod-var-accion--gen"
                       title="Generar código EAN-13 interno"
-                      :aria-label="`Generar código de barras talle ${etiquetaTalle(fila.talle)}`"
+                      :aria-label="`Generar código de barras talle ${etiquetaTalleModal(fila.talle)}`"
                       :disabled="!puedeGestionarCatalogo"
                       @click="solicitarGenerarCodigoBarrasParaFila(fila)"
                     >
@@ -820,7 +892,13 @@ onMounted(() => {
               Cancelar
             </button>
             <button type="submit" class="pg-btn-primario" :disabled="guardando">
-              {{ guardando ? 'Guardando…' : 'Guardar producto' }}
+              {{
+                guardando
+                  ? 'Guardando…'
+                  : desdeCompraActivo
+                    ? 'Guardar y usar en compra'
+                    : 'Guardar producto'
+              }}
             </button>
           </footer>
         </form>
@@ -852,7 +930,11 @@ onMounted(() => {
         </header>
 
         <div class="cat-prod-talles-selector-cuerpo">
-          <section class="cat-prod-talles-grupo" aria-labelledby="cat-prod-talles-letra">
+          <section
+            v-if="tallesPredefinidosLetra.length > 0"
+            class="cat-prod-talles-grupo"
+            aria-labelledby="cat-prod-talles-letra"
+          >
             <h3 id="cat-prod-talles-letra" class="cat-prod-talles-grupo-tit">Letras</h3>
             <div class="cat-prod-talles-matriz" role="group" aria-label="Talles en letras">
               <button
@@ -864,12 +946,16 @@ onMounted(() => {
                 :aria-pressed="fila.habilitado"
                 @click="alternarTalle(fila)"
               >
-                {{ fila.talle }}
+                {{ etiquetaTalleModal(fila.talle) }}
               </button>
             </div>
           </section>
 
-          <section class="cat-prod-talles-grupo" aria-labelledby="cat-prod-talles-numero">
+          <section
+            v-if="tallesPredefinidosNumero.length > 0"
+            class="cat-prod-talles-grupo"
+            aria-labelledby="cat-prod-talles-numero"
+          >
             <h3 id="cat-prod-talles-numero" class="cat-prod-talles-grupo-tit">Números</h3>
             <div class="cat-prod-talles-matriz cat-prod-talles-matriz--num" role="group" aria-label="Talles numéricos">
               <button
@@ -881,7 +967,7 @@ onMounted(() => {
                 :aria-pressed="fila.habilitado"
                 @click="alternarTalle(fila)"
               >
-                {{ fila.talle }}
+                {{ etiquetaTalleModal(fila.talle) }}
               </button>
             </div>
           </section>
@@ -920,7 +1006,7 @@ onMounted(() => {
                   :aria-pressed="fila.habilitado"
                   @click="alternarTalle(fila)"
                 >
-                  {{ fila.talle }}
+                  {{ etiquetaTalleModal(fila.talle) }}
                 </button>
                 <button
                   type="button"

@@ -1,13 +1,11 @@
 import type { Proveedor } from '../../tipos/proveedor';
 import type { MovimientoCuentaCorrienteProveedor } from '../../tipos/cuentaCorrienteProveedor';
 import type { CompraRegistrada } from '../../tipos/compraRegistrada';
-import { obtenerDiaComparableDesdeValor } from '../../utilidades/formatoFechaHora';
 import { calcularReporteCuentasCorrientesProveedor } from '../reportes/calcular/calcularReporteCuentasCorrientesProveedor';
 import { opcionesProveedoresParaReporte } from '../reportes/filtroEntidadReporte';
 import {
-  diaComparableHoy,
+  armarFiltroFechasReporteDesdeMovimientos,
   esRangoFechasValido,
-  type FiltroFechasReporte,
 } from '../reportes/filtroFechasReporte';
 import { exportarReporteComoPdf, nombreArchivoReportePdf } from '../reportes/impresionReporte';
 import { prepararRenderizadoReporte, renderizarPlantillaReporte } from '../reportes/motorEtaReportes';
@@ -23,29 +21,6 @@ export interface ParametrosExportarPdfCuentaCorrienteProveedor {
   ventanaPdfDestino?: Window | null;
 }
 
-function armarFiltroFechasReporte(
-  fechaDesde: string | undefined,
-  fechaHasta: string | undefined,
-  movimientosProveedor: MovimientoCuentaCorrienteProveedor[],
-): FiltroFechasReporte {
-  const diasMovs = movimientosProveedor
-    .map((m) => obtenerDiaComparableDesdeValor(m.fecha))
-    .filter((d): d is string => Boolean(d))
-    .sort();
-
-  const hoy = diaComparableHoy();
-  const minMov = diasMovs[0] ?? hoy;
-  const maxMov = diasMovs[diasMovs.length - 1] ?? hoy;
-
-  const desdeTrim = fechaDesde?.trim() ?? '';
-  const hastaTrim = fechaHasta?.trim() ?? '';
-
-  return {
-    fechaDesde: desdeTrim || minMov,
-    fechaHasta: hastaTrim || (desdeTrim ? hoy : maxMov),
-  };
-}
-
 export async function exportarPdfCuentaCorrienteProveedor(
   parametros: ParametrosExportarPdfCuentaCorrienteProveedor,
 ): Promise<void> {
@@ -53,7 +28,11 @@ export async function exportarPdfCuentaCorrienteProveedor(
     parametros;
 
   const movimientosProveedor = movimientos.filter((m) => m.proveedorId === proveedor.id);
-  const filtroFechas = armarFiltroFechasReporte(fechaDesde, fechaHasta, movimientosProveedor);
+  const filtroFechas = armarFiltroFechasReporteDesdeMovimientos(
+    fechaDesde,
+    fechaHasta,
+    movimientosProveedor.map((m) => m.fecha),
+  );
 
   if (!esRangoFechasValido(filtroFechas)) {
     throw new Error('El rango de fechas no es válido. Revise «Desde» y «Hasta».');

@@ -9,6 +9,7 @@ import {
   claseExportacionPdfResumenVenta,
   estilosResumenVentaCss,
 } from '../ventas/estilosResumenVentaCss';
+import { sanitizarNombreArchivo } from '../../utilidades/nombresArchivo';
 import { calcularDatosReciboPagoCcImpresion } from './calcularDatosReciboPagoCcImpresion';
 import { plantillasCuentaCorriente } from './plantillasCuentaCorriente';
 
@@ -17,20 +18,8 @@ export interface DatosImpresionReciboPago {
   movimiento: MovimientoCuentaCorriente;
 }
 
-function sanitizarNombreArchivo(nombre: string): string {
-  return (
-    nombre
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9._-]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 120) || 'recibo-pago'
-  );
-}
-
 function nombreArchivoReciboPago(codigoRecibo: string): string {
-  return sanitizarNombreArchivo(`recibo-pago-${codigoRecibo}`);
+  return sanitizarNombreArchivo(`recibo-pago-${codigoRecibo}`, 'recibo-pago');
 }
 
 /** Exporta el recibo de cobro en cuenta corriente como PDF (plantilla ETA). */

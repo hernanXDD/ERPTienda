@@ -12,13 +12,20 @@ import {
 } from '../../modulos/reportes/filtroEntidadReporte';
 import { esRangoFechasValido } from '../../modulos/reportes/filtroFechasReporte';
 import { useClientesStore } from '../../stores/clientes';
+import { useCuentaCorrienteStore } from '../../stores/cuentaCorriente';
+import { useFormasPagoStore } from '../../stores/formasPago';
 import { useVentasStore } from '../../stores/ventas';
 import { notificarError } from '../../utilidades/notificacion';
+import { formatearMoneda, formatearMonedaFacturacion } from '../../utilidades/formatoMoneda';
 
 const ventasStore = useVentasStore();
 const clientesStore = useClientesStore();
+const formasPagoStore = useFormasPagoStore();
+const cuentaCorrienteStore = useCuentaCorrienteStore();
 const { ventas } = storeToRefs(ventasStore);
 const { clientes } = storeToRefs(clientesStore);
+const { movimientos: movimientosCc } = storeToRefs(cuentaCorrienteStore);
+const { formas: formasPago } = storeToRefs(formasPagoStore);
 
 const filtro = ref(filtrosReporteVistaPorDefecto());
 const errorFiltro = ref('');
@@ -37,6 +44,9 @@ const datosReporte = computed(() => {
     clientes.value,
     filtro.value,
     opcionesCliente.value,
+    (codigo) => formasPagoStore.ventaIncluyeEnReporteFacturacion(codigo),
+    movimientosCc.value,
+    formasPago.value,
   );
 });
 
@@ -44,7 +54,7 @@ const resumenReporte = computed(() => {
   if (datosReporte.value.sinVentas) return '';
   const partes = [
     `${datosReporte.value.cantidadOperaciones} ventas`,
-    `Total ${datosReporte.value.totalImporte.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}`,
+    `Total ${formatearMoneda(datosReporte.value.totalImporte)}`,
     datosReporte.value.rangoLegible,
   ];
   if (datosReporte.value.filtroEstadoFacturacionLegible) {
@@ -64,7 +74,17 @@ function validarFiltro(): void {
 watch(filtro, validarFiltro, { deep: true });
 
 onMounted(async () => {
-  await Promise.all([ventasStore.asegurarVentasCargadas(), clientesStore.asegurarCargado()]);
+  await Promise.all([
+    ventasStore.asegurarVentasCargadas(),
+    clientesStore.asegurarCargado(),
+    formasPagoStore.asegurarCargado(),
+  ]);
+  const idsCc = clientes.value
+    .filter((c) => c.cuentaCorrienteHabilitada)
+    .map((c) => c.id);
+  if (idsCc.length > 0) {
+    await cuentaCorrienteStore.cargarMovimientosTodos(idsCc);
+  }
   validarFiltro();
 });
 
@@ -122,14 +142,14 @@ async function exportarExcel(): Promise<void> {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="fila in datosReporte.filas" :key="fila.numeroVenta">
+          <tr v-for="fila in datosReporte.filas" :key="`${fila.numeroVenta}-${fila.fechaHora}`">
             <td>{{ fila.fechaHora }}</td>
             <td class="mono">{{ fila.numeroVenta }}</td>
             <td>{{ fila.cliente }}</td>
             <td class="mono">{{ fila.documento || '—' }}</td>
             <td>{{ fila.condicionIva }}</td>
             <td class="der mono">
-              {{ fila.importeNeto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) }}
+              {{ formatearMonedaFacturacion(fila.importeNeto) }}
             </td>
             <td>
               <span

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CalendarClock, Eye, Package, RotateCcw, Tag, X } from 'lucide-vue-next';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 import { computed, onMounted, ref, useTemplateRef } from 'vue';
 import { storeToRefs } from 'pinia';
 import ModalVistaCupon from './ModalVistaCupon.vue';
@@ -7,7 +8,7 @@ import {
   cuponesPorDevolucion,
   ventaCambioPorDevolucion,
 } from '../../modulos/devoluciones/detalleDevolucionHistorial';
-import { etiquetaFormaPago } from '../../datos/formasPago';
+import { useEtiquetaFormaPago } from '../../composables/useEtiquetaFormaPago';
 import { claseChipEstadoCupon, etiquetaEstadoCupon } from '../../datos/etiquetasEstadoCupon';
 import { useCuponesDescuentoStore } from '../../stores/cuponesDescuento';
 import { useVentasStore } from '../../stores/ventas';
@@ -27,18 +28,14 @@ const emit = defineEmits<{
   cerrar: [];
 }>();
 
+const etiquetaFormaPago = useEtiquetaFormaPago();
+
 const refDialogo = useTemplateRef<HTMLDialogElement>('refDialogo');
 const ventasStore = useVentasStore();
 const cuponesStore = useCuponesDescuentoStore();
 const { ventas } = storeToRefs(ventasStore);
 const { cupones } = storeToRefs(cuponesStore);
 const cuponAVer = ref<CuponDescuentoRegistrado | null>(null);
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 const ventaCambio = computed(() => ventaCambioPorDevolucion(props.devolucion, ventas.value));
 const cuponesEmitidos = computed(() => cuponesPorDevolucion(props.devolucion.id, cupones.value));
@@ -108,7 +105,7 @@ function cerrarVerCupon(): void {
               </div>
               <div class="dev-det-meta-item">
                 <dt>Total devuelto</dt>
-                <dd class="lv-mono dev-det-total">{{ formatoPeso.format(devolucion.total) }}</dd>
+                <dd class="lv-mono dev-det-total">{{ formatearMoneda(devolucion.total) }}</dd>
               </div>
               <div class="dev-det-meta-item">
                 <dt>Prendas devueltas</dt>
@@ -127,10 +124,10 @@ function cerrarVerCupon(): void {
                 <div class="dev-det-linea-info">
                   <p class="dev-det-linea-nom">{{ ln.nombre }}</p>
                   <p class="dev-det-linea-meta lv-mono">
-                    {{ ln.cantidad }} u. · {{ formatoPeso.format(ln.precioUnitario) }} c/u
+                    {{ ln.cantidad }} u. · {{ formatearMoneda(ln.precioUnitario) }} c/u
                   </p>
                 </div>
-                <strong class="dev-det-linea-sub lv-mono">{{ formatoPeso.format(ln.subtotal) }}</strong>
+                <strong class="dev-det-linea-sub lv-mono">{{ formatearMoneda(ln.subtotal) }}</strong>
               </li>
             </ol>
           </section>
@@ -147,17 +144,17 @@ function cerrarVerCupon(): void {
             <p class="dev-det-sub">
               Venta <span class="lv-num">{{ ventaCambio.numero }}</span>
               · {{ etiquetaFormaPago(ventaCambio.formaPago) }}
-              · Total {{ formatoPeso.format(ventaCambio.total) }}
+              · Total {{ formatearMoneda(ventaCambio.total) }}
             </p>
             <ol class="dev-det-lineas" role="list">
               <li v-for="(ln, i) in ventaCambio.lineas" :key="`${ventaCambio.id}-${i}`" class="dev-det-linea">
                 <div class="dev-det-linea-info">
                   <p class="dev-det-linea-nom">{{ ln.nombre }}</p>
                   <p class="dev-det-linea-meta lv-mono">
-                    {{ ln.cantidad }} u. · {{ formatoPeso.format(ln.precioUnitario) }} c/u
+                    {{ ln.cantidad }} u. · {{ formatearMoneda(ln.precioUnitario) }} c/u
                   </p>
                 </div>
-                <strong class="dev-det-linea-sub lv-mono">{{ formatoPeso.format(ln.subtotal) }}</strong>
+                <strong class="dev-det-linea-sub lv-mono">{{ formatearMoneda(ln.subtotal) }}</strong>
               </li>
             </ol>
           </section>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Minus, Plus, ScanBarcode, Trash2 } from 'lucide-vue-next';
 import { usarCentroVentasContexto } from './centroVentasContexto';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const {
   lineas,
@@ -12,11 +13,6 @@ const {
   enfocarIngresoProducto,
 } = usarCentroVentasContexto();
 
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 </script>
 
 <template>
@@ -88,8 +84,8 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
                 </button>
               </span>
             </td>
-            <td class="cv-col-pu cv-num">{{ formatoPeso.format(l.precioUnitario) }}</td>
-            <td class="cv-col-sub cv-num">{{ formatoPeso.format(subtotalLinea(l)) }}</td>
+            <td class="cv-col-pu cv-num">{{ formatearMoneda(l.precioUnitario) }}</td>
+            <td class="cv-col-sub cv-num">{{ formatearMoneda(subtotalLinea(l)) }}</td>
             <td class="cv-col-acc">
               <button
                 type="button"

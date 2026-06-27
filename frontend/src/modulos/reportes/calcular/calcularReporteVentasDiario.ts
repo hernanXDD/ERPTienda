@@ -1,4 +1,5 @@
 import type { VentaRegistrada } from '../../../tipos/venta';
+import type { FormaPago } from '../../../tipos/formaPago';
 import { etiquetaEstadoFacturacion } from '../../../datos/condicionesIva';
 import { etiquetaFormaPago } from '../../../datos/formasPago';
 import {
@@ -47,8 +48,9 @@ export function calcularReporteVentasDiario(
   ventas: VentaRegistrada[],
   filtro: FiltrosReporteVentasPeriodo,
   opcionesCliente: OpcionEntidadReporte[],
+  formasPago?: FormaPago[],
 ): DatosReporteVentasDiario {
-  const base = calcularReporteVentasPeriodo(ventas, filtro, opcionesCliente);
+  const base = calcularReporteVentasPeriodo(ventas, filtro, opcionesCliente, formasPago);
 
   const ventasDelDia = ventas
     .filter(
@@ -63,7 +65,7 @@ export function calcularReporteVentasDiario(
     numero: v.numero,
     hora: formatearHoraAmPm(v.fecha),
     cliente: v.nombreClienteMostrar,
-    formaPago: etiquetaFormaPago(v.formaPago),
+    formaPago: etiquetaFormaPago(v.formaPago, formasPago),
     estadoFacturacion: etiquetaEstadoFacturacion(v.estadoFacturacion),
     facturacion: v.facturacion?.trim() || '—',
     total: formatearMonedaReporte(v.total),

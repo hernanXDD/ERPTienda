@@ -2,6 +2,7 @@
 import { HelpCircle, ShoppingCart } from 'lucide-vue-next';
 import { usarCentroVentasContexto } from './centroVentasContexto';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const descripcionPagina = obtenerDescripcionPagina('ventas-centro');
 
@@ -11,11 +12,6 @@ const {
   reabrirOnboarding,
 } = usarCentroVentasContexto();
 
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 </script>
 
 <template>
@@ -28,7 +24,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
           <h1 id="titulo-centro-ventas" class="pg-titulo">Centro de ventas</h1>
           <p v-if="cantidadArticulos > 0" class="pg-sub cv-cab-resumen">
             {{ cantidadArticulos }} {{ cantidadArticulos === 1 ? 'artículo' : 'artículos' }} ·
-            {{ formatoPeso.format(totalTicket) }}
+            {{ formatearMoneda(totalTicket) }}
           </p>
           <p v-else class="pg-sub">{{ descripcionPagina }}</p>
         </div>

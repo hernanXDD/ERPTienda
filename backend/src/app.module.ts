@@ -12,6 +12,8 @@ import { CuentaCorrienteModule } from './modulos/cuenta-corriente/cuenta-corrien
 import { ConfiguracionSistemaModule } from './modulos/configuracion-sistema/configuracion-sistema.module';
 import { DevolucionesModule } from './modulos/devoluciones/devoluciones.module';
 import { CuponesDescuentoModule } from './modulos/cupones-descuento/cupones-descuento.module';
+import { FormasPagoModule } from './modulos/formas-pago/formas-pago.module';
+import { TallesCatalogoModule } from './modulos/talles-catalogo/talles-catalogo.module';
 import { NegocioModule } from './modulos/negocio/negocio.module';
 import { ProveedoresModule } from './modulos/proveedores/proveedores.module';
 import { StockModule } from './modulos/stock/stock.module';
@@ -44,6 +46,8 @@ import { PermisosModule } from './comunes/permisos/permisos.module';
     UsuariosModule,
     NegocioModule,
     ConfiguracionSistemaModule,
+    FormasPagoModule,
+    TallesCatalogoModule,
   ],
   controllers: [AppController],
 })

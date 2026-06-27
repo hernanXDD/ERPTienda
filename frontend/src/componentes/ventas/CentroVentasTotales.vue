@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { usarCentroVentasContexto } from './centroVentasContexto';
 import CentroVentasAcciones from './CentroVentasAcciones.vue';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const {
   subtotalTicket,
@@ -15,12 +16,6 @@ const {
   observaciones,
   cuponAplicado,
 } = usarCentroVentasContexto();
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
   if (cuponAplicado.value) return;
@@ -102,9 +97,9 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
               </div>
             </label>
             <p v-if="hayAjusteTicketActivo" class="cv-ajuste-prev">
-              Sobre {{ formatoPeso.format(subtotalTicket) }}:
+              Sobre {{ formatearMoneda(subtotalTicket) }}:
               <strong>
-                {{ ajusteMontoTicket < 0 ? '−' : '+' }}{{ formatoPeso.format(montoAjusteTicketAbsoluto) }}
+                {{ ajusteMontoTicket < 0 ? '−' : '+' }}{{ formatearMoneda(montoAjusteTicketAbsoluto) }}
               </strong>
             </p>
             <p v-else class="cv-ajuste-ayuda">
@@ -132,12 +127,12 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
         <div class="cv-total-filas">
           <div class="cv-total-fila">
             <span class="cv-total-fila-etq">Subtotal artículos</span>
-            <span class="cv-total-fila-val">{{ formatoPeso.format(subtotalTicket) }}</span>
+            <span class="cv-total-fila-val">{{ formatearMoneda(subtotalTicket) }}</span>
           </div>
           <div v-if="hayAjusteTicketActivo" class="cv-total-fila cv-total-fila--ajuste">
             <span class="cv-total-fila-etq">{{ etiquetaAjusteTicketActivo }}</span>
             <span class="cv-total-fila-val">
-              {{ ajusteMontoTicket < 0 ? '−' : '+' }}{{ formatoPeso.format(montoAjusteTicketAbsoluto) }}
+              {{ ajusteMontoTicket < 0 ? '−' : '+' }}{{ formatearMoneda(montoAjusteTicketAbsoluto) }}
             </span>
           </div>
         </div>
@@ -147,7 +142,7 @@ function elegirTipoAjuste(tipo: 'NINGUNO' | 'DESCUENTO' | 'RECARGO') {
             · {{ cantidadArticulos }} u.
           </span>
         </p>
-        <p class="cv-total-val">{{ formatoPeso.format(totalTicket) }}</p>
+        <p class="cv-total-val">{{ formatearMoneda(totalTicket) }}</p>
       </div>
     </div>
   </footer>

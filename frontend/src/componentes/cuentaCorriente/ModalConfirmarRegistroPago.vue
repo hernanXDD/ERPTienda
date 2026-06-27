@@ -2,6 +2,7 @@
 import { AlertTriangle } from 'lucide-vue-next';
 import { useTemplateRef } from 'vue';
 import { formatearFechaDiaMesAnio } from '../../utilidades/formatoFechaHora';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 export interface DatosConfirmacionRegistroPago {
   nombreTercero: string;
@@ -24,12 +25,6 @@ const emit = defineEmits<{
 }>();
 
 const refDialogo = useTemplateRef<HTMLDialogElement>('refDialogo');
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 function abrir(): void {
   refDialogo.value?.showModal();
@@ -88,7 +83,7 @@ defineExpose({ abrir, cerrar });
         </div>
         <div class="cc-conf-pago-fila cc-conf-pago-fila--destacada">
           <span class="cc-conf-pago-lab">Importe</span>
-          <strong class="cc-conf-pago-importe">{{ formatoPeso.format(datos.importe) }}</strong>
+          <strong class="cc-conf-pago-importe">{{ formatearMoneda(datos.importe) }}</strong>
         </div>
         <div class="cc-conf-pago-fila">
           <span class="cc-conf-pago-lab">Fecha contable</span>

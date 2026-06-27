@@ -8,6 +8,7 @@ import { PermisosGuard } from '../../comunes/guards/permisos.guard';
 import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { CuentaCorrienteProveedorService } from './cuenta-corriente-proveedor.service';
 import { RegistrarPagoProveedorDto } from './dto/registrar-pago-proveedor.dto';
+import { RegistrarMovimientoManualDto } from '../cuenta-corriente/dto/registrar-movimiento-manual.dto';
 
 @Controller('proveedores/:proveedorId/cuenta-corriente')
 @UseGuards(JwtAuthGuard, PermisosGuard)
@@ -41,5 +42,20 @@ export class CuentaCorrienteProveedorController {
       operador,
     );
     return respuestaOk(movimiento, 'Pago registrado correctamente.');
+  }
+
+  @Post('movimiento-manual')
+  @RequierePermiso('puedeGestionarCuentaCorrienteProveedor')
+  async registrarMovimientoManual(
+    @Param('proveedorId') proveedorId: string,
+    @Body() datos: RegistrarMovimientoManualDto,
+    @UsuarioSesionActual() operador: UsuarioSesion,
+  ) {
+    const movimiento = await this.cuentaCorrienteProveedorService.registrarMovimientoManual(
+      proveedorId,
+      datos,
+      operador,
+    );
+    return respuestaOk(movimiento, 'Movimiento manual registrado correctamente.');
   }
 }

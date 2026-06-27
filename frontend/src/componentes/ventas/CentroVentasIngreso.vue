@@ -2,6 +2,7 @@
 import type { ComponentPublicInstance } from 'vue';
 import { ScanBarcode, Search } from 'lucide-vue-next';
 import { usarCentroVentasContexto } from './centroVentasContexto';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const {
   refInputLector,
@@ -26,11 +27,6 @@ function enlazarBusqueda(el: Element | ComponentPublicInstance | null) {
   refInputNombre.value = el instanceof HTMLInputElement ? el : null;
 }
 
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 </script>
 
 <template>
@@ -142,7 +138,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
                 f.variante.codigoBarras
               }}</span>
             </span>
-            <span class="cv-res-pre">{{ formatoPeso.format(f.precioUnitario) }}</span>
+            <span class="cv-res-pre">{{ formatearMoneda(f.precioUnitario) }}</span>
           </button>
         </li>
       </ul>

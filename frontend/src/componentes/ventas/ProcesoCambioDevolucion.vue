@@ -11,11 +11,15 @@ import {
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import type { ContextoProcesoDevolucion } from '../../composables/useProcesoDevolucion';
-import { FORMAS_PAGO } from '../../datos/formasPago';
+import { useFormasPagoStore } from '../../stores/formasPago';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const props = defineProps<{
   proceso: ContextoProcesoDevolucion;
 }>();
+
+const formasPagoStore = useFormasPagoStore();
+const opcionesFormaPago = computed(() => formasPagoStore.opcionesSelector);
 
 const emit = defineEmits<{
   finalizado: [];
@@ -26,12 +30,6 @@ const busquedaPrenda = props.proceso.busquedaPrenda;
 const observaciones = props.proceso.observaciones;
 const formaPagoCambio = props.proceso.formaPagoCambio;
 const emitirCuponAlConfirmar = props.proceso.emitirCuponAlConfirmar;
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 async function confirmar(): Promise<void> {
   const resultado = await props.proceso.finalizarOperacion();
@@ -107,7 +105,7 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
         <div class="cambio-bloque cambio-bloque--dev">
           <p class="cambio-bloque-etiq">Crédito por devolución</p>
           <p class="cambio-bloque-valor cambio-bloque-valor--dev lv-mono">
-            −{{ formatoPeso.format(proceso.subtotalDevolucion.value) }}
+            −{{ formatearMoneda(proceso.subtotalDevolucion.value) }}
           </p>
         </div>
       </div>
@@ -151,7 +149,7 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
               @click="proceso.agregarPrenda(fila)"
             >
               <span class="cambio-res-nom">{{ fila.nombreLinea }}</span>
-              <span class="cambio-res-precio lv-mono">{{ formatoPeso.format(fila.precioUnitario) }}</span>
+              <span class="cambio-res-precio lv-mono">{{ formatearMoneda(fila.precioUnitario) }}</span>
             </button>
           </li>
         </ul>
@@ -192,18 +190,18 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
                 <td class="cambio-col-desc">
                   <span class="cambio-nom">{{ ln.nombre }}</span>
                   <span class="cambio-meta-movil lv-mono">
-                    {{ ln.cantidad }} × {{ formatoPeso.format(ln.precioUnitario) }}
+                    {{ ln.cantidad }} × {{ formatearMoneda(ln.precioUnitario) }}
                   </span>
                 </td>
                 <td class="cambio-col-cant">
                   <span class="cambio-cant-fija lv-mono">{{ ln.cantidad }}</span>
                 </td>
                 <td class="cambio-col-pu">
-                  <span class="cambio-valor lv-mono">{{ formatoPeso.format(ln.precioUnitario) }}</span>
+                  <span class="cambio-valor lv-mono">{{ formatearMoneda(ln.precioUnitario) }}</span>
                 </td>
                 <td class="cambio-col-sub">
                   <span class="cambio-valor cambio-valor--dev lv-mono">
-                    −{{ formatoPeso.format(subtotalLinea(ln.cantidad, ln.precioUnitario)) }}
+                    −{{ formatearMoneda(subtotalLinea(ln.cantidad, ln.precioUnitario)) }}
                   </span>
                 </td>
                 <td class="cambio-col-acc" />
@@ -223,7 +221,7 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
                 <td class="cambio-col-desc">
                   <span class="cambio-nom">{{ ln.nombre }}</span>
                   <span class="cambio-meta-movil lv-mono">
-                    {{ formatoPeso.format(ln.precioUnitario) }} c/u
+                    {{ formatearMoneda(ln.precioUnitario) }} c/u
                   </span>
                 </td>
                 <td class="cambio-col-cant">
@@ -248,11 +246,11 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
                   </span>
                 </td>
                 <td class="cambio-col-pu">
-                  <span class="cambio-valor lv-mono">{{ formatoPeso.format(ln.precioUnitario) }}</span>
+                  <span class="cambio-valor lv-mono">{{ formatearMoneda(ln.precioUnitario) }}</span>
                 </td>
                 <td class="cambio-col-sub">
                   <span class="cambio-valor lv-mono">
-                    {{ formatoPeso.format(subtotalLinea(ln.cantidad, ln.precioUnitario)) }}
+                    {{ formatearMoneda(subtotalLinea(ln.cantidad, ln.precioUnitario)) }}
                   </span>
                 </td>
                 <td class="cambio-col-acc">
@@ -278,7 +276,7 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
           <div v-if="proceso.haySaldoAPagar.value" class="cambio-campo">
             <label class="cambio-campo-etiq" for="cambio-forma-pago">Forma de pago del saldo</label>
             <select id="cambio-forma-pago" v-model="formaPagoCambio" class="cambio-inp cambio-sel">
-              <option v-for="fp in FORMAS_PAGO" :key="fp.id" :value="fp.id">{{ fp.etiqueta }}</option>
+              <option v-for="fp in opcionesFormaPago" :key="fp.id" :value="fp.id">{{ fp.etiqueta }}</option>
             </select>
           </div>
 
@@ -294,7 +292,7 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
             />
             <span>
               Emitir cupón por
-              <strong>{{ formatoPeso.format(proceso.saldoAFavor.value) }}</strong>
+              <strong>{{ formatearMoneda(proceso.saldoAFavor.value) }}</strong>
               al confirmar
             </span>
           </label>
@@ -321,13 +319,13 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
             <div class="cambio-total-fila">
               <span class="cambio-total-fila-etq">Crédito devolución</span>
               <span class="cambio-total-fila-val cambio-total-fila-val--dev lv-mono">
-                −{{ formatoPeso.format(proceso.subtotalDevolucion.value) }}
+                −{{ formatearMoneda(proceso.subtotalDevolucion.value) }}
               </span>
             </div>
             <div class="cambio-total-fila">
               <span class="cambio-total-fila-etq">Prendas nuevas</span>
               <span class="cambio-total-fila-val lv-mono">
-                {{ formatoPeso.format(proceso.subtotalNuevasPrendas.value) }}
+                {{ formatearMoneda(proceso.subtotalNuevasPrendas.value) }}
               </span>
             </div>
           </div>
@@ -344,10 +342,10 @@ function cambiarCantidadPrenda(varianteId: string, delta: number): void {
             }"
           >
             <template v-if="proceso.haySaldoAPagar.value">
-              {{ formatoPeso.format(proceso.saldoAPagar.value) }}
+              {{ formatearMoneda(proceso.saldoAPagar.value) }}
             </template>
             <template v-else-if="proceso.haySaldoAFavor.value">
-              {{ formatoPeso.format(proceso.saldoAFavor.value) }}
+              {{ formatearMoneda(proceso.saldoAFavor.value) }}
             </template>
             <template v-else>$ 0</template>
           </p>

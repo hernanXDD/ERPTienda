@@ -3,6 +3,7 @@ import {
   prepararClonDocumentoA4Pdf,
 } from '../reportes/impresionReporte';
 import { prepararRenderizadoReporte, renderizarPlantillaConEstilos } from '../reportes/motorEtaReportes';
+import { sanitizarNombreArchivo } from '../../utilidades/nombresArchivo';
 import { calcularDatosResumenVentaImpresion } from './calcularDatosResumenVentaImpresion';
 import {
   claseExportacionPdfResumenVenta,
@@ -10,21 +11,10 @@ import {
 } from './estilosResumenVentaCss';
 import { plantillasVentas } from './plantillasVentas';
 import type { VentaRegistrada } from '../../tipos/venta';
-
-function sanitizarNombreArchivo(nombre: string): string {
-  return (
-    nombre
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9._-]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 120) || 'comprobante'
-  );
-}
+import { useFormasPagoStore } from '../../stores/formasPago';
 
 function nombreArchivoComprobanteVenta(numero: string): string {
-  return sanitizarNombreArchivo(`comprobante-${numero}`);
+  return sanitizarNombreArchivo(`comprobante-${numero}`, 'comprobante');
 }
 
 async function renderizarFragmentoResumenVenta(venta: VentaRegistrada): Promise<{
@@ -37,7 +27,7 @@ async function renderizarFragmentoResumenVenta(venta: VentaRegistrada): Promise<
   }
 
   await prepararRenderizadoReporte();
-  const datos = calcularDatosResumenVentaImpresion(venta);
+  const datos = calcularDatosResumenVentaImpresion(venta, useFormasPagoStore().formas);
   const fragmento = renderizarPlantillaConEstilos(plantilla, datos, estilosResumenVentaCss);
   if (!fragmento.trim()) {
     throw new Error('No se pudo generar el comprobante de compra.');

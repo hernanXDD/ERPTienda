@@ -2,6 +2,7 @@
 import { CheckCircle2, Printer, ShoppingCart } from 'lucide-vue-next';
 import { nextTick, useTemplateRef, watch } from 'vue';
 import { usarCentroVentasContexto } from './centroVentasContexto';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const {
   ventaConfirmada,
@@ -10,12 +11,6 @@ const {
 } = usarCentroVentasContexto();
 
 const refDialog = useTemplateRef<HTMLDialogElement>('refDialog');
-
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 
 watch(ventaConfirmada, async (venta) => {
   await nextTick();
@@ -57,7 +52,7 @@ function alCerrarDialog() {
       <p id="cv-exito-desc" class="cv-exito-det">
         <span class="cv-exito-num">{{ ventaConfirmada.numero }}</span>
         ·
-        {{ formatoPeso.format(ventaConfirmada.total) }}
+        {{ formatearMoneda(ventaConfirmada.total) }}
       </p>
 
       <p class="cv-exito-cli">{{ ventaConfirmada.nombreClienteMostrar }}</p>

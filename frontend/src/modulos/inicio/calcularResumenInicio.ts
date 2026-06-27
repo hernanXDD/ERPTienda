@@ -48,6 +48,14 @@ export function calcularKpisVentasDia(ventasDelDia: VentaRegistrada[]): KpisVent
   };
 }
 
+/** Variantes desactivadas con stock en cero (p. ej. por auto-deshabilitación). */
+export function contarVariantesInactivasStockCero(
+  variantes: Variante[],
+  cantidadActual: (varianteId: string) => number,
+): number {
+  return variantes.filter((v) => !v.activa && cantidadActual(v.id) === 0).length;
+}
+
 export function calcularAlertasStock(
   variantesActivas: Variante[],
   cantidadActual: (varianteId: string) => number,

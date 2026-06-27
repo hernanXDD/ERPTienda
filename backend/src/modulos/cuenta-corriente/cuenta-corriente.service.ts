@@ -11,7 +11,12 @@ import { IdSecuenciaService } from '../../prisma/id-secuencia.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { RegistrarCargoDto } from './dto/registrar-cargo.dto';
+import { RegistrarMovimientoManualDto } from './dto/registrar-movimiento-manual.dto';
 import { RegistrarPagoDto } from './dto/registrar-pago.dto';
+
+export interface OpcionesRegistrarCargoCuentaCorriente {
+  ventaId?: string;
+}
 
 export interface AuditoriaPagoCuentaCorrienteApi {
   marcaTiempoUtcRegistroCliente: string;
@@ -169,6 +174,7 @@ export class CuentaCorrienteService {
     datos: RegistrarCargoDto,
     registradoPorUsuarioId?: string,
     tx?: ClienteTx,
+    opciones?: OpcionesRegistrarCargoCuentaCorriente,
   ): Promise<MovimientoCuentaCorrienteApi> {
     const prisma = tx ?? this.prisma;
     if (!tx) await this.validarClienteExiste(clienteId);
@@ -178,10 +184,33 @@ export class CuentaCorrienteService {
       data: {
         id,
         clienteId,
+        ventaId: opciones?.ventaId ?? null,
         tipoMovimiento: TipoMovimientoCuentaCorriente.cargo,
         importe: new Prisma.Decimal(datos.importe),
         descripcion: datos.descripcion?.trim() || 'Cargo en cuenta corriente',
         registradoPorUsuarioId: registradoPorUsuarioId ?? null,
+      },
+    });
+    return this.mapearMovimiento(movimiento);
+  }
+
+  /** Ajuste manual (saldo inicial, intereses, correcciones). No valida límite de crédito. */
+  async registrarMovimientoManual(
+    clienteId: string,
+    datos: RegistrarMovimientoManualDto,
+    operador: UsuarioSesion,
+  ): Promise<MovimientoCuentaCorrienteApi> {
+    await this.validarClienteExiste(clienteId);
+
+    const id = await this.idSecuencia.siguienteMovimientoCuentaCorriente();
+    const movimiento = await this.prisma.movimientoCuentaCorriente.create({
+      data: {
+        id,
+        clienteId,
+        tipoMovimiento: datos.tipoMovimiento,
+        importe: new Prisma.Decimal(datos.importe),
+        descripcion: datos.descripcion.trim(),
+        registradoPorUsuarioId: operador.id,
       },
     });
     return this.mapearMovimiento(movimiento);

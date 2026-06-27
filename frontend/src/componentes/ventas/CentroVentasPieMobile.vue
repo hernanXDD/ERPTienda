@@ -2,6 +2,7 @@
 import { CheckCircle2 } from 'lucide-vue-next';
 import { usarCentroVentasContexto } from './centroVentasContexto';
 import { useEsMovil } from '../../composables/useEsMovil';
+import { formatearMoneda } from '../../utilidades/formatoMoneda';
 
 const esMovil = useEsMovil();
 
@@ -15,11 +16,6 @@ const {
   pedirLimpiar,
 } = usarCentroVentasContexto();
 
-const formatoPeso = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
 </script>
 
 <template>
@@ -27,7 +23,7 @@ const formatoPeso = new Intl.NumberFormat('es-AR', {
     <footer class="cv-pie-mobile" aria-label="Confirmación rápida de venta">
       <div class="cv-pie-mobile-total">
         <span class="cv-pie-mobile-etiq">Total</span>
-        <strong class="cv-pie-mobile-monto">{{ formatoPeso.format(totalTicket) }}</strong>
+        <strong class="cv-pie-mobile-monto">{{ formatearMoneda(totalTicket) }}</strong>
         <span v-if="cantidadArticulos > 0" class="cv-pie-mobile-art">
           {{ cantidadArticulos }} {{ cantidadArticulos === 1 ? 'artículo' : 'artículos' }}
         </span>

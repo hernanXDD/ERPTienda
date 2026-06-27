@@ -1,4 +1,5 @@
 import type { VentaRegistrada } from '../../../tipos/venta';
+import type { FormaPago } from '../../../tipos/formaPago';
 import { etiquetaEstadoFacturacion } from '../../../datos/condicionesIva';
 import { etiquetaFormaPago } from '../../../datos/formasPago';
 import { formatearFechaDiaMesAnio } from '../../../utilidades/formatoFechaHora';
@@ -58,7 +59,8 @@ export interface DatosReporteVentasPeriodo {
 export function calcularReporteVentasPeriodo(
   ventas: VentaRegistrada[],
   filtro: FiltrosReporteVentasPeriodo,
-  opcionesCliente: OpcionEntidadReporte[]
+  opcionesCliente: OpcionEntidadReporte[],
+  formasPago?: FormaPago[],
 ): DatosReporteVentasPeriodo {
   const enPeriodo = ventas
     .filter(
@@ -89,7 +91,7 @@ export function calcularReporteVentasPeriodo(
   const filasFormaPago: FilaFormaPagoReporte[] = [...acumFormaPago.entries()]
     .sort((a, b) => b[1].importe - a[1].importe)
     .map(([id, datos]) => ({
-      etiqueta: etiquetaFormaPago(id as VentaRegistrada['formaPago']),
+      etiqueta: etiquetaFormaPago(id as VentaRegistrada['formaPago'], formasPago),
       cantidad: formatearNumeroReporte(datos.cantidad),
       importe: formatearMonedaReporte(datos.importe),
       porcentaje: formatearPorcentajeReporte(datos.importe, totalImporte),
@@ -99,7 +101,7 @@ export function calcularReporteVentasPeriodo(
     numero: v.numero,
     fecha: formatearFechaDiaMesAnio(v.fecha),
     cliente: v.nombreClienteMostrar,
-    formaPago: etiquetaFormaPago(v.formaPago),
+    formaPago: etiquetaFormaPago(v.formaPago, formasPago),
     estadoFacturacion: etiquetaEstadoFacturacion(v.estadoFacturacion),
     facturacion: v.facturacion?.trim() || '—',
     total: formatearMonedaReporte(v.total),

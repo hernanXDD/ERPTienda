@@ -4,11 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CondicionIvaCliente, FormaPagoVenta, Prisma } from '@prisma/client';
+import { CondicionIvaCliente, Prisma } from '@prisma/client';
 import {
   CODIGO_ESTADO_FACTURACION_FACTURADA,
   ID_ESTADO_FACTURACION_PENDIENTE,
 } from '../../comunes/constantes/estados-facturacion';
+import { esFormaPagoCuentaCorriente } from '../../comunes/constantes/forma-pago';
 import { decimalANumero } from '../../comunes/utilidades/mapear-decimal';
 import { siguienteNumeroComprobante } from '../../comunes/utilidades/numero-comprobante';
 import {
@@ -21,6 +22,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { filtroNoBorrado } from '../../comunes/utilidades/borrado-logico';
 import { CuentaCorrienteService } from '../cuenta-corriente/cuenta-corriente.service';
 import { CuponesDescuentoService } from '../cupones-descuento/cupones-descuento.service';
+import { FormasPagoService } from '../formas-pago/formas-pago.service';
 import { StockService } from '../stock/stock.service';
 import { CargarFacturacionesDto } from './dto/cargar-facturaciones.dto';
 import { RegistrarVentaDto } from './dto/registrar-venta.dto';
@@ -73,6 +75,7 @@ export class VentasService {
     private readonly stockService: StockService,
     private readonly cuentaCorrienteService: CuentaCorrienteService,
     private readonly cuponesDescuentoService: CuponesDescuentoService,
+    private readonly formasPagoService: FormasPagoService,
   ) {}
 
   async listar(): Promise<VentaRegistradaApi[]> {
@@ -147,6 +150,9 @@ export class VentasService {
   }
 
   async registrar(datos: RegistrarVentaDto, operador: UsuarioSesion): Promise<VentaRegistradaApi> {
+    const formaPago = datos.formaPago.trim().toUpperCase();
+    await this.formasPagoService.validarCodigoParaVenta(formaPago);
+
     const ajusteMonto = datos.ajusteMonto ?? 0;
     const cuponDescuentoId = datos.cuponDescuentoId?.trim() || null;
 
@@ -178,7 +184,7 @@ export class VentasService {
     let condicionIvaCliente: CondicionIvaCliente = CondicionIvaCliente.CONSUMIDOR_FINAL;
     let limiteCompraCuentaCorriente = 0;
 
-    if (datos.formaPago === FormaPagoVenta.CUENTA_CORRIENTE) {
+    if (esFormaPagoCuentaCorriente(formaPago)) {
       if (!datos.clienteId) {
         throw new BadRequestException('La venta en cuenta corriente requiere un cliente.');
       }
@@ -217,7 +223,7 @@ export class VentasService {
         throw new ConflictException('Stock insuficiente para completar la venta.');
       }
 
-      if (datos.formaPago === FormaPagoVenta.CUENTA_CORRIENTE && datos.clienteId) {
+      if (esFormaPagoCuentaCorriente(formaPago) && datos.clienteId) {
         await this.cuentaCorrienteService.validarCreditoDisponibleParaCargo(
           datos.clienteId,
           totalCalculado,
@@ -242,7 +248,7 @@ export class VentasService {
           nombreClienteMostrar: datos.nombreClienteMostrar.trim(),
           documentoClienteMostrar,
           condicionIvaCliente,
-          formaPago: datos.formaPago,
+          formaPago,
           subtotal: new Prisma.Decimal(subtotalLineas),
           ajusteMonto: new Prisma.Decimal(redondearMoneda(ajusteMonto)),
           ajustePorcentaje:
@@ -279,7 +285,7 @@ export class VentasService {
         operador.id,
       );
 
-      if (datos.formaPago === FormaPagoVenta.CUENTA_CORRIENTE && datos.clienteId) {
+      if (esFormaPagoCuentaCorriente(formaPago) && datos.clienteId) {
         await this.cuentaCorrienteService.registrarCargo(
           datos.clienteId,
           {
@@ -288,6 +294,7 @@ export class VentasService {
           },
           operador.id,
           tx,
+          { ventaId: creada.id },
         );
       }
 
