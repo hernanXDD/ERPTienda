@@ -1,5 +1,6 @@
 # ERP Tienda API — imagen para Easypanel / Docker
-FROM node:20-alpine AS builder
+# Mirror ECR público: evita rate limit 429 de Docker Hub en VPS compartidos.
+FROM public.ecr.aws/docker/library/node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -13,7 +14,7 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM public.ecr.aws/docker/library/node:20-alpine AS runner
 
 WORKDIR /app
 
