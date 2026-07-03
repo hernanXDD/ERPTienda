@@ -12,15 +12,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { respuestaOk } from '../../comunes/dto/respuesta-api';
-import { RequiereAlgunoMenu, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
+import { RequiereAlgunoMenu, RequiereConfiguracionApp, RequierePermiso } from '../../comunes/decoradores/requiere-permiso.decorator';
 import { MENUS_LECTURA_CATALOGO } from '../../comunes/permisos/menus-lectura';
 import { JwtAuthGuard } from '../../comunes/guards/jwt-auth.guard';
 import { PermisosGuard } from '../../comunes/guards/permisos.guard';
+import { UsuarioSesionActual } from '../../comunes/decoradores/usuario-sesion.decorator';
+import type { UsuarioSesion } from '../../comunes/tipos/usuario-sesion';
 import { CatalogoService } from './catalogo.service';
 import { ActualizarProductoDto } from './dto/actualizar-producto.dto';
 import { ActualizarVarianteDto } from './dto/actualizar-variante.dto';
 import { CrearProductoDto } from './dto/crear-producto.dto';
 import { CrearVarianteDto } from './dto/crear-variante.dto';
+import { ImportarStockInicialDto } from './dto/importar-stock-inicial.dto';
 
 @Controller('catalogo')
 @UseGuards(JwtAuthGuard, PermisosGuard)
@@ -75,6 +78,19 @@ export class CatalogoController {
   async crearVariante(@Body() datos: CrearVarianteDto) {
     const variante = await this.catalogoService.crearVariante(datos);
     return respuestaOk(variante, 'Variante creada correctamente.');
+  }
+
+  @Post('importar-stock-inicial')
+  @RequiereConfiguracionApp()
+  async importarStockInicial(
+    @Body() datos: ImportarStockInicialDto,
+    @UsuarioSesionActual() operador: UsuarioSesion,
+  ) {
+    const resultado = await this.catalogoService.importarStockInicialMasivo(datos, operador.id);
+    return respuestaOk(
+      resultado,
+      `Carga inicial registrada: ${resultado.productosCreados} producto(s) y ${resultado.variantesCreadas} artículo(s).`,
+    );
   }
 
   @Patch('variantes/:id')

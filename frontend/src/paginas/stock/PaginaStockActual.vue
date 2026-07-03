@@ -207,7 +207,6 @@ const gruposFiltrados = computed((): GrupoStockProducto[] => {
 
 const filasParaConteoFisico = computed((): FilaStock[] => {
   return variantes.value
-    .filter((v) => v.activa)
     .map((variante): FilaStock | null => {
       const producto = catalogoStore.productoPorId(variante.productoId);
       if (!producto) return null;
@@ -420,7 +419,7 @@ async function alSeleccionarArchivoConteo(event: Event): Promise<void> {
   try {
     const resultado = await parsearArchivoConteoFisico(
       archivo,
-      variantes.value.filter((v) => v.activa),
+      variantes.value,
       (id) => catalogoStore.productoPorId(id),
       (varianteId) => stockStore.cantidadActual(varianteId),
     );

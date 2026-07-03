@@ -10,8 +10,10 @@ import {
   CLAVE_MENU_REQUERIDO,
   CLAVE_MENUS_ALTERNATIVOS,
   CLAVE_PERMISO_REQUERIDO,
+  REQUIERE_CONFIGURACION_APP,
   REQUIERE_ROL_ELEVADO,
 } from '../decoradores/requiere-permiso.decorator';
+import { esUsuarioConfiguracionApp } from '../constantes/usuario-configuracion-app';
 import { PermisosUsuarioService } from '../permisos/permisos-usuario.service';
 import type { ClaveMenuPrincipal } from '../tipos/permisos-usuario';
 import type { UsuarioSesion } from '../tipos/usuario-sesion';
@@ -39,13 +41,27 @@ export class PermisosGuard implements CanActivate {
       contexto.getHandler(),
       contexto.getClass(),
     ]);
+    const requiereConfiguracionApp = this.reflector.getAllAndOverride<boolean>(
+      REQUIERE_CONFIGURACION_APP,
+      [contexto.getHandler(), contexto.getClass()],
+    );
 
-    if (!permiso && !menu && !menusAlternativos?.length && !rolElevado) return true;
+    if (!permiso && !menu && !menusAlternativos?.length && !rolElevado && !requiereConfiguracionApp) {
+      return true;
+    }
 
     const solicitud = contexto.switchToHttp().getRequest<Request & { user?: UsuarioSesion }>();
     const operador = solicitud.user;
     if (!operador?.id) {
       throw new ForbiddenException('Sesión inválida.');
+    }
+
+    if (requiereConfiguracionApp) {
+      if (!esUsuarioConfiguracionApp(operador)) {
+        throw new ForbiddenException(
+          'Esta operación está reservada al administrador principal del sistema.',
+        );
+      }
     }
 
     if (rolElevado) {

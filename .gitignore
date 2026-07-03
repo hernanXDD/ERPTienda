@@ -77,3 +77,4 @@ input inicial.txt
 # Backups de base de datos
 backup-*.sql
 *.sql.gz
+.gstack/

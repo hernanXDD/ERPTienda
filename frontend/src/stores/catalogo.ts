@@ -13,8 +13,11 @@ import {
   crearVarianteApi,
   eliminarProductoApi,
   eliminarVarianteApi,
+  importarStockInicialApi,
   listarProductosApi,
   listarVariantesApi,
+  type LineaImportarStockInicialApi,
+  type ResultadoImportarStockInicialApi,
 } from '../servicios/catalogo.servicio';
 import {
   armarNombreLineaComercial,
@@ -241,6 +244,17 @@ export const useCatalogoStore = defineStore('catalogo', () => {
     return true;
   }
 
+  async function aplicarImportacionStockInicial(
+    lineas: LineaImportarStockInicialApi[],
+    observacion?: string,
+  ): Promise<ResultadoImportarStockInicialApi> {
+    sincronizador.marcarMutacionLocal();
+    const resultado = await importarStockInicialApi({ lineas, observacion });
+    sincronizado = false;
+    await cargar({ forzar: true });
+    return resultado;
+  }
+
   return {
     categorias,
     productos,
@@ -269,5 +283,6 @@ export const useCatalogoStore = defineStore('catalogo', () => {
     agregarVariante,
     actualizarVariante,
     eliminarVariante,
+    aplicarImportacionStockInicial,
   };
 });

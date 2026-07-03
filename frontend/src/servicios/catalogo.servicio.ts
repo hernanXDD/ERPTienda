@@ -54,3 +54,39 @@ export async function actualizarVarianteApi(
 export async function eliminarVarianteApi(id: string): Promise<void> {
   await clienteHttp.delete(`/catalogo/variantes/${id}`);
 }
+
+export interface LineaImportarStockInicialApi {
+  productoId?: string;
+  nombre: string;
+  marca: string;
+  categoriaId: string;
+  precioVenta: number;
+  descripcion?: string;
+  talle: string;
+  codigoBarras?: string;
+  stock: number;
+}
+
+export interface ResultadoImportarStockInicialApi {
+  productosCreados: number;
+  variantesCreadas: number;
+  unidadesStock: number;
+  detalle: Array<{
+    productoId: string;
+    varianteId: string;
+    nombreVariante: string;
+    codigoBarras: string;
+    stock: number;
+  }>;
+}
+
+export async function importarStockInicialApi(datos: {
+  lineas: LineaImportarStockInicialApi[];
+  observacion?: string;
+}): Promise<ResultadoImportarStockInicialApi> {
+  const { data } = await clienteHttp.post<RespuestaApi<ResultadoImportarStockInicialApi>>(
+    '/catalogo/importar-stock-inicial',
+    datos,
+  );
+  return data.datos;
+}

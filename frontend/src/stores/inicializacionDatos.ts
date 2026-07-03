@@ -1,5 +1,9 @@
 import { ref } from 'vue';
 import { menusVisiblesPorDefecto } from '../modulos/usuarios/permisosUsuario';
+import {
+  esErrorDemasiadasSolicitudes,
+  mensajeUsuarioDemasiadasSolicitudes,
+} from '../servicios/apiUtil';
 import type { MenusVisiblesUsuario } from '../tipos/usuarioGestion';
 import { useCatalogoStore } from './catalogo';
 import { useClientesStore } from './clientes';
@@ -18,6 +22,7 @@ import { useVentasStore } from './ventas';
 
 let promesaCarga: Promise<void> | null = null;
 let datosMaestrosCargados = false;
+let cargaMaestrosIntentada = false;
 
 export const errorCargaDatosMaestros = ref<string | null>(null);
 
@@ -37,15 +42,31 @@ const ETIQUETAS_CARGA: Record<string, string> = {
   cuentaCorrienteProveedor: 'cuentas corrientes proveedores',
 };
 
+const fallosCargaActual = ref<string[]>([]);
+let huboDemasiadasSolicitudesEnCarga = false;
+
+export function armarMensajeErrorCargaMaestros(
+  fallos: string[],
+  demasiadasSolicitudes: boolean,
+): string {
+  if (demasiadasSolicitudes) {
+    return mensajeUsuarioDemasiadasSolicitudes();
+  }
+  const unicos = [...new Set(fallos)];
+  const lista = unicos.join(', ');
+  return `No se pudieron cargar algunos datos (${lista}). Revisá la conexión con la API y usá «Reintentar carga».`;
+}
+
 async function cargarConRegistro(clave: keyof typeof ETIQUETAS_CARGA, promesa: Promise<unknown>): Promise<void> {
   try {
     await promesa;
-  } catch {
+  } catch (error) {
     fallosCargaActual.value.push(ETIQUETAS_CARGA[clave]);
+    if (esErrorDemasiadasSolicitudes(error)) {
+      huboDemasiadasSolicitudesEnCarga = true;
+    }
   }
 }
-
-const fallosCargaActual = ref<string[]>([]);
 
 function menusDelOperador(): MenusVisiblesUsuario {
   const sesion = useSesionStore();
@@ -59,22 +80,24 @@ function requiereAlgunoMenu(
   return claves.some((clave) => menus[clave] === true);
 }
 
-function armarMensajeErrorCarga(fallos: string[]): string {
-  const unicos = [...new Set(fallos)];
-  const lista = unicos.join(', ');
-  return `No se pudieron cargar algunos datos (${lista}). Revisá la conexión con la API y usá «Reintentar carga».`;
+export interface OpcionesCargaDatosMaestros {
+  /** Reintenta la carga aunque ya se haya intentado una vez (p. ej. botón «Reintentar carga»). */
+  forzar?: boolean;
 }
 
 /**
  * Carga datos maestros desde la API tras el login, solo para módulos visibles del operador.
+ * Los movimientos de cuenta corriente se cargan al entrar a esas pantallas (lazy).
  */
-export async function cargarDatosMaestros(): Promise<void> {
+export async function cargarDatosMaestros(opciones?: OpcionesCargaDatosMaestros): Promise<void> {
   if (datosMaestrosCargados) return;
+  if (cargaMaestrosIntentada && !opciones?.forzar) return;
   if (promesaCarga) return promesaCarga;
 
   promesaCarga = (async () => {
     errorCargaDatosMaestros.value = null;
     fallosCargaActual.value = [];
+    huboDemasiadasSolicitudesEnCarga = false;
 
     const menus = menusDelOperador();
     const catalogo = useCatalogoStore();
@@ -146,32 +169,30 @@ export async function cargarDatosMaestros(): Promise<void> {
         .filter((c) => c.habilitado && c.cuentaCorrienteHabilitada)
         .map((c) => c.id);
       const cuentaCorriente = useCuentaCorrienteStore();
-      await Promise.all([
-        cargarConRegistro('cuentaCorriente', cuentaCorriente.cargarSaldos(idsCc)),
-        cargarConRegistro('cuentaCorriente', cuentaCorriente.cargarMovimientosTodos(idsCc)),
-      ]);
+      await cargarConRegistro('cuentaCorriente', cuentaCorriente.cargarSaldos(idsCc));
     }
 
     if (requiereAlgunoMenu(menus, ['compras', 'reportes'])) {
       const idsCcProv = proveedores.proveedores
         .filter((p) => p.habilitado && p.comprasCreditoHabilitadas)
         .map((p) => p.id);
-      await Promise.all([
-        cargarConRegistro('cuentaCorrienteProveedor', cuentaCorrienteProveedor.cargarSaldos(idsCcProv)),
-        cargarConRegistro(
-          'cuentaCorrienteProveedor',
-          cuentaCorrienteProveedor.cargarMovimientosTodos(idsCcProv),
-        ),
-      ]);
+      await cargarConRegistro(
+        'cuentaCorrienteProveedor',
+        cuentaCorrienteProveedor.cargarSaldos(idsCcProv),
+      );
     }
 
     if (fallosCargaActual.value.length > 0) {
-      errorCargaDatosMaestros.value = armarMensajeErrorCarga(fallosCargaActual.value);
+      errorCargaDatosMaestros.value = armarMensajeErrorCargaMaestros(
+        fallosCargaActual.value,
+        huboDemasiadasSolicitudesEnCarga,
+      );
       return;
     }
 
     datosMaestrosCargados = true;
   })().finally(() => {
+    cargaMaestrosIntentada = true;
     promesaCarga = null;
   });
 
@@ -181,11 +202,13 @@ export async function cargarDatosMaestros(): Promise<void> {
 export function reiniciarEstadoCargaDatos(): void {
   promesaCarga = null;
   datosMaestrosCargados = false;
+  cargaMaestrosIntentada = false;
   errorCargaDatosMaestros.value = null;
   fallosCargaActual.value = [];
+  huboDemasiadasSolicitudesEnCarga = false;
 }
 
 export async function reintentarCargaDatosMaestros(): Promise<void> {
   reiniciarEstadoCargaDatos();
-  await cargarDatosMaestros();
+  await cargarDatosMaestros({ forzar: true });
 }

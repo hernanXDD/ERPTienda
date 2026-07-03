@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Settings2 } from 'lucide-vue-next';
+import SeccionCargaInicialCatalogo from '../../componentes/configuracion/SeccionCargaInicialCatalogo.vue';
 import { obtenerDescripcionPagina } from '../../modulos/nucleo/descripcionesPaginas';
 
 const descripcionPagina = obtenerDescripcionPagina('configuracion-app');
@@ -23,9 +24,12 @@ const descripcionPagina = obtenerDescripcionPagina('configuracion-app');
 
       <div class="pg-cuerpo cfg-app-cuerpo">
         <p class="cfg-app-aviso" role="status">
-          Sección reservada al administrador principal del sistema. Las opciones avanzadas se
-          habilitan según el plan y la configuración de la instalación.
+          Herramientas reservadas al equipo de implementación. El cliente de la tienda no usa esta
+          sección: vos descargás la plantilla, se la enviás para completar y acá importás el Excel
+          devuelto.
         </p>
+
+        <SeccionCargaInicialCatalogo />
       </div>
     </div>
   </section>
@@ -37,7 +41,7 @@ const descripcionPagina = obtenerDescripcionPagina('configuracion-app');
 }
 
 .cfg-app-aviso {
-  margin: 0;
+  margin: 0 0 1.25rem;
   padding: 0.85rem 1rem;
   border-radius: 10px;
   border: 1px dashed var(--color-acento-borde);

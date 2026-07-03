@@ -25,7 +25,7 @@ export const DESCRIPCIONES_PAGINA: Record<string, string> = {
   'productos-categorias':
     'Clasificación de productos por rubro. Cada artículo del catálogo debe tener una categoría asignada. No se puede eliminar una categoría con productos asociados.',
   'stock-actual':
-    'Existencias por variante. Los conteos requieren permiso específico, confirmación previa y quedan auditados.',
+    'Existencias por variante. Conteo físico en pantalla o por Excel; cada ajuste queda auditado.',
   'stock-auditorias':
     'Historial de movimientos agrupados por auditoría: ventas, compras y conteos físicos. Para el saldo vigente consultá Stock actual.',
   'reportes-panel':
@@ -39,7 +39,7 @@ export const DESCRIPCIONES_PAGINA: Record<string, string> = {
   'configuracion-sistema':
     'Límites de cuenta corriente, alertas de stock, porcentaje de ganancia sugerido, plazos de deuda y devoluciones.',
   'configuracion-app':
-    'Opciones avanzadas de administración reservadas al administrador principal del sistema.',
+    'Herramientas de implementación: carga inicial de catálogo y stock desde Excel. Solo para el equipo que despliega la tienda.',
 };
 
 export function obtenerDescripcionPagina(nombreRuta: string): string {

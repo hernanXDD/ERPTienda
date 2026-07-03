@@ -22,10 +22,10 @@ export function refrescarDatosPorRuta(
 
   switch (nombre) {
     case 'inicio':
-      void useVentasStore().cargarVentas({ forzar: true });
-      void useStockStore().cargar({ forzar: true });
-      void useClientesStore().cargar({ forzar: true });
-      void useCatalogoStore().cargar({ forzar: true });
+      void useVentasStore().cargarVentas();
+      void useStockStore().cargar();
+      void useClientesStore().cargar();
+      void useCatalogoStore().cargar();
       void useTallesCatalogoStore().cargar();
       void useConfiguracionSistemaStore().cargar();
       break;
