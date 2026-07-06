@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
-import { obtenerOrigenesCorsPermitidos } from './config/cors.config';
+import { normalizarOrigenCors, obtenerOrigenesCorsPermitidos } from './config/cors.config';
 import { ExcepcionHttpFiltro } from './comunes/filtros/excepcion-http.filtro';
 import { CambioContrasenaPendienteInterceptor } from './comunes/interceptores/cambio-contrasena-pendiente.interceptor';
 import { claveIpSolicitud, limiteSolicitudes } from './comunes/seguridad/limite-solicitudes';
@@ -61,7 +61,7 @@ async function bootstrap(): Promise<void> {
         callback(null, true);
         return;
       }
-      if (origenesPermitidos.includes(origen)) {
+      if (origenesPermitidos.includes(normalizarOrigenCors(origen))) {
         callback(null, true);
         return;
       }

@@ -15,6 +15,7 @@ import {
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { VARIABLES_TEMA_LOGIN } from '../../modulos/tema/variablesTemaLogin';
+import { mensajeErrorHttp } from '../../servicios/apiUtil';
 import { useSesionStore } from '../../stores/sesion';
 
 const router = useRouter();
@@ -39,11 +40,13 @@ const caracteristicas = [
 ] as const;
 
 function extraerMensajeError(error: unknown): string {
-  if (error instanceof AxiosError && error.response?.data && typeof error.response.data === 'object') {
-    const datos = error.response.data as { mensaje?: string };
-    if (typeof datos.mensaje === 'string') return datos.mensaje;
+  if (error instanceof AxiosError && !error.response) {
+    if (error.code === 'ECONNABORTED') {
+      return 'La conexión tardó demasiado. Verificá la señal e intentá de nuevo.';
+    }
+    return 'No se pudo conectar con el servidor. Si usás datos móviles, probá también con Wi‑Fi o verificá la URL de la app.';
   }
-  return 'No se pudo iniciar sesión. Intente nuevamente.';
+  return mensajeErrorHttp(error, 'No se pudo iniciar sesión. Intente nuevamente.');
 }
 
 function alternarVisibilidadContrasena(): void {

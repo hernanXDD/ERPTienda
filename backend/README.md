@@ -71,7 +71,7 @@ En **producción** usar únicamente `npm run db:migrate` y `npm run db:seed` (cr
 | **Autenticación** | JWT Bearer; contraseñas con bcrypt. |
 | **CORS** | Orígenes explícitos vía `CORS_ORIGENES` (obligatorio en producción). |
 | **Cabeceras HTTP** | `helmet` en `main.ts`. |
-| **Fuerza bruta login** | Máx. 8 intentos / 15 min por IP en `POST /autenticacion/inicio-sesion`. |
+| **Fuerza bruta login** | Máx. 10 intentos / 15 min por usuario y 40 / IP (configurable; tolera NAT móvil). |
 | **Rate limit API** | Máx. 240 req/min por IP (configurable); excluye salud y login. |
 | **Permisos de lectura** | Todos los `GET` exigen menú visible (`@RequiereMenu` / `@RequiereAlgunoMenu`). |
 | **Sesión con permisos** | Login y `sesion-actual` devuelven `permisos` completos del operador. |
