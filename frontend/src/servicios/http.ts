@@ -1,7 +1,12 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
 
+function baseUrlApi(): string {
+  const configurada = import.meta.env.VITE_API_BASE_URL?.trim();
+  return configurada ? configurada : '/api';
+}
+
 export const clienteHttp = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
+  baseURL: baseUrlApi(),
   timeout: 15_000,
   headers: {
     'Content-Type': 'application/json',
