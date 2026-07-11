@@ -12,7 +12,7 @@ export interface Cliente {
   telefonoPrincipal: string;
   /** Teléfono alternativo u oficina; opcional */
   telefonoAlternativo: string;
-  /** Dirección de entrega o fiscal; texto libre (calle, ciudad, CP). */
+  /** Dirección de entrega o fiscal; opcional. */
   direccion: string;
   /**
    * Tope máximo para compras en cuenta corriente (moneda local, ej. ARS).

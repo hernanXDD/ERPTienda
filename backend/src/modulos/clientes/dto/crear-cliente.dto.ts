@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
@@ -10,6 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import { CondicionIvaCliente } from '@prisma/client';
+import { transformarCadenaVaciaComoUndefined } from '../../../comunes/validadores/transformar-cadena-vacia';
 
 export class CrearClienteDto {
   @IsString()
@@ -23,6 +25,7 @@ export class CrearClienteDto {
   documento!: string;
 
   @IsOptional()
+  @Transform(transformarCadenaVaciaComoUndefined)
   @IsEmail()
   @MaxLength(255)
   correoElectronico?: string;

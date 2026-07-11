@@ -641,7 +641,7 @@ function alCerrarDialogo() {
                   <Phone class="lc-ed-bloque-ico" aria-hidden="true" :size="18" stroke-width="2.1" />
                   <div class="lc-ed-bloque-txt">
                     <h3 id="lc-sec-contacto" class="lc-ed-bloque-tit">Contacto</h3>
-                    <p class="lc-ed-bloque-desc">Teléfonos, correo y domicilio comercial</p>
+                    <p class="lc-ed-bloque-desc">Teléfonos y datos de contacto; correo y dirección opcionales</p>
                   </div>
                 </header>
                 <div class="lc-ed-fila lc-ed-fila--contacto">
@@ -704,7 +704,7 @@ function alCerrarDialogo() {
                     </p>
                   </div>
                   <div class="lc-ed-campo">
-                    <label class="lc-ed-etiq" for="ed-correo">Correo electrónico</label>
+                    <label class="lc-ed-etiq" for="ed-correo">Correo electrónico (opcional)</label>
                     <input
                       id="ed-correo"
                       :value="borrador.correoElectronico"
@@ -712,7 +712,7 @@ function alCerrarDialogo() {
                       class="lc-ed-inp"
                       autocomplete="email"
                       inputmode="email"
-                      placeholder="cliente@ejemplo.com"
+                      placeholder="Opcional"
                       :class="{ 'lc-ed-inp--error': erroresValidacionCliente.correoElectronico }"
                       :aria-invalid="erroresValidacionCliente.correoElectronico ? true : undefined"
                       :aria-describedby="
@@ -736,7 +736,7 @@ function alCerrarDialogo() {
                   <div class="lc-ed-campo">
                     <label class="lc-ed-etiq" for="ed-dir">
                       <MapPin class="lc-ed-etiq-ico" aria-hidden="true" :size="14" stroke-width="2.2" />
-                      Dirección
+                      Dirección (opcional)
                     </label>
                     <input
                       id="ed-dir"
@@ -744,7 +744,7 @@ function alCerrarDialogo() {
                       type="text"
                       class="lc-ed-inp"
                       maxlength="500"
-                      placeholder="Calle, número, localidad, código postal"
+                      placeholder="Opcional"
                       autocomplete="street-address"
                       :disabled="!formularioClienteEditable"
                       @blur="alPerderFocoDireccionCliente"
